@@ -47,6 +47,14 @@ import { useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { isTextEditableTarget } from "@/utils/domUtils";
+import {
+  useProviderGroups,
+  ALL_GROUP_ID,
+  UNGROUPED_GROUP_ID,
+  type ActiveGroupId,
+} from "@/hooks/useProviderGroups";
+import { GroupTabs } from "@/components/providers/GroupTabs";
+import { BulkAssignBar } from "@/components/providers/BulkAssignBar";
 
 interface ProviderListProps {
   providers: Record<string, Provider>;
@@ -92,6 +100,88 @@ export function ProviderList({
   onSetAsDefault,
 }: ProviderListProps) {
   const { t } = useTranslation();
+  const {
+    groups: providerGroups,
+    activeGroupId,
+    setActiveGroupId,
+    createGroup: createProviderGroup,
+    renameGroup: renameProviderGroup,
+    deleteGroup: deleteProviderGroup,
+    assignProviders: assignProvidersToGroup,
+    removeFromGroup: removeProvidersFromGroup,
+    removeFromAllGroups: removeProvidersFromAllGroups,
+    filterByActiveGroup,
+  } = useProviderGroups(appId);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const appIdRef = useRef(appId);
+  // Only reset bulk selection when the app tab changes, not on first mount.
+  useEffect(() => {
+    if (appIdRef.current === appId) return;
+    appIdRef.current = appId;
+    setSelectionMode(false);
+    setSelectedIds([]);
+  }, [appId]);
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }, []);
+  const toggleSelectionMode = useCallback(() => {
+    setSelectionMode((prev) => {
+      if (prev) setSelectedIds([]);
+      return !prev;
+    });
+  }, []);
+  const clearSelection = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds([]);
+  }, []);
+  const handleActiveGroupChange = useCallback(
+    (id: ActiveGroupId) => {
+      setActiveGroupId(id);
+      setSelectedIds([]);
+    },
+    [setActiveGroupId],
+  );
+  const handleAssignSelectedTo = useCallback(
+    (groupId: string) => {
+      if (!selectedIds.length) return;
+      assignProvidersToGroup(groupId, selectedIds);
+      setSelectedIds([]);
+      setSelectionMode(false);
+    },
+    [assignProvidersToGroup, selectedIds],
+  );
+  const handleCreateGroupFromBar = useCallback(
+    (name: string) => {
+      const id = createProviderGroup(name);
+      if (id && selectedIds.length) {
+        assignProvidersToGroup(id, selectedIds);
+        setSelectedIds([]);
+        setSelectionMode(false);
+      }
+    },
+    [assignProvidersToGroup, createProviderGroup, selectedIds],
+  );
+  const handleRemoveSelectedFromCurrent = useCallback(() => {
+    if (!selectedIds.length) return;
+    if (
+      activeGroupId === ALL_GROUP_ID ||
+      activeGroupId === UNGROUPED_GROUP_ID
+    ) {
+      removeProvidersFromAllGroups(selectedIds);
+    } else {
+      removeProvidersFromGroup(activeGroupId, selectedIds);
+    }
+    setSelectedIds([]);
+    setSelectionMode(false);
+  }, [
+    activeGroupId,
+    removeProvidersFromAllGroups,
+    removeProvidersFromGroup,
+    selectedIds,
+  ]);
   const { checkProvider, isChecking } = useStreamCheck(appId);
   const { sortedProviders, sensors, handleDragEnd } = useDragSort(
     providers,
@@ -294,6 +384,21 @@ export function ProviderList({
     });
   }, [searchTerm, sortedProviders]);
 
+  const groupFilteredProviders = useMemo(
+    () => filterByActiveGroup(filteredProviders),
+    [filterByActiveGroup, filteredProviders],
+  );
+
+  const groupFilteredIdSet = useMemo(
+    () => new Set(groupFilteredProviders.map((p) => p.id)),
+    [groupFilteredProviders],
+  );
+
+  const effectiveSelectedIds = useMemo(
+    () => selectedIds.filter((id) => groupFilteredIdSet.has(id)),
+    [selectedIds, groupFilteredIdSet],
+  );
+
   const claudeDesktopStatusMessages = useMemo(() => {
     if (appId !== "claude-desktop" || !claudeDesktopStatus) return [];
 
@@ -381,11 +486,11 @@ export function ProviderList({
       onDragEnd={handleDragEnd}
     >
       <SortableContext
-        items={filteredProviders.map((provider) => provider.id)}
+        items={groupFilteredProviders.map((provider) => provider.id)}
         strategy={verticalListSortingStrategy}
       >
         <div className="space-y-3">
-          {filteredProviders.map((provider) => {
+          {groupFilteredProviders.map((provider) => {
             const isOmo = provider.category === "omo";
             const isOmoSlim = provider.category === "omo-slim";
             const isOmoCurrent = isOmo && provider.id === (currentOmoId || "");
@@ -440,6 +545,9 @@ export function ProviderList({
                 onSetAsDefault={
                   onSetAsDefault ? () => onSetAsDefault(provider) : undefined
                 }
+                selectionMode={selectionMode}
+                isSelected={selectedIds.includes(provider.id)}
+                onToggleSelect={toggleSelect}
               />
             );
           })}
@@ -465,6 +573,16 @@ export function ProviderList({
           </ul>
         </div>
       )}
+      <GroupTabs
+        groups={providerGroups}
+        activeGroupId={activeGroupId}
+        selectionMode={selectionMode}
+        onSelectGroup={handleActiveGroupChange}
+        onCreateGroup={createProviderGroup}
+        onRenameGroup={renameProviderGroup}
+        onDeleteGroup={deleteProviderGroup}
+        onToggleSelectionMode={toggleSelectionMode}
+      />
       <AnimatePresence>
         {isSearchOpen && (
           <motion.div
@@ -535,8 +653,25 @@ export function ProviderList({
             defaultValue: "No providers match your search.",
           })}
         </div>
+      ) : groupFilteredProviders.length === 0 ? (
+        <div className="px-6 py-8 text-sm text-center border border-dashed rounded-lg border-border text-muted-foreground">
+          {t("group.emptyGroup", {
+            defaultValue: "No providers in this group.",
+          })}
+        </div>
       ) : (
         renderProviderList()
+      )}
+      {selectionMode && (
+        <BulkAssignBar
+          selectedCount={effectiveSelectedIds.length}
+          groups={providerGroups}
+          activeGroupId={activeGroupId}
+          onAssignTo={handleAssignSelectedTo}
+          onRemoveFromCurrent={handleRemoveSelectedFromCurrent}
+          onCreateGroup={handleCreateGroupFromBar}
+          onCancel={clearSelection}
+        />
       )}
     </div>
   );
@@ -571,6 +706,9 @@ interface SortableProviderCardProps {
   // OpenClaw: default model
   isDefaultModel?: boolean;
   onSetAsDefault?: () => void;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }
 
 function SortableProviderCard({
@@ -601,6 +739,9 @@ function SortableProviderCard({
   activeProviderId,
   isDefaultModel,
   onSetAsDefault,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
 }: SortableProviderCardProps) {
   const {
     setNodeRef,
@@ -654,6 +795,9 @@ function SortableProviderCard({
         // OpenClaw: default model
         isDefaultModel={isDefaultModel}
         onSetAsDefault={onSetAsDefault}
+        selectionMode={selectionMode}
+        isSelected={isSelected}
+        onToggleSelect={onToggleSelect}
       />
     </div>
   );

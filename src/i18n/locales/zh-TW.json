@@ -175,6 +175,27 @@
       }
     }
   },
+  "group": {
+    "all": "全部",
+    "ungrouped": "未分組",
+    "new": "新增分組",
+    "newDialogTitle": "新增分組",
+    "renameDialogTitle": "重新命名分組",
+    "namePlaceholder": "輸入分組名稱",
+    "rename": "重新命名",
+    "delete": "刪除",
+    "groupMenu": "分組選單",
+    "bulkSelect": "批次選取",
+    "exitBulk": "退出批次",
+    "selectProvider": "選取供應商",
+    "selectedCount": "已選 {{count}} 項",
+    "assignTo": "加入分組",
+    "removeFromGroup": "從目前分組移除",
+    "noGroups": "尚未建立分組",
+    "emptyGroup": "此分組尚無供應商",
+    "deleteConfirmTitle": "刪除分組",
+    "deleteConfirmMessage": "確定要刪除分組 \"{{name}}\" 嗎? 組內供應商會歸入未分組, 不會被刪除."
+  },
   "claudeCode": {
     "needsRouting": "需要路由",
     "noRoutingSupport": "不支援路由"

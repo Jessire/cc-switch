@@ -175,6 +175,27 @@
       }
     }
   },
+  "group": {
+    "all": "全部",
+    "ungrouped": "未分组",
+    "new": "新建分组",
+    "newDialogTitle": "新建分组",
+    "renameDialogTitle": "重命名分组",
+    "namePlaceholder": "输入分组名称",
+    "rename": "重命名",
+    "delete": "删除",
+    "groupMenu": "分组菜单",
+    "bulkSelect": "批量选择",
+    "exitBulk": "退出批量",
+    "selectProvider": "选择供应商",
+    "selectedCount": "已选 {{count}} 项",
+    "assignTo": "加入分组",
+    "removeFromGroup": "从当前分组移出",
+    "noGroups": "还没有分组",
+    "emptyGroup": "该分组还没有供应商",
+    "deleteConfirmTitle": "删除分组",
+    "deleteConfirmMessage": "确定要删除分组 \"{{name}}\" 吗? 组内供应商会归入未分组, 不会被删除."
+  },
   "claudeCode": {
     "needsRouting": "需要路由",
     "noRoutingSupport": "不支持路由"

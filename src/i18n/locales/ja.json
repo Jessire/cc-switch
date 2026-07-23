@@ -175,6 +175,27 @@
       }
     }
   },
+  "group": {
+    "all": "すべて",
+    "ungrouped": "未分類",
+    "new": "グループを追加",
+    "newDialogTitle": "グループを追加",
+    "renameDialogTitle": "グループ名を変更",
+    "namePlaceholder": "グループ名を入力",
+    "rename": "名前を変更",
+    "delete": "削除",
+    "groupMenu": "グループメニュー",
+    "bulkSelect": "一括選択",
+    "exitBulk": "選択を終了",
+    "selectProvider": "プロバイダーを選択",
+    "selectedCount": "{{count}} 件選択中",
+    "assignTo": "グループに追加",
+    "removeFromGroup": "このグループから外す",
+    "noGroups": "グループがありません",
+    "emptyGroup": "このグループにプロバイダーはありません",
+    "deleteConfirmTitle": "グループを削除",
+    "deleteConfirmMessage": "グループ \"{{name}}\" を削除しますか? 所属プロバイダーは未分類に戻ります."
+  },
   "claudeCode": {
     "needsRouting": "ルーティングが必要",
     "noRoutingSupport": "ルーティング非対応"

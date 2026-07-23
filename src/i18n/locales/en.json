@@ -175,6 +175,27 @@
       }
     }
   },
+  "group": {
+    "all": "All",
+    "ungrouped": "Ungrouped",
+    "new": "New group",
+    "newDialogTitle": "New group",
+    "renameDialogTitle": "Rename group",
+    "namePlaceholder": "Enter group name",
+    "rename": "Rename",
+    "delete": "Delete",
+    "groupMenu": "Group menu",
+    "bulkSelect": "Bulk select",
+    "exitBulk": "Exit bulk",
+    "selectProvider": "Select provider",
+    "selectedCount": "{{count}} selected",
+    "assignTo": "Assign to",
+    "removeFromGroup": "Remove from group",
+    "noGroups": "No groups yet",
+    "emptyGroup": "No providers in this group.",
+    "deleteConfirmTitle": "Delete group",
+    "deleteConfirmMessage": "Delete group \"{{name}}\"? Providers will fall back to Ungrouped and stay intact."
+  },
   "claudeCode": {
     "needsRouting": "Needs Routing",
     "noRoutingSupport": "No Routing Support"

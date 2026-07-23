@@ -29,6 +29,7 @@ import {
 import { useProviderHealth } from "@/lib/query/failover";
 import { useUsageQuery } from "@/lib/query/queries";
 import { resolveProviderIcon } from "@/utils/providerIcon";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface DragHandleProps {
   attributes: DraggableAttributes;
@@ -66,6 +67,9 @@ interface ProviderCardProps {
   // OpenClaw: default model
   isDefaultModel?: boolean;
   onSetAsDefault?: () => void;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }
 
 /** 判断是否为官方供应商（无自定义 base URL / API key，直连官方 API） */
@@ -165,6 +169,9 @@ export function ProviderCard({
   // OpenClaw: default model
   isDefaultModel,
   onSetAsDefault,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
 }: ProviderCardProps) {
   const { t } = useTranslation();
 
@@ -333,6 +340,15 @@ export function ProviderCard({
           >
             <GripVertical className="h-4 w-4" />
           </button>
+
+          {selectionMode && (
+            <Checkbox
+              checked={!!isSelected}
+              onCheckedChange={() => onToggleSelect?.(provider.id)}
+              aria-label={t("group.selectProvider", { defaultValue: "Select provider" })}
+              className="ml-1"
+            />
+          )}
 
           <div className="h-8 w-8 flex-shrink-0 rounded-lg bg-muted flex items-center justify-center border border-border group-hover:scale-105 transition-transform duration-300">
             <ProviderIcon
