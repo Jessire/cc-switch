@@ -103,6 +103,7 @@ export function ProviderList({
   const { t } = useTranslation();
   const {
     groups: providerGroups,
+    tabOrder,
     activeGroupId,
     setActiveGroupId,
     createGroup: createProviderGroup,
@@ -590,6 +591,7 @@ export function ProviderList({
       )}
       <GroupTabs
         groups={providerGroups}
+        tabOrder={tabOrder}
         activeGroupId={activeGroupId}
         selectionMode={selectionMode}
         onSelectGroup={handleActiveGroupChange}

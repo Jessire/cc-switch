@@ -16,16 +16,68 @@ export interface ProviderGroup {
 interface PerAppGroupsState {
   groups: ProviderGroup[];
   activeGroupId: ActiveGroupId;
+  /** Visual order of tabs, including special groups. */
+  tabOrder?: ActiveGroupId[];
 }
 
 type GroupsState = Partial<Record<AppId, PerAppGroupsState>>;
 
 const STORAGE_KEY = "cc-switch-provider-groups-v1";
+const SPECIAL_TAB_IDS: ActiveGroupId[] = [ALL_GROUP_ID, UNGROUPED_GROUP_ID];
 
 const emptyPerApp = (): PerAppGroupsState => ({
   groups: [],
   activeGroupId: ALL_GROUP_ID,
+  tabOrder: [...SPECIAL_TAB_IDS],
 });
+
+function isSpecialTabId(id: string): id is SpecialGroupId {
+  return id === ALL_GROUP_ID || id === UNGROUPED_GROUP_ID;
+}
+
+export function normalizeTabOrder(
+  groups: ProviderGroup[],
+  tabOrder?: ActiveGroupId[],
+): ActiveGroupId[] {
+  const customIds = groups.map((g) => g.id);
+  const customSet = new Set(customIds);
+  const seen = new Set<string>();
+  const next: ActiveGroupId[] = [];
+
+  for (const id of tabOrder ?? []) {
+    if (seen.has(id)) continue;
+    if (isSpecialTabId(id) || customSet.has(id)) {
+      next.push(id);
+      seen.add(id);
+    }
+  }
+
+  for (const id of SPECIAL_TAB_IDS) {
+    if (!seen.has(id)) {
+      next.push(id);
+      seen.add(id);
+    }
+  }
+
+  for (const id of customIds) {
+    if (!seen.has(id)) {
+      next.push(id);
+      seen.add(id);
+    }
+  }
+
+  return next;
+}
+
+function normalizePerApp(raw?: PerAppGroupsState | null): PerAppGroupsState {
+  if (!raw || typeof raw !== "object") return emptyPerApp();
+  const groups = Array.isArray(raw.groups) ? raw.groups : [];
+  return {
+    groups,
+    activeGroupId: raw.activeGroupId ?? ALL_GROUP_ID,
+    tabOrder: normalizeTabOrder(groups, raw.tabOrder),
+  };
+}
 
 function readState(): GroupsState {
   if (typeof window === "undefined") return {};
@@ -67,7 +119,7 @@ export function useProviderGroups(appId: AppId) {
   const appIdRef = useRef(appId);
   const [state, setState] = useState<PerAppGroupsState>(() => {
     const all = readState();
-    return all[appId] ?? emptyPerApp();
+    return normalizePerApp(all[appId]);
   });
 
   // Only re-hydrate when appId actually changes. Avoid setState on first mount
@@ -76,27 +128,36 @@ export function useProviderGroups(appId: AppId) {
     if (appIdRef.current === appId) return;
     appIdRef.current = appId;
     const all = readState();
-    setState(all[appId] ?? emptyPerApp());
+    setState(normalizePerApp(all[appId]));
   }, [appId]);
 
   const persist = useCallback(
     (next: PerAppGroupsState) => {
+      const normalized = normalizePerApp(next);
       const all = readState();
-      all[appId] = next;
+      all[appId] = normalized;
       writeState(all);
-      setState(next);
+      setState(normalized);
     },
     [appId],
   );
 
   const activeGroupId = state.activeGroupId ?? ALL_GROUP_ID;
   const groups = state.groups;
+  const tabOrder = useMemo(
+    () => normalizeTabOrder(state.groups, state.tabOrder),
+    [state.groups, state.tabOrder],
+  );
 
   const setActiveGroupId = useCallback(
     (id: ActiveGroupId) => {
-      persist({ groups: state.groups, activeGroupId: id });
+      persist({
+        groups: state.groups,
+        activeGroupId: id,
+        tabOrder: state.tabOrder,
+      });
     },
-    [persist, state.groups],
+    [persist, state.groups, state.tabOrder],
   );
 
   const createGroup = useCallback(
@@ -104,18 +165,25 @@ export function useProviderGroups(appId: AppId) {
       const clean = sanitizeName(name);
       if (!clean) return null;
       const id = generateGroupId();
+      const nextGroups = [
+        ...state.groups,
+        { id, name: clean, providerIds: [] },
+      ];
       const next: PerAppGroupsState = {
-        groups: [...state.groups, { id, name: clean, providerIds: [] }],
+        groups: nextGroups,
         activeGroupId: id,
+        // Always append newly created groups to the end of the tab strip.
+        tabOrder: [...normalizeTabOrder(state.groups, state.tabOrder), id],
       };
       persist(next);
       return id;
     },
-    [persist, state.groups],
+    [persist, state.groups, state.tabOrder],
   );
 
   const renameGroup = useCallback(
     (id: string, name: string) => {
+      if (isSpecialTabId(id)) return;
       const clean = sanitizeName(name);
       if (!clean) return;
       const next: PerAppGroupsState = {
@@ -131,39 +199,54 @@ export function useProviderGroups(appId: AppId) {
 
   const deleteGroup = useCallback(
     (id: string) => {
+      if (isSpecialTabId(id)) return;
+      const nextGroups = state.groups.filter((g) => g.id !== id);
       const next: PerAppGroupsState = {
-        groups: state.groups.filter((g) => g.id !== id),
+        groups: nextGroups,
         activeGroupId:
           state.activeGroupId === id ? ALL_GROUP_ID : state.activeGroupId,
+        tabOrder: normalizeTabOrder(nextGroups, state.tabOrder).filter(
+          (tabId) => tabId !== id,
+        ),
       };
       persist(next);
     },
     [persist, state],
   );
 
+  // Reorder the full tab strip, including special groups.
   const reorderGroups = useCallback(
-    (orderedIds: string[]) => {
+    (orderedIds: ActiveGroupId[]) => {
       if (!orderedIds.length) return;
+      const currentOrder = normalizeTabOrder(state.groups, state.tabOrder);
+      const nextOrder = normalizeTabOrder(state.groups, orderedIds);
+      const customOrder = nextOrder.filter((id) => !isSpecialTabId(id));
       const byId = new Map(state.groups.map((g) => [g.id, g]));
-      const nextOrdered: ProviderGroup[] = [];
-      for (const id of orderedIds) {
+      const nextGroups: ProviderGroup[] = [];
+      for (const id of customOrder) {
         const group = byId.get(id);
         if (group) {
-          nextOrdered.push(group);
+          nextGroups.push(group);
           byId.delete(id);
         }
       }
-      // Keep any leftover groups that were not in orderedIds.
       for (const leftover of byId.values()) {
-        nextOrdered.push(leftover);
+        nextGroups.push(leftover);
       }
-      if (
-        nextOrdered.length === state.groups.length &&
-        nextOrdered.every((g, i) => g.id === state.groups[i]?.id)
-      ) {
-        return;
-      }
-      persist({ ...state, groups: nextOrdered });
+
+      const sameTabs =
+        nextOrder.length === currentOrder.length &&
+        nextOrder.every((id, i) => id === currentOrder[i]);
+      const sameGroups =
+        nextGroups.length === state.groups.length &&
+        nextGroups.every((g, i) => g.id === state.groups[i]?.id);
+      if (sameTabs && sameGroups) return;
+
+      persist({
+        ...state,
+        groups: nextGroups,
+        tabOrder: nextOrder,
+      });
     },
     [persist, state],
   );
@@ -171,7 +254,7 @@ export function useProviderGroups(appId: AppId) {
   // Multi-group membership: add to target without removing from others.
   const assignProviders = useCallback(
     (groupId: string, providerIds: string[]) => {
-      if (!providerIds.length) return;
+      if (!providerIds.length || isSpecialTabId(groupId)) return;
       const nextGroups = state.groups.map((g) => {
         if (g.id !== groupId) return g;
         const merged = new Set([...g.providerIds, ...providerIds]);
@@ -184,7 +267,7 @@ export function useProviderGroups(appId: AppId) {
 
   const removeFromGroup = useCallback(
     (groupId: string, providerIds: string[]) => {
-      if (!providerIds.length) return;
+      if (!providerIds.length || isSpecialTabId(groupId)) return;
       const idSet = new Set(providerIds);
       const nextGroups = state.groups.map((g) =>
         g.id === groupId
@@ -258,6 +341,7 @@ export function useProviderGroups(appId: AppId) {
 
   return {
     groups,
+    tabOrder,
     activeGroupId,
     setActiveGroupId,
     createGroup,

@@ -15,7 +15,13 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MoreVertical, Plus, CheckSquare, Square } from "lucide-react";
+import {
+  GripVertical,
+  MoreVertical,
+  Plus,
+  CheckSquare,
+  Square,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -42,13 +48,14 @@ import {
 
 interface GroupTabsProps {
   groups: ProviderGroup[];
+  tabOrder: ActiveGroupId[];
   activeGroupId: ActiveGroupId;
   selectionMode: boolean;
   onSelectGroup: (id: ActiveGroupId) => void;
   onCreateGroup: (name: string) => string | null;
   onRenameGroup: (id: string, name: string) => void;
   onDeleteGroup: (id: string) => void;
-  onReorderGroups: (orderedIds: string[]) => void;
+  onReorderGroups: (orderedIds: ActiveGroupId[]) => void;
   onToggleSelectionMode: () => void;
 }
 
@@ -57,27 +64,37 @@ type EditingState =
   | { mode: "rename"; groupId: string; initialName: string }
   | null;
 
-interface SortableGroupChipProps {
-  group: ProviderGroup;
+type TabItem =
+  | { kind: "special"; id: typeof ALL_GROUP_ID | typeof UNGROUPED_GROUP_ID }
+  | { kind: "custom"; group: ProviderGroup };
+
+interface SortableTabChipProps {
+  id: ActiveGroupId;
+  label: string;
+  count?: number;
   active: boolean;
+  showMenu?: boolean;
   onSelect: () => void;
-  onRename: () => void;
-  onDelete: () => void;
-  renameLabel: string;
-  deleteLabel: string;
-  menuLabel: string;
+  onRename?: () => void;
+  onDelete?: () => void;
+  renameLabel?: string;
+  deleteLabel?: string;
+  menuLabel?: string;
 }
 
-function SortableGroupChip({
-  group,
+function SortableTabChip({
+  id,
+  label,
+  count,
   active,
+  showMenu = false,
   onSelect,
   onRename,
   onDelete,
   renameLabel,
   deleteLabel,
   menuLabel,
-}: SortableGroupChipProps) {
+}: SortableTabChipProps) {
   const {
     attributes,
     listeners,
@@ -85,7 +102,7 @@ function SortableGroupChip({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: group.id });
+  } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -96,7 +113,7 @@ function SortableGroupChip({
     <div
       ref={setNodeRef}
       style={style}
-      title={group.name}
+      title={label}
       onClick={onSelect}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -119,48 +136,57 @@ function SortableGroupChip({
     >
       <span className="inline-flex min-w-0 items-center gap-1">
         <GripVertical className="h-3 w-3 shrink-0 opacity-50" />
-        <span className="max-w-[10rem] truncate">{group.name}</span>
-        <span
-          className={cn(
-            "ml-0.5 rounded-full px-1.5 text-[10px] tabular-nums",
-            active
-              ? "bg-primary/20 text-primary"
-              : "bg-muted text-muted-foreground",
-          )}
-        >
-          {group.providerIds.length}
-        </span>
+        <span className="max-w-[10rem] truncate">{label}</span>
+        {typeof count === "number" ? (
+          <span
+            className={cn(
+              "ml-0.5 rounded-full px-1.5 text-[10px] tabular-nums",
+              active
+                ? "bg-primary/20 text-primary"
+                : "bg-muted text-muted-foreground",
+            )}
+          >
+            {count}
+          </span>
+        ) : null}
       </span>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 shrink-0 rounded-full"
-            aria-label={menuLabel}
-            onClick={(event) => event.stopPropagation()}
-            onPointerDown={(event) => event.stopPropagation()}
-            onKeyDown={(event) => event.stopPropagation()}
-          >
-            <MoreVertical className="h-3.5 w-3.5" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-[8rem]">
-          <DropdownMenuItem onSelect={onRename}>{renameLabel}</DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={onDelete}
-            className="text-destructive focus:text-destructive"
-          >
-            {deleteLabel}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {showMenu && onRename && onDelete ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 shrink-0 rounded-full"
+              aria-label={menuLabel}
+              onClick={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+            >
+              <MoreVertical className="h-3.5 w-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[8rem]">
+            <DropdownMenuItem onSelect={onRename}>
+              {renameLabel}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={onDelete}
+              className="text-destructive focus:text-destructive"
+            >
+              {deleteLabel}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <span className="w-1" />
+      )}
     </div>
   );
 }
 
 export function GroupTabs({
   groups,
+  tabOrder,
   activeGroupId,
   selectionMode,
   onSelectGroup,
@@ -184,18 +210,31 @@ export function GroupTabs({
     }),
   );
 
+  const groupById = useMemo(() => {
+    const map = new Map(groups.map((group) => [group.id, group]));
+    return map;
+  }, [groups]);
+
+  const tabs = useMemo<TabItem[]>(() => {
+    const items: TabItem[] = [];
+    for (const id of tabOrder) {
+      if (id === ALL_GROUP_ID || id === UNGROUPED_GROUP_ID) {
+        items.push({ kind: "special", id });
+        continue;
+      }
+      const group = groupById.get(id);
+      if (group) items.push({ kind: "custom", group });
+    }
+    return items;
+  }, [groupById, tabOrder]);
+
   useEffect(() => {
     if (editing) {
-      if (editing.mode === "rename") {
-        setNameInput(editing.initialName);
-      } else {
-        setNameInput("");
-      }
-      const frame = requestAnimationFrame(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      });
-      return () => cancelAnimationFrame(frame);
+      setNameInput(
+        editing.mode === "rename" ? editing.initialName : "",
+      );
+      // Focus after dialog mounts.
+      requestAnimationFrame(() => inputRef.current?.focus());
     }
   }, [editing]);
 
@@ -215,81 +254,69 @@ export function GroupTabs({
     setEditing(null);
   };
 
-  const chipClass = (active: boolean) =>
-    cn(
-      "inline-flex h-8 items-center gap-1 rounded-full border px-3 text-xs font-medium transition-colors",
-      active
-        ? "border-primary bg-primary/10 text-primary"
-        : "border-border bg-background text-muted-foreground hover:border-border-hover hover:text-foreground",
-    );
-
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = groups.findIndex((g) => g.id === active.id);
-    const newIndex = groups.findIndex((g) => g.id === over.id);
+    const oldIndex = tabOrder.findIndex((id) => id === active.id);
+    const newIndex = tabOrder.findIndex((id) => id === over.id);
     if (oldIndex < 0 || newIndex < 0) return;
-    const next = arrayMove(groups, oldIndex, newIndex).map((g) => g.id);
-    onReorderGroups(next);
+    onReorderGroups(arrayMove(tabOrder, oldIndex, newIndex));
   };
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <button
-        type="button"
-        className={chipClass(activeGroupId === ALL_GROUP_ID)}
-        onClick={() => onSelectGroup(ALL_GROUP_ID)}
-      >
-        {t("group.all")}
-      </button>
-      <button
-        type="button"
-        className={chipClass(activeGroupId === UNGROUPED_GROUP_ID)}
-        onClick={() => onSelectGroup(UNGROUPED_GROUP_ID)}
-      >
-        {t("group.ungrouped")}
-      </button>
-
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={groups.map((g) => g.id)}
+          items={tabOrder}
           strategy={horizontalListSortingStrategy}
         >
-          {groups.map((group) => (
-            <SortableGroupChip
-              key={group.id}
-              group={group}
-              active={activeGroupId === group.id}
-              onSelect={() => onSelectGroup(group.id)}
-              onRename={() =>
-                setEditing({
-                  mode: "rename",
-                  groupId: group.id,
-                  initialName: group.name,
-                })
-              }
-              onDelete={() => setPendingDelete(group)}
-              renameLabel={t("group.rename")}
-              deleteLabel={t("group.delete")}
-              menuLabel={t("group.groupMenu")}
-            />
-          ))}
+          {tabs.map((tab) => {
+            if (tab.kind === "special") {
+              const label =
+                tab.id === ALL_GROUP_ID
+                  ? t("group.all")
+                  : t("group.ungrouped");
+              return (
+                <SortableTabChip
+                  key={tab.id}
+                  id={tab.id}
+                  label={label}
+                  active={activeGroupId === tab.id}
+                  onSelect={() => onSelectGroup(tab.id)}
+                />
+              );
+            }
+
+            const { group } = tab;
+            return (
+              <SortableTabChip
+                key={group.id}
+                id={group.id}
+                label={group.name}
+                count={group.providerIds.length}
+                active={activeGroupId === group.id}
+                showMenu
+                onSelect={() => onSelectGroup(group.id)}
+                onRename={() =>
+                  setEditing({
+                    mode: "rename",
+                    groupId: group.id,
+                    initialName: group.name,
+                  })
+                }
+                onDelete={() => setPendingDelete(group)}
+                renameLabel={t("group.rename")}
+                deleteLabel={t("group.delete")}
+                menuLabel={t("group.groupMenu")}
+              />
+            );
+          })}
         </SortableContext>
       </DndContext>
-
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-8 gap-1 rounded-full px-3 text-xs"
-        onClick={() => setEditing({ mode: "create" })}
-      >
-        <Plus className="h-3.5 w-3.5" />
-        {t("group.new")}
-      </Button>
 
       <Button
         variant={selectionMode ? "default" : "outline"}
@@ -303,6 +330,16 @@ export function GroupTabs({
           <Square className="h-3.5 w-3.5" />
         )}
         {selectionMode ? t("group.exitBulk") : t("group.bulkSelect")}
+      </Button>
+
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-8 gap-1 rounded-full px-3 text-xs"
+        onClick={() => setEditing({ mode: "create" })}
+      >
+        <Plus className="h-3.5 w-3.5" />
+        {t("group.new")}
       </Button>
 
       <Dialog
