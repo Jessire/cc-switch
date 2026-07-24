@@ -586,15 +586,6 @@ export function ProviderCard({
           </div>
 
           <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto transition-opacity duration-200">
-            {onAssignToGroup && onRemoveFromGroup && onCreateGroupAndAssign ? (
-              <ProviderGroupAssignButton
-                groups={allGroups}
-                membershipGroupIds={membershipGroups.map((group) => group.id)}
-                onAssignTo={onAssignToGroup}
-                onRemoveFrom={onRemoveFromGroup}
-                onCreateAndAssign={onCreateGroupAndAssign}
-              />
-            ) : null}
             <ProviderActions
               appId={appId}
               isCurrent={isCurrent}
@@ -641,6 +632,15 @@ export function ProviderCard({
               isDefaultModel={isDefaultModel}
               onSetAsDefault={onSetAsDefault}
             />
+            {onAssignToGroup && onRemoveFromGroup && onCreateGroupAndAssign ? (
+              <ProviderGroupAssignButton
+                groups={allGroups}
+                membershipGroupIds={membershipGroups.map((group) => group.id)}
+                onAssignTo={onAssignToGroup}
+                onRemoveFrom={onRemoveFromGroup}
+                onCreateAndAssign={onCreateGroupAndAssign}
+              />
+            ) : null}
           </div>
         </div>
       </div>
