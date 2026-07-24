@@ -194,7 +194,9 @@
     "noGroups": "还没有分组",
     "emptyGroup": "该分组还没有供应商",
     "deleteConfirmTitle": "删除分组",
-    "deleteConfirmMessage": "确定要删除分组 \"{{name}}\" 吗? 组内供应商会归入未分组, 不会被删除."
+    "deleteConfirmMessage": "确定要删除分组 \"{{name}}\" 吗? 供应商本身不会被删除, 仅从该分组移除.",
+    "inGroup": "已在组内",
+    "addToGroup": "加入"
   },
   "claudeCode": {
     "needsRouting": "需要路由",

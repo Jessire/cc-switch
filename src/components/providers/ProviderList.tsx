@@ -52,6 +52,7 @@ import {
   ALL_GROUP_ID,
   UNGROUPED_GROUP_ID,
   type ActiveGroupId,
+  type ProviderGroup,
 } from "@/hooks/useProviderGroups";
 import { GroupTabs } from "@/components/providers/GroupTabs";
 import { BulkAssignBar } from "@/components/providers/BulkAssignBar";
@@ -107,9 +108,11 @@ export function ProviderList({
     createGroup: createProviderGroup,
     renameGroup: renameProviderGroup,
     deleteGroup: deleteProviderGroup,
+    reorderGroups,
     assignProviders: assignProvidersToGroup,
     removeFromGroup: removeProvidersFromGroup,
     removeFromAllGroups: removeProvidersFromAllGroups,
+    getGroupsOf,
     filterByActiveGroup,
   } = useProviderGroups(appId);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -548,6 +551,18 @@ export function ProviderList({
                 selectionMode={selectionMode}
                 isSelected={selectedIds.includes(provider.id)}
                 onToggleSelect={toggleSelect}
+                membershipGroups={getGroupsOf(provider.id)}
+                allGroups={providerGroups}
+                onAssignToGroup={(groupId) =>
+                  assignProvidersToGroup(groupId, [provider.id])
+                }
+                onRemoveFromGroup={(groupId) =>
+                  removeProvidersFromGroup(groupId, [provider.id])
+                }
+                onCreateGroupAndAssign={(name) => {
+                  const id = createProviderGroup(name);
+                  if (id) assignProvidersToGroup(id, [provider.id]);
+                }}
               />
             );
           })}
@@ -581,6 +596,7 @@ export function ProviderList({
         onCreateGroup={createProviderGroup}
         onRenameGroup={renameProviderGroup}
         onDeleteGroup={deleteProviderGroup}
+        onReorderGroups={reorderGroups}
         onToggleSelectionMode={toggleSelectionMode}
       />
       <AnimatePresence>
@@ -709,6 +725,11 @@ interface SortableProviderCardProps {
   selectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (id: string) => void;
+  membershipGroups?: ProviderGroup[];
+  allGroups?: ProviderGroup[];
+  onAssignToGroup?: (groupId: string) => void;
+  onRemoveFromGroup?: (groupId: string) => void;
+  onCreateGroupAndAssign?: (name: string) => void;
 }
 
 function SortableProviderCard({
@@ -742,6 +763,11 @@ function SortableProviderCard({
   selectionMode,
   isSelected,
   onToggleSelect,
+  membershipGroups,
+  allGroups,
+  onAssignToGroup,
+  onRemoveFromGroup,
+  onCreateGroupAndAssign,
 }: SortableProviderCardProps) {
   const {
     setNodeRef,
@@ -798,6 +824,11 @@ function SortableProviderCard({
         selectionMode={selectionMode}
         isSelected={isSelected}
         onToggleSelect={onToggleSelect}
+        membershipGroups={membershipGroups}
+        allGroups={allGroups}
+        onAssignToGroup={onAssignToGroup}
+        onRemoveFromGroup={onRemoveFromGroup}
+        onCreateGroupAndAssign={onCreateGroupAndAssign}
       />
     </div>
   );

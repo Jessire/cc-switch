@@ -194,7 +194,9 @@
     "noGroups": "No groups yet",
     "emptyGroup": "No providers in this group.",
     "deleteConfirmTitle": "Delete group",
-    "deleteConfirmMessage": "Delete group \"{{name}}\"? Providers will fall back to Ungrouped and stay intact."
+    "deleteConfirmMessage": "Delete group \"{{name}}\"? Providers themselves will not be deleted; they are only removed from this group.",
+    "inGroup": "In group",
+    "addToGroup": "Add"
   },
   "claudeCode": {
     "needsRouting": "Needs Routing",

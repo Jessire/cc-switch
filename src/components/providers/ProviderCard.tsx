@@ -9,6 +9,8 @@ import type { Provider } from "@/types";
 import type { AppId } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ProviderActions } from "@/components/providers/ProviderActions";
+import { ProviderGroupAssignButton } from "@/components/providers/ProviderGroupAssignButton";
+import type { ProviderGroup } from "@/hooks/useProviderGroups";
 import { ProviderIcon } from "@/components/ProviderIcon";
 import UsageFooter from "@/components/UsageFooter";
 import SubscriptionQuotaFooter from "@/components/SubscriptionQuotaFooter";
@@ -70,6 +72,11 @@ interface ProviderCardProps {
   selectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (id: string) => void;
+  membershipGroups?: ProviderGroup[];
+  allGroups?: ProviderGroup[];
+  onAssignToGroup?: (groupId: string) => void;
+  onRemoveFromGroup?: (groupId: string) => void;
+  onCreateGroupAndAssign?: (name: string) => void;
 }
 
 /** 判断是否为官方供应商（无自定义 base URL / API key，直连官方 API） */
@@ -172,6 +179,11 @@ export function ProviderCard({
   selectionMode,
   isSelected,
   onToggleSelect,
+  membershipGroups = [],
+  allGroups = [],
+  onAssignToGroup,
+  onRemoveFromGroup,
+  onCreateGroupAndAssign,
 }: ProviderCardProps) {
   const { t } = useTranslation();
 
@@ -369,6 +381,16 @@ export function ProviderCard({
                 {provider.name}
               </h3>
 
+              {membershipGroups.map((group) => (
+                <span
+                  key={group.id}
+                  className="inline-flex items-center rounded-md bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-900/40 dark:text-violet-300"
+                  title={t("group.inGroup", { defaultValue: "已在组内" })}
+                >
+                  {group.name}
+                </span>
+              ))}
+
               {isOmo && (
                 <span className="inline-flex items-center rounded-md bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
                   OMO
@@ -564,6 +586,15 @@ export function ProviderCard({
           </div>
 
           <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto transition-opacity duration-200">
+            {onAssignToGroup && onRemoveFromGroup && onCreateGroupAndAssign ? (
+              <ProviderGroupAssignButton
+                groups={allGroups}
+                membershipGroupIds={membershipGroups.map((group) => group.id)}
+                onAssignTo={onAssignToGroup}
+                onRemoveFrom={onRemoveFromGroup}
+                onCreateAndAssign={onCreateGroupAndAssign}
+              />
+            ) : null}
             <ProviderActions
               appId={appId}
               isCurrent={isCurrent}

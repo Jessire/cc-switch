@@ -194,7 +194,9 @@
     "noGroups": "尚未建立分組",
     "emptyGroup": "此分組尚無供應商",
     "deleteConfirmTitle": "刪除分組",
-    "deleteConfirmMessage": "確定要刪除分組 \"{{name}}\" 嗎? 組內供應商會歸入未分組, 不會被刪除."
+    "deleteConfirmMessage": "確定要刪除分組 \"{{name}}\" 嗎? 供應商本身不會被刪除, 僅從該分組移除.",
+    "inGroup": "已在組內",
+    "addToGroup": "加入"
   },
   "claudeCode": {
     "needsRouting": "需要路由",

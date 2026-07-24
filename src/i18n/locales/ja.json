@@ -194,7 +194,9 @@
     "noGroups": "グループがありません",
     "emptyGroup": "このグループにプロバイダーはありません",
     "deleteConfirmTitle": "グループを削除",
-    "deleteConfirmMessage": "グループ \"{{name}}\" を削除しますか? 所属プロバイダーは未分類に戻ります."
+    "deleteConfirmMessage": "グループ \"{{name}}\" を削除しますか? プロバイダー自体は削除されず, このグループからのみ外れます.",
+    "inGroup": "所属中",
+    "addToGroup": "追加"
   },
   "claudeCode": {
     "needsRouting": "ルーティングが必要",
