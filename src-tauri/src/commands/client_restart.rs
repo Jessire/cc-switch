@@ -10,6 +10,21 @@ use std::process::Command;
 use std::thread;
 use std::time::Duration;
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
+/// Hide console windows for taskkill / powershell / cmd child processes on Windows.
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+/// Build a Windows Command with CREATE_NO_WINDOW so no CMD flash appears.
+#[cfg(target_os = "windows")]
+fn silent_cmd(program: impl AsRef<std::ffi::OsStr>) -> Command {
+    let mut cmd = Command::new(program);
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    cmd
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ClientRestartResult {
@@ -142,7 +157,7 @@ fn restart_windows(app: &str, target: &ClientTarget) -> Result<ClientRestartResu
     let mut kill_attempts = 0u32;
     for name in target.process_names {
         // /T kills child tree as well.
-        let output = Command::new("taskkill")
+        let output = silent_cmd("taskkill")
             .args(["/F", "/IM", name, "/T"])
             .output();
         kill_attempts += 1;
@@ -172,7 +187,7 @@ fn restart_windows(app: &str, target: &ClientTarget) -> Result<ClientRestartResu
     // 1) MSIX AppsFolder (most reliable for Store/MSIX apps like Codex)
     if let Some(ref aumid) = msix_launch {
         let arg = format!("shell:AppsFolder\\{aumid}");
-        match Command::new("explorer.exe").arg(&arg).spawn() {
+        match silent_cmd("explorer.exe").arg(&arg).spawn() {
             Ok(_) => {
                 launched = true;
                 launch_note = format!("via {arg}");
@@ -187,7 +202,7 @@ fn restart_windows(app: &str, target: &ClientTarget) -> Result<ClientRestartResu
     // 2) Direct exe path captured before kill
     if !launched {
         if let Some(path) = launch_path {
-            match Command::new(&path).spawn() {
+            match silent_cmd(&path).spawn() {
                 Ok(_) => {
                     launched = true;
                     launch_note = format!("via {}", path.display());
@@ -208,7 +223,7 @@ fn restart_windows(app: &str, target: &ClientTarget) -> Result<ClientRestartResu
         for pattern in target.fallback_exes {
             let expanded = expand_env_path(pattern);
             if expanded.is_file() {
-                match Command::new(&expanded).spawn() {
+                match silent_cmd(&expanded).spawn() {
                     Ok(_) => {
                         launched = true;
                         launch_note = format!("via {}", expanded.display());
@@ -231,7 +246,7 @@ fn restart_windows(app: &str, target: &ClientTarget) -> Result<ClientRestartResu
         for prefix in target.msix_name_prefixes {
             if let Some(aumid) = find_msix_aumid_by_prefix(prefix) {
                 let arg = format!("shell:AppsFolder\\{aumid}");
-                if Command::new("explorer.exe").arg(&arg).spawn().is_ok() {
+                if silent_cmd("explorer.exe").arg(&arg).spawn().is_ok() {
                     launched = true;
                     launch_note = format!("via {arg}");
                     log::info!("[client-restart] launched {arg} (prefix scan)");
@@ -282,10 +297,12 @@ fn list_matching_processes(names: &[&str]) -> Vec<ProcInfo> {
          ForEach-Object {{ '{{0}}|{{1}}' -f $_.Name, $_.ExecutablePath }}"
     );
 
-    let output = Command::new("powershell")
+    let output = silent_cmd("powershell.exe")
         .args([
             "-NoProfile",
             "-NonInteractive",
+            "-WindowStyle",
+            "Hidden",
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
@@ -383,10 +400,12 @@ fn find_msix_aumid_by_prefix(prefix: &str) -> Option<String> {
         "Get-AppxPackage | Where-Object {{ $_.Name -like '{prefix}*' }} | \
          Select-Object -First 1 -ExpandProperty PackageFamilyName"
     );
-    let output = Command::new("powershell")
+    let output = silent_cmd("powershell.exe")
         .args([
             "-NoProfile",
             "-NonInteractive",
+            "-WindowStyle",
+            "Hidden",
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
