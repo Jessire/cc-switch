@@ -351,11 +351,20 @@ pub fn run() {
             }
 
             if !found_deeplink {
-                log::info!("ℹ No deep link URL found in args (this is expected on macOS when launched via system)");
+                log::info!(
+                    "ℹ No deep link URL found in args; keep window hidden (open via tray right-click only)"
+                );
+                // 二次启动/双击 EXE 不再自动弹出主界面：
+                // 主界面仅通过托盘右键菜单「打开主界面」唤起。
+                return;
             }
 
-            // Show and focus window regardless
+            // Deep link 导入需要主界面可见
             if let Some(window) = app.get_webview_window("main") {
+                #[cfg(target_os = "windows")]
+                {
+                    let _ = window.set_skip_taskbar(false);
+                }
                 let _ = window.unminimize();
                 let _ = window.show();
                 let _ = window.set_focus();
@@ -1052,7 +1061,7 @@ pub fn run() {
                 .on_menu_event(|app, event| {
                     tray::handle_tray_menu_event(app, &event.id.0);
                 })
-                .show_menu_on_left_click(true);
+                .show_menu_on_left_click(false); // 仅右键弹出托盘菜单，取消左键单击
 
             // 使用平台对应的托盘图标（macOS 使用模板图标适配深浅色）
             #[cfg(target_os = "macos")]
