@@ -16,7 +16,9 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 doctest = false
 
 [features]
-default = []
+default = ["custom-protocol"]
+# production builds embed frontend; tauri dev uses --no-default-features
+custom-protocol = ["tauri/custom-protocol"]
 test-hooks = []
 
 [build-dependencies]

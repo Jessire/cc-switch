@@ -351,15 +351,10 @@ pub fn run() {
             }
 
             if !found_deeplink {
-                log::info!(
-                    "ℹ No deep link URL found in args; keep window hidden (open via tray right-click only)"
-                );
-                // 二次启动/双击 EXE 不再自动弹出主界面：
-                // 主界面仅通过托盘右键菜单「打开主界面」唤起。
-                return;
+                log::info!("ℹ No deep link URL found in args (this is expected on macOS when launched via system)");
             }
 
-            // Deep link 导入需要主界面可见
+            // 二次启动 / 双击 EXE：显示并聚焦主窗口
             if let Some(window) = app.get_webview_window("main") {
                 #[cfg(target_os = "windows")]
                 {
@@ -1046,10 +1041,27 @@ pub fn run() {
             let mut tray_builder = TrayIconBuilder::with_id(tray::TRAY_ID)
                 .tooltip("CC Switch") // 鼠标悬停提示
                 .on_tray_icon_event(|tray, event| match event {
-                    // 鼠标悬停/点击到托盘图标时，后台异步刷新用量缓存，
-                    // 让用户下一次（或快速打开菜单的那一刻）看到较新的数字。
+                    // 悬停/单击：仅后台刷新用量缓存（不弹菜单、不打开窗口）
                     // refresh_all_usage_in_tray 内部有 10 秒防抖。
-                    TrayIconEvent::Enter { .. } | TrayIconEvent::Click { .. } => {
+                    TrayIconEvent::Enter { .. } => {
+                        let app = tray.app_handle().clone();
+                        tauri::async_runtime::spawn(async move {
+                            crate::tray::refresh_all_usage_in_tray(&app).await;
+                        });
+                    }
+                    // 左键双击：打开主界面（用户明确要求）
+                    TrayIconEvent::DoubleClick {
+                        button: tauri::tray::MouseButton::Left,
+                        ..
+                    } => {
+                        let app = tray.app_handle().clone();
+                        tray::handle_tray_menu_event(&app, "show_main");
+                    }
+                    // 左键单击：明确忽略（菜单只走右键）
+                    TrayIconEvent::Click {
+                        button: tauri::tray::MouseButton::Left,
+                        ..
+                    } => {
                         let app = tray.app_handle().clone();
                         tauri::async_runtime::spawn(async move {
                             crate::tray::refresh_all_usage_in_tray(&app).await;
@@ -1061,7 +1073,8 @@ pub fn run() {
                 .on_menu_event(|app, event| {
                     tray::handle_tray_menu_event(app, &event.id.0);
                 })
-                .show_menu_on_left_click(false); // 仅右键弹出托盘菜单，取消左键单击
+                // 取消左键单击弹菜单，只保留右键单击菜单
+                .show_menu_on_left_click(false);
 
             // 使用平台对应的托盘图标（macOS 使用模板图标适配深浅色）
             #[cfg(target_os = "macos")]
