@@ -248,11 +248,22 @@
       }
     }
   },
+  "autoRestart": {
+    "aria": "Auto-restart client after provider switch",
+    "tooltip": {
+      "enabled": "On: switching {{app}} providers will auto-restart the client",
+      "disabled": "When enabled, switching {{app}} providers auto-restarts the client",
+      "unsupported": "{{app}} is CLI / applies immediately; client restart is not needed"
+    }
+  },
   "notifications": {
     "providerAdded": "Provider added",
     "providerSaved": "Provider configuration saved",
     "providerDeleted": "Provider deleted successfully",
     "switchSuccess": "Switch successful!",
+    "switchSuccessAutoRestarted": "Switched successfully. Client auto-restarted.",
+    "switchSuccessAutoRestartNote": "Switched successfully ({{detail}})",
+    "autoRestartFailed": "Failed to auto-restart client",
     "codexRestartRequired": "Switched successfully. Restart the client to apply changes.",
     "grokBuildRestartRequired": "Switched successfully. Restart Grok Build to apply changes.",
     "claudeDesktopRestartRequired": "Switched successfully. Restart Claude Desktop to apply changes.",

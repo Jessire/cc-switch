@@ -248,11 +248,22 @@
       }
     }
   },
+  "autoRestart": {
+    "aria": "プロバイダー切り替え後にクライアントを自動再起動",
+    "tooltip": {
+      "enabled": "有効：{{app}} のプロバイダー切り替え後にクライアントを自動再起動します",
+      "disabled": "有効にすると、{{app}} のプロバイダー切り替え時に対応クライアントを自動再起動します",
+      "unsupported": "{{app}} は CLI / 即時反映のため、クライアント再起動は不要です"
+    }
+  },
   "notifications": {
     "providerAdded": "プロバイダーを追加しました",
     "providerSaved": "プロバイダー設定を保存しました",
     "providerDeleted": "プロバイダーを削除しました",
     "switchSuccess": "切り替え成功！",
+    "switchSuccessAutoRestarted": "切り替えました。クライアントを自動再起動しました",
+    "switchSuccessAutoRestartNote": "切り替えました（{{detail}}）",
+    "autoRestartFailed": "クライアントの自動再起動に失敗しました",
     "codexRestartRequired": "切り替えました。反映するにはクライアントを再起動してください",
     "grokBuildRestartRequired": "切り替えました。反映するには Grok Build を再起動してください",
     "claudeDesktopRestartRequired": "切り替えました。反映するには Claude Desktop を再起動してください",

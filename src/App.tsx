@@ -69,6 +69,7 @@ import { EnvWarningBanner } from "@/components/env/EnvWarningBanner";
 import { ProxyToggle } from "@/components/proxy/ProxyToggle";
 import { ClaudeDesktopRouteToggle } from "@/components/proxy/ClaudeDesktopRouteToggle";
 import { FailoverToggle } from "@/components/proxy/FailoverToggle";
+import { AutoRestartToggle } from "@/components/providers/AutoRestartToggle";
 import UsageScriptModal from "@/components/UsageScriptModal";
 import UnifiedMcpPanel from "@/components/mcp/UnifiedMcpPanel";
 import PromptPanel from "@/components/prompts/PromptPanel";
@@ -1247,24 +1248,28 @@ function App() {
           </div>
 
           <div className="flex flex-1 min-w-0 items-center justify-end gap-1.5">
-            {currentView === "providers" &&
-              activeApp !== "opencode" &&
-              activeApp !== "openclaw" &&
-              activeApp !== "hermes" && (
+            {currentView === "providers" && (
                 <div
                   className="flex shrink-0 items-center gap-1.5"
                   style={{ WebkitAppRegion: "no-drag" } as any}
                 >
-                  {activeApp === "claude-desktop" ? (
-                    <ClaudeDesktopRouteToggle />
-                  ) : (
-                    settingsData?.enableLocalProxy && (
-                      <ProxyToggle activeApp={activeApp} />
-                    )
-                  )}
-                  {activeApp !== "claude-desktop" &&
-                    settingsData?.enableFailoverToggle && (
-                      <FailoverToggle activeApp={activeApp} />
+                  <AutoRestartToggle activeApp={activeApp} />
+                  {activeApp !== "opencode" &&
+                    activeApp !== "openclaw" &&
+                    activeApp !== "hermes" && (
+                      <>
+                        {activeApp === "claude-desktop" ? (
+                          <ClaudeDesktopRouteToggle />
+                        ) : (
+                          settingsData?.enableLocalProxy && (
+                            <ProxyToggle activeApp={activeApp} />
+                          )
+                        )}
+                        {activeApp !== "claude-desktop" &&
+                          settingsData?.enableFailoverToggle && (
+                            <FailoverToggle activeApp={activeApp} />
+                          )}
+                      </>
                     )}
                 </div>
               )}

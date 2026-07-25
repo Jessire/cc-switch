@@ -3,6 +3,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { providersApi, settingsApi, openclawApi, type AppId } from "@/lib/api";
+import {
+  clientRestartApi,
+  appSupportsClientRestart,
+} from "@/lib/api/clientRestart";
+import { isAutoRestartClientEnabled } from "@/components/providers/AutoRestartToggle";
 import type {
   Provider,
   UsageScript,
@@ -301,11 +306,39 @@ export function useProviderActions(
           );
         }
 
+        // Optional: auto-restart the matching desktop client after switch
+        let autoRestarted = false;
+        let autoRestartMessage = "";
+        if (
+          isAutoRestartClientEnabled() &&
+          appSupportsClientRestart(activeApp)
+        ) {
+          try {
+            const restartResult = await clientRestartApi.restart(activeApp);
+            autoRestarted = restartResult.killed || restartResult.launched;
+            autoRestartMessage = restartResult.message;
+          } catch (error) {
+            autoRestartMessage =
+              extractErrorMessage(error) ||
+              t("notifications.autoRestartFailed", {
+                defaultValue: "自动重启客户端失败",
+              });
+            console.warn("[switchProvider] auto restart failed:", error);
+          }
+        }
+
         // 若已弹过 proxyRequired 警告则不再弹 success
         if (!proxyRequiredReason) {
           let messageKey = "notifications.switchSuccess";
           let defaultMessage = "切换成功！";
-          if (activeApp === "codex") {
+          if (autoRestarted) {
+            messageKey = "notifications.switchSuccessAutoRestarted";
+            defaultMessage = "切换成功，已自动重启客户端";
+          } else if (autoRestartMessage && isAutoRestartClientEnabled()) {
+            // Toggle on but nothing to kill / launch failed — still report switch ok
+            messageKey = "notifications.switchSuccessAutoRestartNote";
+            defaultMessage = "切换成功（{{detail}}）";
+          } else if (activeApp === "codex") {
             messageKey = "notifications.codexRestartRequired";
             defaultMessage = "切换成功，请重启客户端以生效";
           } else if (activeApp === "grokbuild") {
@@ -324,9 +357,36 @@ export function useProviderActions(
             messageKey = "notifications.addToConfigSuccess";
             defaultMessage = "已添加到配置";
           }
-          toast.success(t(messageKey, { defaultValue: defaultMessage }), {
-            closeButton: true,
-          });
+
+          if (
+            messageKey === "notifications.switchSuccessAutoRestartNote" &&
+            autoRestartMessage
+          ) {
+            toast.success(
+              t(messageKey, {
+                detail: autoRestartMessage,
+                defaultValue: defaultMessage,
+              }),
+              { closeButton: true },
+            );
+          } else if (
+            messageKey === "notifications.switchSuccessAutoRestarted" &&
+            autoRestartMessage
+          ) {
+            toast.success(
+              t(messageKey, {
+                detail: autoRestartMessage,
+                defaultValue: `${defaultMessage}：${autoRestartMessage}`,
+              }),
+              { closeButton: true },
+            );
+          } else {
+            toast.success(t(messageKey, { defaultValue: defaultMessage }), {
+              closeButton: true,
+            });
+          }
+        } else if (autoRestarted && autoRestartMessage) {
+          toast.message(autoRestartMessage, { closeButton: true });
         }
       } catch {
         // 错误提示由 mutation 处理

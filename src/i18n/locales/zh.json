@@ -248,11 +248,22 @@
       }
     }
   },
+  "autoRestart": {
+    "aria": "切换供应商后自动重启客户端",
+    "tooltip": {
+      "enabled": "已开启：切换 {{app}} 供应商后自动重启客户端",
+      "disabled": "开启后，切换 {{app}} 供应商时自动重启对应客户端",
+      "unsupported": "{{app}} 为 CLI / 配置即时生效，无需自动重启客户端"
+    }
+  },
   "notifications": {
     "providerAdded": "供应商已添加",
     "providerSaved": "供应商配置已保存",
     "providerDeleted": "供应商删除成功",
     "switchSuccess": "切换成功！",
+    "switchSuccessAutoRestarted": "切换成功，已自动重启客户端",
+    "switchSuccessAutoRestartNote": "切换成功（{{detail}}）",
+    "autoRestartFailed": "自动重启客户端失败",
     "codexRestartRequired": "切换成功，请重启客户端以生效",
     "grokBuildRestartRequired": "切换成功，请重启 Grok Build 以生效",
     "claudeDesktopRestartRequired": "切换成功，重启 Claude Desktop 后生效",
