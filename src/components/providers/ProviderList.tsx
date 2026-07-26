@@ -61,7 +61,10 @@ interface ProviderListProps {
   providers: Record<string, Provider>;
   currentProviderId: string;
   appId: AppId;
-  onSwitch: (provider: Provider) => void;
+  onSwitch: (
+    provider: Provider,
+    context?: { isWithinCustomGroup?: boolean },
+  ) => void;
   onEdit: (provider: Provider) => void;
   onDelete: (provider: Provider) => void;
   onRemoveFromConfig?: (provider: Provider) => void;
@@ -147,6 +150,18 @@ export function ProviderList({
       setSelectedIds([]);
     },
     [setActiveGroupId],
+  );
+  const handleProviderSwitch = useCallback(
+    (provider: Provider) => {
+      const isWithinCustomGroup =
+        activeGroupId !== ALL_GROUP_ID && activeGroupId !== UNGROUPED_GROUP_ID;
+      if (isWithinCustomGroup) {
+        onSwitch(provider, { isWithinCustomGroup: true });
+      } else {
+        onSwitch(provider);
+      }
+    },
+    [activeGroupId, onSwitch],
   );
   const handleAssignSelectedTo = useCallback(
     (groupId: string) => {
@@ -519,7 +534,7 @@ export function ProviderList({
                 isInConfig={isProviderInConfig(provider.id)}
                 isOmo={isOmo}
                 isOmoSlim={isOmoSlim}
-                onSwitch={onSwitch}
+                onSwitch={handleProviderSwitch}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onRemoveFromConfig={onRemoveFromConfig}

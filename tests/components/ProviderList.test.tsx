@@ -121,6 +121,7 @@ function renderWithQueryClient(ui: ReactElement) {
 }
 
 beforeEach(() => {
+  localStorage.clear();
   useDragSortMock.mockReset();
   useSortableMock.mockReset();
   providerCardRenderSpy.mockClear();
@@ -235,12 +236,12 @@ describe("ProviderList Component", () => {
     // Drag attributes from useSortable
     expect(
       providerCardRenderSpy.mock.calls[0][0].dragHandleProps?.attributes[
-      "data-dnd-id"
+        "data-dnd-id"
       ],
     ).toBe("b");
     expect(
       providerCardRenderSpy.mock.calls[1][0].dragHandleProps?.attributes[
-      "data-dnd-id"
+        "data-dnd-id"
       ],
     ).toBe("a");
 
@@ -305,5 +306,44 @@ describe("ProviderList Component", () => {
     expect(
       screen.getByText("No providers match your search."),
     ).toBeInTheDocument();
+  });
+
+  it("marks provider switches made from a custom group", () => {
+    const provider = createProvider({ id: "grouped", name: "Grouped" });
+    const handleSwitch = vi.fn();
+    localStorage.setItem(
+      "cc-switch-provider-groups-v1",
+      JSON.stringify({
+        codex: {
+          groups: [{ id: "gpt", name: "GPT", providerIds: [provider.id] }],
+          activeGroupId: "gpt",
+          tabOrder: ["__all__", "__ungrouped__", "gpt"],
+        },
+      }),
+    );
+    useDragSortMock.mockReturnValue({
+      sortedProviders: [provider],
+      sensors: [],
+      handleDragEnd: vi.fn(),
+    });
+
+    renderWithQueryClient(
+      <ProviderList
+        providers={{ grouped: provider }}
+        currentProviderId=""
+        appId="codex"
+        onSwitch={handleSwitch}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onDuplicate={vi.fn()}
+        onOpenWebsite={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("switch-grouped"));
+
+    expect(handleSwitch).toHaveBeenCalledWith(provider, {
+      isWithinCustomGroup: true,
+    });
   });
 });

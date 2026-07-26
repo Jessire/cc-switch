@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw, Loader2 } from "lucide-react";
+import { RefreshCw, FolderX, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,7 @@ import type { AppId } from "@/lib/api";
 import { appSupportsClientRestart } from "@/lib/api/clientRestart";
 
 const STORAGE_KEY = "cc-switch-auto-restart-client-v1";
+const GROUP_SKIP_STORAGE_KEY = "cc-switch-skip-restart-in-group-v1";
 
 function readEnabled(): boolean {
   try {
@@ -34,6 +35,26 @@ function writeEnabled(value: boolean) {
 /** Read current toggle without React (for switchProvider). */
 export function isAutoRestartClientEnabled(): boolean {
   return readEnabled();
+}
+
+function readGroupSkipEnabled(): boolean {
+  try {
+    return localStorage.getItem(GROUP_SKIP_STORAGE_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+function writeGroupSkipEnabled(value: boolean) {
+  try {
+    localStorage.setItem(GROUP_SKIP_STORAGE_KEY, value ? "1" : "0");
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
+export function isGroupRestartSuppressed(): boolean {
+  return readGroupSkipEnabled();
 }
 
 interface AutoRestartToggleProps {
@@ -71,11 +92,14 @@ export function AutoRestartToggle({
   const { t } = useTranslation();
   const [enabled, setEnabled] = useState(false);
   const [pending, setPending] = useState(false);
+  const [groupSkipEnabled, setGroupSkipEnabled] = useState(true);
+  const [groupPending, setGroupPending] = useState(false);
   const supported = appSupportsClientRestart(activeApp);
   const label = appLabel(activeApp);
 
   useEffect(() => {
     setEnabled(readEnabled());
+    setGroupSkipEnabled(readGroupSkipEnabled());
   }, []);
 
   const handleToggle = useCallback((checked: boolean) => {
@@ -84,6 +108,13 @@ export function AutoRestartToggle({
     writeEnabled(checked);
     // tiny delay so switch animation feels intentional
     window.setTimeout(() => setPending(false), 120);
+  }, []);
+
+  const handleGroupToggle = useCallback((checked: boolean) => {
+    setGroupPending(true);
+    setGroupSkipEnabled(checked);
+    writeGroupSkipEnabled(checked);
+    window.setTimeout(() => setGroupPending(false), 120);
   }, []);
 
   const tooltipText = !supported
@@ -101,34 +132,71 @@ export function AutoRestartToggle({
           defaultValue: `开启后，切换 ${label} 供应商时自动重启对应客户端`,
         });
 
+  const groupTooltipText = !supported
+    ? t("autoRestart.groupSkip.unsupported", {
+        app: label,
+        defaultValue: `${label} 无需自动重启客户端`,
+      })
+    : groupSkipEnabled
+      ? t("autoRestart.groupSkip.enabled", {
+          defaultValue: "已开启：在自建分组内切换中转时不自动重启客户端",
+        })
+      : t("autoRestart.groupSkip.disabled", {
+          defaultValue: "已关闭：在自建分组内切换中转时仍自动重启客户端",
+        });
+
   return (
-    <div
-      className={cn(
-        "flex items-center gap-1 px-1.5 h-8 rounded-lg bg-muted/50 transition-all",
-        className,
-      )}
-      title={tooltipText}
-    >
-      {pending ? (
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-      ) : (
-        <RefreshCw
-          className={cn(
-            "h-4 w-4 transition-colors",
-            enabled && supported
-              ? "text-emerald-500 animate-pulse"
-              : "text-muted-foreground",
-          )}
+    <div className={cn("flex items-center gap-1.5", className)}>
+      <div
+        className="flex items-center gap-1 px-1.5 h-8 rounded-lg bg-muted/50 transition-all"
+        title={tooltipText}
+      >
+        {pending ? (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        ) : (
+          <RefreshCw
+            className={cn(
+              "h-4 w-4 transition-colors",
+              enabled && supported
+                ? "text-emerald-500 animate-pulse"
+                : "text-muted-foreground",
+            )}
+          />
+        )}
+        <Switch
+          checked={enabled}
+          onCheckedChange={handleToggle}
+          disabled={pending}
+          aria-label={t("autoRestart.aria", {
+            defaultValue: "切换供应商后自动重启客户端",
+          })}
         />
-      )}
-      <Switch
-        checked={enabled}
-        onCheckedChange={handleToggle}
-        disabled={pending}
-        aria-label={t("autoRestart.aria", {
-          defaultValue: "切换供应商后自动重启客户端",
-        })}
-      />
+      </div>
+      <div
+        className="flex items-center gap-1 px-1.5 h-8 rounded-lg bg-muted/50 transition-all"
+        title={groupTooltipText}
+      >
+        {groupPending ? (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        ) : (
+          <FolderX
+            className={cn(
+              "h-4 w-4 transition-colors",
+              groupSkipEnabled && supported
+                ? "text-sky-500"
+                : "text-muted-foreground",
+            )}
+          />
+        )}
+        <Switch
+          checked={groupSkipEnabled}
+          onCheckedChange={handleGroupToggle}
+          disabled={groupPending || !supported}
+          aria-label={t("autoRestart.groupSkip.aria", {
+            defaultValue: "自建分组内切换中转时不自动重启客户端",
+          })}
+        />
+      </div>
     </div>
   );
 }

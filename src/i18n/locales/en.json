@@ -254,6 +254,12 @@
       "enabled": "On: switching {{app}} providers will auto-restart the client",
       "disabled": "When enabled, switching {{app}} providers auto-restarts the client",
       "unsupported": "{{app}} is CLI / applies immediately; client restart is not needed"
+    },
+    "groupSkip": {
+      "aria": "Do not auto-restart when switching within a custom group",
+      "enabled": "On: switching within a custom group will not auto-restart the client",
+      "disabled": "Off: switching within a custom group will still auto-restart the client",
+      "unsupported": "{{app}} does not need an automatic client restart"
     }
   },
   "notifications": {

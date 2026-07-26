@@ -9,6 +9,21 @@ const toastSuccessMock = vi.fn();
 const toastErrorMock = vi.fn();
 const toastInfoMock = vi.fn();
 const toastWarningMock = vi.fn();
+const autoRestartEnabledMock = vi.fn(() => false);
+const groupRestartSuppressedMock = vi.fn(() => true);
+const clientRestartMock = vi.fn();
+
+vi.mock("@/components/providers/AutoRestartToggle", () => ({
+  isAutoRestartClientEnabled: () => autoRestartEnabledMock(),
+  isGroupRestartSuppressed: () => groupRestartSuppressedMock(),
+}));
+
+vi.mock("@/lib/api/clientRestart", () => ({
+  appSupportsClientRestart: () => true,
+  clientRestartApi: {
+    restart: (...args: unknown[]) => clientRestartMock(...args),
+  },
+}));
 
 vi.mock("sonner", () => ({
   toast: {
@@ -122,6 +137,11 @@ beforeEach(() => {
   toastErrorMock.mockReset();
   toastInfoMock.mockReset();
   toastWarningMock.mockReset();
+  autoRestartEnabledMock.mockReset();
+  autoRestartEnabledMock.mockReturnValue(false);
+  groupRestartSuppressedMock.mockReset();
+  groupRestartSuppressedMock.mockReturnValue(true);
+  clientRestartMock.mockReset();
 
   addProviderMutation.isPending = false;
   updateProviderMutation.isPending = false;
@@ -196,6 +216,30 @@ describe("useProviderActions", () => {
       "切换成功，请重启客户端以生效",
       { closeButton: true },
     );
+  });
+
+  it("does not restart the client when switching inside a custom group", async () => {
+    autoRestartEnabledMock.mockReturnValue(true);
+    groupRestartSuppressedMock.mockReturnValue(true);
+    switchProviderMutateAsync.mockResolvedValueOnce(undefined);
+    const { wrapper } = createWrapper();
+    const provider = createProvider({ category: "custom" });
+
+    const { result } = renderHook(() => useProviderActions("codex"), {
+      wrapper,
+    });
+
+    await act(async () => {
+      await result.current.switchProvider(provider, {
+        isWithinCustomGroup: true,
+      });
+    });
+
+    expect(switchProviderMutateAsync).toHaveBeenCalledWith(provider.id);
+    expect(clientRestartMock).not.toHaveBeenCalled();
+    expect(toastSuccessMock).toHaveBeenCalledWith("切换成功！", {
+      closeButton: true,
+    });
   });
 
   it("warns but still switches providers that require proxy when proxy is not running", async () => {
