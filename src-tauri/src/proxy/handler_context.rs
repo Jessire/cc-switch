@@ -53,6 +53,9 @@ pub struct RequestContext {
     /// usage 归因的兜底顺序：上游响应回显 → outbound_model → request_model。
     /// 不能直接用 request_model 兜底：接管场景下它是映射前的客户端别名。
     pub outbound_model: Option<String>,
+    /// 会话/请求级路由指定的模型名（session override 或 provider 前缀剥离后），
+    /// handler 层用它改写 body["model"]。
+    pub forced_model: Option<String>,
     /// 日志标签（如 "Claude"、"Codex"、"Gemini"）
     pub tag: &'static str,
     /// 应用类型字符串（如 "claude"、"codex"、"gemini"）
@@ -148,6 +151,73 @@ impl RequestContext {
             .cloned()
             .ok_or(ProxyError::NoAvailableProvider)?;
 
+        // 会话/请求级路由覆盖:
+        // 1. session override（/model 命令写入，仅对客户端提供 session id 的请求生效）
+        // 2. 模型名前缀 provider/model（Gemini 的 model 在 URI 中，不适用）
+        let mut providers = providers;
+        let mut provider = provider;
+        let mut current_provider_id = current_provider_id;
+        let mut request_model = request_model;
+        let mut forced_model: Option<String> = None;
+        let mut routed = false;
+
+        if session_result.client_provided {
+            if let Some(ov) = state.session_overrides.get(&session_id) {
+                match state.db.get_provider_by_id(&ov.provider_id, app_type_str) {
+                    Ok(Some(p)) => {
+                        log::info!(
+                            "[{}] Session override: provider {} (model: {:?}), session: {}",
+                            tag,
+                            p.name,
+                            ov.model,
+                            session_id
+                        );
+                        current_provider_id = p.id.clone();
+                        provider = p.clone();
+                        providers = vec![p];
+                        forced_model = ov.model.clone();
+                        routed = true;
+                    }
+                    _ => {
+                        // provider 已被删除，清理失效 override
+                        state.session_overrides.clear(&session_id);
+                        log::warn!(
+                            "[{}] Session override provider {} no longer exists, cleared, session: {}",
+                            tag,
+                            ov.provider_id,
+                            session_id
+                        );
+                    }
+                }
+            }
+        }
+
+        if !routed && app_type_str != "gemini" {
+            if let Some((prefix, stripped)) =
+                crate::proxy::session_router::parse_provider_prefix(&request_model)
+            {
+                if let Ok(all) = state.db.get_all_providers(app_type_str) {
+                    if let Some(p) = all.values().find(|p| {
+                        p.name.eq_ignore_ascii_case(prefix) || p.id.eq_ignore_ascii_case(prefix)
+                    }) {
+                        log::info!(
+                            "[{}] Provider prefix routing: {} -> provider {} model {}",
+                            tag,
+                            request_model,
+                            p.name,
+                            stripped
+                        );
+                        current_provider_id = p.id.clone();
+                        provider = p.clone();
+                        providers = vec![provider.clone()];
+                        forced_model = Some(stripped.to_string());
+                        request_model = stripped.to_string();
+                    }
+                    // 未匹配任何 provider: 静默回落，原样转发
+                }
+            }
+        }
+
         log::debug!(
             "[{}] Provider: {}, model: {}, failover chain: {} providers, session: {}",
             tag,
@@ -165,6 +235,7 @@ impl RequestContext {
             current_provider_id,
             request_model,
             outbound_model: None,
+            forced_model,
             tag,
             app_type_str,
             app_type,
