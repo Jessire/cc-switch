@@ -48,8 +48,6 @@ describe("CodexFormFields model menu", () => {
             onEndpointModalToggle={vi.fn()}
             autoSelect={false}
             onAutoSelectChange={vi.fn()}
-            codexModel="existing-model"
-            onModelChange={vi.fn()}
             apiFormat="openai_responses"
             onApiFormatChange={vi.fn()}
             anthropicAuthField="ANTHROPIC_API_KEY"
@@ -77,6 +75,10 @@ describe("CodexFormFields model menu", () => {
     }
 
     render(<Harness />);
+
+    expect(
+      document.getElementById("codexDefaultModel"),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(
       screen

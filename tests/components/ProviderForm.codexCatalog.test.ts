@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { normalizeCodexCatalogModelsForSave } from "@/components/providers/forms/ProviderForm";
+import {
+  normalizeCodexCatalogModelsForSave,
+  syncCodexModelToCatalogFirst,
+} from "@/components/providers/forms/ProviderForm";
+import { extractCodexModelName } from "@/utils/providerConfigUtils";
 
 describe("ProviderForm Codex catalog helpers", () => {
   it("normalizes catalog rows and removes empty or duplicate models", () => {
@@ -48,5 +52,21 @@ describe("ProviderForm Codex catalog helpers", () => {
       },
       { model: "mimo-v2.5-pro", supportsParallelToolCalls: false },
     ]);
+  });
+
+  it("uses the first menu model as the Codex default model", () => {
+    const config = 'model = "old-model"\nmodel_provider = "custom"\n';
+    const result = syncCodexModelToCatalogFirst(config, [
+      { model: "new-first" },
+      { model: "second" },
+    ]);
+
+    expect(extractCodexModelName(result)).toBe("new-first");
+  });
+
+  it("preserves the existing default model when the menu is empty", () => {
+    const config = 'model = "existing-model"\nmodel_provider = "custom"\n';
+
+    expect(syncCodexModelToCatalogFirst(config, [])).toBe(config);
   });
 });

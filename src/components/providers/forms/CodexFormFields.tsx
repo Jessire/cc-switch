@@ -99,7 +99,7 @@ interface CodexFormFieldsProps {
   autoSelect: boolean;
   onAutoSelectChange: (checked: boolean) => void;
 
-  // Default model (config.toml top-level `model`)
+  // Grok Build keeps an explicit default model; Codex derives it from catalog order.
   codexModel?: string;
   onModelChange?: (model: string) => void;
 
@@ -684,7 +684,6 @@ export function CodexFormFields({
     });
   }, [fetchedModels, modelSearch, selectedModelIds]);
 
-  // 默认模型下拉建议 = Codex 菜单中的模型 ∪ 拉取到的 /models 列表
   const defaultModelSuggestions = useMemo<FetchedModel[]>(() => {
     const seen = new Set<string>();
     const suggestions: FetchedModel[] = [];
@@ -770,9 +769,7 @@ export function CodexFormFields({
         </div>
       )}
 
-      {/* 默认模型 —— config.toml 顶层 model，Codex 启动时默认请求的模型。
-          实时写回 TOML；留空则删行（有映射时保存回退为映射第一行）。 */}
-      {category !== "official" && onModelChange && (
+      {appId !== "codex" && category !== "official" && onModelChange && (
         <div className="space-y-1.5">
           <FormLabel htmlFor="codexDefaultModel">
             {t("codexConfig.defaultModelLabel", { defaultValue: "默认模型" })}
