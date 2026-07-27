@@ -5,9 +5,13 @@
 //! Codex (ChatGPT.exe), Claude Desktop, Grok Build.
 
 use serde::Serialize;
+#[cfg(target_os = "windows")]
 use std::path::{Path, PathBuf};
+#[cfg(target_os = "windows")]
 use std::process::Command;
+#[cfg(target_os = "windows")]
 use std::thread;
+#[cfg(target_os = "windows")]
 use std::time::Duration;
 
 #[cfg(target_os = "windows")]
@@ -46,12 +50,16 @@ struct ClientTarget {
     /// Display name for messages
     label: &'static str,
     /// Process image names to kill (with .exe on Windows)
+    #[cfg(target_os = "windows")]
     process_names: &'static [&'static str],
     /// Prefer killing these first (main UI process)
+    #[cfg(target_os = "windows")]
     preferred_launch_names: &'static [&'static str],
     /// Known MSIX package name prefixes for shell:AppsFolder relaunch
+    #[cfg(target_os = "windows")]
     msix_name_prefixes: &'static [&'static str],
     /// Common install path fallbacks (relative to known folders)
+    #[cfg(target_os = "windows")]
     fallback_exes: &'static [&'static str],
 }
 
@@ -60,16 +68,24 @@ fn target_for_app(app: &str) -> Option<ClientTarget> {
         "codex" => Some(ClientTarget {
             label: "Codex",
             // ChatGPT.exe is the MSIX UI host; codex.exe is the app-server child.
+            #[cfg(target_os = "windows")]
             process_names: &["ChatGPT.exe", "codex.exe", "Codex.exe"],
+            #[cfg(target_os = "windows")]
             preferred_launch_names: &["ChatGPT.exe"],
+            #[cfg(target_os = "windows")]
             msix_name_prefixes: &["OpenAI.Codex"],
+            #[cfg(target_os = "windows")]
             fallback_exes: &[],
         }),
         "claude-desktop" => Some(ClientTarget {
             label: "Claude Desktop",
+            #[cfg(target_os = "windows")]
             process_names: &["Claude.exe", "claude.exe"],
+            #[cfg(target_os = "windows")]
             preferred_launch_names: &["Claude.exe", "claude.exe"],
+            #[cfg(target_os = "windows")]
             msix_name_prefixes: &[],
+            #[cfg(target_os = "windows")]
             fallback_exes: &[
                 r"%LOCALAPPDATA%\AnthropicClaude\claude.exe",
                 r"%LOCALAPPDATA%\Programs\Claude\Claude.exe",
@@ -79,9 +95,13 @@ fn target_for_app(app: &str) -> Option<ClientTarget> {
         }),
         "grokbuild" => Some(ClientTarget {
             label: "Grok Build",
+            #[cfg(target_os = "windows")]
             process_names: &["Grok.exe", "grok.exe", "Grok Build.exe", "xAI Grok.exe"],
+            #[cfg(target_os = "windows")]
             preferred_launch_names: &["Grok.exe", "grok.exe"],
+            #[cfg(target_os = "windows")]
             msix_name_prefixes: &["xAI", "Grok"],
+            #[cfg(target_os = "windows")]
             fallback_exes: &[
                 r"%LOCALAPPDATA%\Programs\Grok\Grok.exe",
                 r"%LOCALAPPDATA%\Grok\Grok.exe",
@@ -115,14 +135,14 @@ fn restart_client_app_sync(app: &str) -> Result<ClientRestartResult, String> {
 
     #[cfg(not(target_os = "windows"))]
     {
-        return Ok(ClientRestartResult {
+        Ok(ClientRestartResult {
             app: app.to_string(),
             killed: false,
             kill_attempts: 0,
             launched: false,
             supported: true,
             message: format!("{} 自动重启目前仅支持 Windows", target.label),
-        });
+        })
     }
 
     #[cfg(target_os = "windows")]
@@ -447,6 +467,7 @@ fn expand_env_path(pattern: &str) -> PathBuf {
 mod tests {
     use super::*;
 
+    #[cfg(target_os = "windows")]
     #[test]
     fn package_family_from_full_name() {
         let full = "OpenAI.Codex_26.721.4979.0_x64__2p2nqsd0c76g0";
@@ -456,6 +477,7 @@ mod tests {
         );
     }
 
+    #[cfg(target_os = "windows")]
     #[test]
     fn msix_id_from_path() {
         let path = PathBuf::from(
