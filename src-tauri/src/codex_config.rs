@@ -33,6 +33,11 @@ const CREATE_NO_WINDOW: u32 = 0x08000000;
 #[cfg(not(test))]
 static CODEX_MODEL_CATALOG_TEMPLATE_CACHE: OnceCell<Value> = OnceCell::new();
 
+// Codex's bundled catalog is immutable for a given install, so one successful
+// load per process is enough. Tests bypass it (see the cfg(test) loader below).
+#[cfg(not(test))]
+static CODEX_BUNDLED_MODELS_CACHE: OnceCell<Vec<Value>> = OnceCell::new();
+
 /// Top-level `config.toml` key that controls Codex's built-in web-search tool.
 pub(crate) const CODEX_WEB_SEARCH_FIELD: &str = "web_search";
 /// Value that disables the web-search tool. Some native `/responses` gateways
@@ -868,6 +873,66 @@ fn load_codex_model_template_from_bundled() -> Result<Option<Value>, AppError> {
     Ok(None)
 }
 
+/// Codex's complete built-in model list, as reported by
+/// `codex debug models --bundled`.
+///
+/// `model_catalog_json` REPLACES Codex's built-in catalog instead of extending
+/// it, so a catalog holding only cc-switch's rows makes the Codex Desktop model
+/// picker lose every official entry. Keeping these entries verbatim and
+/// appending the provider's models (priority 1000+) preserves the stock picker
+/// order with the custom models listed after it.
+#[cfg(not(test))]
+fn load_codex_bundled_models_uncached() -> Vec<Value> {
+    for candidate in codex_cli_candidates() {
+        let candidate_label = candidate.to_string_lossy();
+        let output = match codex_bundled_models_command(&candidate).output() {
+            Ok(output) => output,
+            Err(err) => {
+                log::debug!("failed to run `{candidate_label} debug models --bundled`: {err}");
+                continue;
+            }
+        };
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            log::debug!("`{candidate_label} debug models --bundled` failed: {stderr}");
+            continue;
+        }
+
+        let catalog: Value = match serde_json::from_slice(&output.stdout) {
+            Ok(catalog) => catalog,
+            Err(e) => {
+                log::debug!(
+                    "Failed to parse `{candidate_label} debug models --bundled` output: {e}"
+                );
+                continue;
+            }
+        };
+
+        if let Some(models) = catalog.get("models").and_then(|models| models.as_array()) {
+            if !models.is_empty() {
+                return models.clone();
+            }
+        }
+    }
+
+    Vec::new()
+}
+
+#[cfg(not(test))]
+fn load_codex_bundled_models() -> Vec<Value> {
+    CODEX_BUNDLED_MODELS_CACHE
+        .get_or_init(load_codex_bundled_models_uncached)
+        .clone()
+}
+
+/// Tests isolate CODEX_HOME and must not depend on a machine-local Codex CLI,
+/// so they always build catalogs from an empty built-in list.
+#[cfg(test)]
+fn load_codex_bundled_models() -> Vec<Value> {
+    Vec::new()
+}
+
 fn load_codex_model_template_static() -> Option<Value> {
     let text = include_str!("resources/gpt5_5_template.json");
     match serde_json::from_str(text) {
@@ -973,12 +1038,32 @@ fn codex_model_catalog_from_specs(
     specs: &[CodexCatalogModelSpec],
     template: &Value,
     profile: CodexCatalogToolProfile,
+    bundled: &[Value],
 ) -> Value {
-    let entries: Vec<Value> = specs
+    let custom_slugs: std::collections::HashSet<&str> =
+        specs.iter().map(|spec| spec.model.as_str()).collect();
+
+    // Codex's own entries are cloned verbatim (they keep their native priority,
+    // < 1000) so the picker keeps showing them first; a bundled slug that the
+    // provider also declares is dropped, otherwise the picker shows it twice
+    // and the provider's row is not the one Codex would resolve.
+    let mut entries: Vec<Value> = bundled
         .iter()
-        .enumerate()
-        .map(|(index, spec)| codex_catalog_model_entry(template, spec, index, profile))
+        .filter(|entry| {
+            entry
+                .get("slug")
+                .and_then(|slug| slug.as_str())
+                .is_none_or(|slug| !custom_slugs.contains(slug))
+        })
+        .cloned()
         .collect();
+
+    entries.extend(
+        specs
+            .iter()
+            .enumerate()
+            .map(|(index, spec)| codex_catalog_model_entry(template, spec, index, profile)),
+    );
 
     json!({ "models": entries })
 }
@@ -1003,7 +1088,10 @@ fn codex_model_catalog_from_settings(
         CodexCatalogToolProfile::ProxyChat => load_codex_model_catalog_template()?,
     };
     Ok(Some(codex_model_catalog_from_specs(
-        &specs, &template, profile,
+        &specs,
+        &template,
+        profile,
+        &load_codex_bundled_models(),
     )))
 }
 
@@ -1189,6 +1277,16 @@ fn build_simplified_catalog_from_texts(config_text: &str, catalog_text: &str) ->
 
     let mut entries = Vec::with_capacity(models.len());
     for entry in models {
+        // Codex's built-in entries (priority < 1000) are re-attached on every
+        // write; reading them back would turn them into editable provider rows.
+        if entry
+            .get("priority")
+            .and_then(|priority| priority.as_u64())
+            .is_some_and(|priority| priority < 1000)
+        {
+            continue;
+        }
+
         let Some(model) = entry
             .get("slug")
             .and_then(|v| v.as_str())
@@ -2785,8 +2883,12 @@ base_url = "https://production.api/v1"
             input_modalities: None,
             base_instructions: None,
         }];
-        let catalog =
-            codex_model_catalog_from_specs(&specs, &template, CodexCatalogToolProfile::ProxyChat);
+        let catalog = codex_model_catalog_from_specs(
+            &specs,
+            &template,
+            CodexCatalogToolProfile::ProxyChat,
+            &[],
+        );
         assert_eq!(
             catalog["models"][0]
                 .get("supports_reasoning_summaries")
@@ -2843,8 +2945,12 @@ base_url = "https://production.api/v1"
             }
         });
         let specs = codex_catalog_model_specs(&settings, r#"model_context_window = 128000"#);
-        let catalog =
-            codex_model_catalog_from_specs(&specs, &template, CodexCatalogToolProfile::ProxyChat);
+        let catalog = codex_model_catalog_from_specs(
+            &specs,
+            &template,
+            CodexCatalogToolProfile::ProxyChat,
+            &[],
+        );
         let models = catalog
             .get("models")
             .and_then(|value| value.as_array())
@@ -3022,7 +3128,7 @@ base_url = "https://production.api/v1"
             CodexCatalogToolProfile::NativeResponses,
             CodexCatalogToolProfile::Anthropic,
         ] {
-            let catalog = codex_model_catalog_from_specs(&specs, &template, profile);
+            let catalog = codex_model_catalog_from_specs(&specs, &template, profile, &[]);
             let models = catalog["models"].as_array().expect("models array");
             let modalities = |slug: &str| {
                 models
@@ -3095,6 +3201,7 @@ base_url = "https://production.api/v1"
             &specs,
             &proxy_template,
             CodexCatalogToolProfile::ProxyChat,
+            &[],
         );
         assert_eq!(
             catalog["models"][0]
@@ -3443,6 +3550,114 @@ web_search = "disabled"
             )
             .is_none(),
             "entries lacking slug are skipped; a fully-skipped catalog yields None"
+        );
+    }
+
+    #[test]
+    fn codex_model_catalog_prepends_bundled_models() {
+        let mut template = json!({ "slug": "gpt-5.5" });
+        fill_template_fields_from_static(&mut template);
+        let specs = vec![CodexCatalogModelSpec {
+            model: "k3".to_string(),
+            display_name: "Kimi K3".to_string(),
+            context_window: 262_144,
+            supports_parallel_tool_calls: None,
+            input_modalities: None,
+            base_instructions: None,
+        }];
+        let bundled = vec![
+            json!({ "slug": "gpt-5.6-sol", "display_name": "5.6 Sol", "priority": 0 }),
+            json!({ "slug": "gpt-5.5", "display_name": "5.5", "priority": 20 }),
+        ];
+
+        let catalog = codex_model_catalog_from_specs(
+            &specs,
+            &template,
+            CodexCatalogToolProfile::ProxyChat,
+            &bundled,
+        );
+        let models = catalog["models"].as_array().expect("models array");
+
+        assert_eq!(
+            models.len(),
+            3,
+            "bundled entries kept, custom ones appended"
+        );
+        assert_eq!(models[0], bundled[0], "bundled entries are cloned verbatim");
+        assert_eq!(models[1], bundled[1]);
+        assert_eq!(
+            models[2].get("slug").and_then(|slug| slug.as_str()),
+            Some("k3")
+        );
+        assert_eq!(
+            models[2].get("priority").and_then(|value| value.as_u64()),
+            Some(1000)
+        );
+    }
+
+    #[test]
+    fn codex_model_catalog_drops_bundled_entry_shadowed_by_custom_model() {
+        let template = json!({ "slug": "gpt-5.5" });
+        let specs = vec![CodexCatalogModelSpec {
+            model: "gpt-5.5".to_string(),
+            display_name: "Relay GPT 5.5".to_string(),
+            context_window: 128_000,
+            supports_parallel_tool_calls: None,
+            input_modalities: None,
+            base_instructions: None,
+        }];
+        let bundled = vec![
+            json!({ "slug": "gpt-5.6-sol", "priority": 0 }),
+            json!({ "slug": "gpt-5.5", "priority": 20 }),
+        ];
+
+        let catalog = codex_model_catalog_from_specs(
+            &specs,
+            &template,
+            CodexCatalogToolProfile::ProxyChat,
+            &bundled,
+        );
+        let models = catalog["models"].as_array().expect("models array");
+
+        assert_eq!(models.len(), 2);
+        assert_eq!(
+            models[0].get("slug").and_then(|slug| slug.as_str()),
+            Some("gpt-5.6-sol")
+        );
+        assert_eq!(
+            models[1].get("display_name").and_then(|name| name.as_str()),
+            Some("Relay GPT 5.5"),
+            "the provider row wins for a slug Codex also ships"
+        );
+    }
+
+    #[test]
+    fn simplified_catalog_skips_builtin_priority_entries() {
+        let catalog = r#"{
+            "models": [
+                { "slug": "gpt-5.6-sol", "display_name": "5.6 Sol", "priority": 0 },
+                { "slug": "custom-one", "display_name": "Custom One", "priority": 1000 },
+                { "slug": "legacy-no-priority", "display_name": "Legacy" }
+            ]
+        }"#;
+
+        let result = build_simplified_catalog_from_texts("", catalog).expect("entries");
+        let slugs: Vec<&str> = result["models"]
+            .as_array()
+            .expect("models array")
+            .iter()
+            .map(|entry| entry["model"].as_str().expect("model"))
+            .collect();
+
+        assert_eq!(slugs, vec!["custom-one", "legacy-no-priority"]);
+    }
+
+    #[test]
+    fn simplified_catalog_with_only_builtin_entries_yields_none() {
+        let catalog = r#"{ "models": [{ "slug": "gpt-5.6-sol", "priority": 0 }] }"#;
+        assert!(
+            build_simplified_catalog_from_texts("", catalog).is_none(),
+            "a catalog holding only Codex's built-ins has no provider rows"
         );
     }
 
