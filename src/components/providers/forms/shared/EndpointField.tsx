@@ -51,18 +51,20 @@ export function EndpointField({
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <FormLabel htmlFor={id}>{label}</FormLabel>
+      <div className="flex min-h-5 items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <FormLabel htmlFor={id} className="leading-5">
+            {label}
+          </FormLabel>
           {showFullUrlToggle && onFullUrlChange ? (
-            <div className="flex items-center gap-2 rounded-full border border-border/70 bg-muted/30 px-2.5 py-1">
+            <div className="flex h-5 items-center gap-1.5 rounded-md bg-muted/50 px-1.5">
               <Link2
-                className={`h-3.5 w-3.5 ${
+                className={`h-3 w-3 ${
                   isFullUrl ? "text-primary" : "text-muted-foreground"
                 }`}
               />
               <span
-                className={`text-xs font-medium ${
+                className={`text-[11px] font-medium leading-none ${
                   isFullUrl ? "text-foreground" : "text-muted-foreground"
                 }`}
               >
@@ -76,7 +78,7 @@ export function EndpointField({
                 aria-label={t("providerForm.fullUrlLabel", {
                   defaultValue: "完整 URL",
                 })}
-                className="h-5 w-9"
+                size="sm"
               />
             </div>
           ) : null}
@@ -85,7 +87,7 @@ export function EndpointField({
           <button
             type="button"
             onClick={onManageClick}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="flex h-5 shrink-0 items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
           >
             <Zap className="h-3.5 w-3.5" />
             {manageButtonLabel || defaultManageLabel}

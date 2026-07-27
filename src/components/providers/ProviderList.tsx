@@ -512,7 +512,7 @@ export function ProviderList({
         items={groupFilteredProviders.map((provider) => provider.id)}
         strategy={verticalListSortingStrategy}
       >
-        <div className="space-y-3">
+        <div className="space-y-1.5">
           {groupFilteredProviders.map((provider) => {
             const isOmo = provider.category === "omo";
             const isOmoSlim = provider.category === "omo-slim";
@@ -592,7 +592,7 @@ export function ProviderList({
   );
 
   return (
-    <div className="mt-4 space-y-4">
+    <div className="mt-3 space-y-3">
       {claudeDesktopStatusMessages.length > 0 && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
           <div className="flex items-center gap-2 font-medium">
@@ -619,6 +619,7 @@ export function ProviderList({
         onDeleteGroup={deleteProviderGroup}
         onReorderGroups={reorderGroups}
         onToggleSelectionMode={toggleSelectionMode}
+        onCreateProvider={onCreate}
       />
       <AnimatePresence>
         {isSearchOpen && (

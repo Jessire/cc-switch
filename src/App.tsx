@@ -261,9 +261,6 @@ function App() {
   // 这里 enabled 默认 false，仅用于「导入」按钮的绿点提示，不主动发起扫描。
   const { data: unmanagedSkills } = useScanUnmanagedSkills();
   const hasUnmanagedSkills = (unmanagedSkills?.length ?? 0) > 0;
-  const addActionButtonClass =
-    "bg-orange-500 hover:bg-orange-600 dark:bg-orange-500 dark:hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30 dark:shadow-orange-500/40 rounded-full w-8 h-8";
-
   const {
     isRunning: isProxyRunning,
     takeoverStatus,
@@ -1248,40 +1245,6 @@ function App() {
           </div>
 
           <div className="flex flex-1 min-w-0 items-center justify-end gap-1.5">
-            {currentView === "providers" && (
-                <div
-                  className="flex shrink-0 items-center gap-1.5"
-                  style={{ WebkitAppRegion: "no-drag" } as any}
-                >
-                  <AutoRestartToggle activeApp={activeApp} />
-                  {activeApp !== "opencode" &&
-                    activeApp !== "openclaw" &&
-                    activeApp !== "hermes" && (
-                      <>
-                        {activeApp === "claude-desktop" ? (
-                          <ClaudeDesktopRouteToggle />
-                        ) : (
-                          settingsData?.enableLocalProxy && (
-                            <ProxyToggle activeApp={activeApp} />
-                          )
-                        )}
-                        {activeApp !== "claude-desktop" &&
-                          settingsData?.enableFailoverToggle && (
-                            <FailoverToggle activeApp={activeApp} />
-                          )}
-                      </>
-                    )}
-                </div>
-              )}
-            {currentView === "providers" &&
-              (settingsData?.showProfileSwitcher ?? true) && (
-                <div
-                  className="flex shrink-0 items-center"
-                  style={{ WebkitAppRegion: "no-drag" } as any}
-                >
-                  <ProfileSwitcher activeApp={activeApp} />
-                </div>
-              )}
             <div
               ref={toolbarRef}
               className="flex flex-1 min-w-0 overflow-x-hidden items-center py-4 pr-2"
@@ -1406,6 +1369,10 @@ function App() {
                       visibleApps={visibleApps}
                       compact={isToolbarCompact}
                     />
+
+                    {(settingsData?.showProfileSwitcher ?? true) && (
+                      <ProfileSwitcher activeApp={activeApp} />
+                    )}
 
                     <div className="flex items-center gap-1 p-1 bg-muted rounded-xl">
                       <AnimatePresence mode="wait">
@@ -1568,13 +1535,27 @@ function App() {
                       </AnimatePresence>
                     </div>
 
-                    <Button
-                      onClick={() => setIsAddOpen(true)}
-                      size="icon"
-                      className={`ml-2 ${addActionButtonClass}`}
-                    >
-                      <Plus className="w-5 h-5" />
-                    </Button>
+                    <div className="mx-0.5 h-6 w-px bg-border/70" />
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <AutoRestartToggle activeApp={activeApp} />
+                      {activeApp !== "opencode" &&
+                        activeApp !== "openclaw" &&
+                        activeApp !== "hermes" && (
+                          <>
+                            {activeApp === "claude-desktop" ? (
+                              <ClaudeDesktopRouteToggle />
+                            ) : (
+                              settingsData?.enableLocalProxy && (
+                                <ProxyToggle activeApp={activeApp} />
+                              )
+                            )}
+                            {activeApp !== "claude-desktop" &&
+                              settingsData?.enableFailoverToggle && (
+                                <FailoverToggle activeApp={activeApp} />
+                              )}
+                          </>
+                        )}
+                    </div>
                   </>
                 )}
               </div>

@@ -57,6 +57,7 @@ interface GroupTabsProps {
   onDeleteGroup: (id: string) => void;
   onReorderGroups: (orderedIds: ActiveGroupId[]) => void;
   onToggleSelectionMode: () => void;
+  onCreateProvider?: () => void;
 }
 
 type EditingState =
@@ -125,7 +126,7 @@ function SortableTabChip({
         "inline-flex h-8 cursor-pointer items-center gap-0.5 rounded-full border pl-2 pr-1 text-xs font-medium transition-colors outline-none",
         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
         active
-          ? "border-primary bg-primary/10 text-primary"
+          ? "border-emerald-500/70 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
           : "border-border bg-background text-muted-foreground hover:border-border-hover hover:text-foreground",
         isDragging && "z-20 cursor-grabbing opacity-90 shadow-md",
       )}
@@ -142,7 +143,7 @@ function SortableTabChip({
             className={cn(
               "ml-0.5 rounded-full px-1.5 text-[10px] tabular-nums",
               active
-                ? "bg-primary/20 text-primary"
+                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                 : "bg-muted text-muted-foreground",
             )}
           >
@@ -195,6 +196,7 @@ export function GroupTabs({
   onDeleteGroup,
   onReorderGroups,
   onToggleSelectionMode,
+  onCreateProvider,
 }: GroupTabsProps) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState<EditingState>(null);
@@ -230,9 +232,7 @@ export function GroupTabs({
 
   useEffect(() => {
     if (editing) {
-      setNameInput(
-        editing.mode === "rename" ? editing.initialName : "",
-      );
+      setNameInput(editing.mode === "rename" ? editing.initialName : "");
       // Focus after dialog mounts.
       requestAnimationFrame(() => inputRef.current?.focus());
     }
@@ -264,83 +264,108 @@ export function GroupTabs({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={tabOrder}
-          strategy={horizontalListSortingStrategy}
-        >
-          {tabs.map((tab) => {
-            if (tab.kind === "special") {
-              const label =
-                tab.id === ALL_GROUP_ID
-                  ? t("group.all")
-                  : t("group.ungrouped");
-              return (
-                <SortableTabChip
-                  key={tab.id}
-                  id={tab.id}
-                  label={label}
-                  active={activeGroupId === tab.id}
-                  onSelect={() => onSelectGroup(tab.id)}
-                />
-              );
-            }
+    <>
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-max items-center gap-2 pr-1">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={tabOrder}
+                strategy={horizontalListSortingStrategy}
+              >
+                {tabs.map((tab) => {
+                  if (tab.kind === "special") {
+                    const label =
+                      tab.id === ALL_GROUP_ID
+                        ? t("group.all")
+                        : t("group.ungrouped");
+                    return (
+                      <SortableTabChip
+                        key={tab.id}
+                        id={tab.id}
+                        label={label}
+                        active={activeGroupId === tab.id}
+                        onSelect={() => onSelectGroup(tab.id)}
+                      />
+                    );
+                  }
 
-            const { group } = tab;
-            return (
-              <SortableTabChip
-                key={group.id}
-                id={group.id}
-                label={group.name}
-                count={group.providerIds.length}
-                active={activeGroupId === group.id}
-                showMenu
-                onSelect={() => onSelectGroup(group.id)}
-                onRename={() =>
-                  setEditing({
-                    mode: "rename",
-                    groupId: group.id,
-                    initialName: group.name,
-                  })
-                }
-                onDelete={() => setPendingDelete(group)}
-                renameLabel={t("group.rename")}
-                deleteLabel={t("group.delete")}
-                menuLabel={t("group.groupMenu")}
-              />
-            );
-          })}
-        </SortableContext>
-      </DndContext>
+                  const { group } = tab;
+                  return (
+                    <SortableTabChip
+                      key={group.id}
+                      id={group.id}
+                      label={group.name}
+                      count={group.providerIds.length}
+                      active={activeGroupId === group.id}
+                      showMenu
+                      onSelect={() => onSelectGroup(group.id)}
+                      onRename={() =>
+                        setEditing({
+                          mode: "rename",
+                          groupId: group.id,
+                          initialName: group.name,
+                        })
+                      }
+                      onDelete={() => setPendingDelete(group)}
+                      renameLabel={t("group.rename")}
+                      deleteLabel={t("group.delete")}
+                      menuLabel={t("group.groupMenu")}
+                    />
+                  );
+                })}
+              </SortableContext>
+            </DndContext>
 
-      <Button
-        variant={selectionMode ? "default" : "outline"}
-        size="sm"
-        className="h-8 gap-1 rounded-full px-3 text-xs"
-        onClick={onToggleSelectionMode}
-      >
-        {selectionMode ? (
-          <CheckSquare className="h-3.5 w-3.5" />
-        ) : (
-          <Square className="h-3.5 w-3.5" />
-        )}
-        {selectionMode ? t("group.exitBulk") : t("group.bulkSelect")}
-      </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 shrink-0 gap-1 rounded-full px-3 text-xs"
+              onClick={() => setEditing({ mode: "create" })}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {t("group.new")}
+            </Button>
+          </div>
+        </div>
 
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-8 gap-1 rounded-full px-3 text-xs"
-        onClick={() => setEditing({ mode: "create" })}
-      >
-        <Plus className="h-3.5 w-3.5" />
-        {t("group.new")}
-      </Button>
+        <div className="flex shrink-0 items-center gap-1.5 border-l border-border/70 pl-2">
+          <Button
+            variant={selectionMode ? "default" : "outline"}
+            size="sm"
+            className={cn(
+              "h-8 gap-1 rounded-lg px-2.5 text-xs",
+              selectionMode &&
+                "bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700",
+            )}
+            onClick={onToggleSelectionMode}
+          >
+            {selectionMode ? (
+              <CheckSquare className="h-3.5 w-3.5" />
+            ) : (
+              <Square className="h-3.5 w-3.5" />
+            )}
+            {selectionMode ? t("group.exitBulk") : t("group.bulkSelect")}
+          </Button>
+
+          {onCreateProvider ? (
+            <Button
+              type="button"
+              size="icon"
+              onClick={onCreateProvider}
+              className="h-8 w-8 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+              title={t("header.addProvider")}
+              aria-label={t("header.addProvider")}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          ) : null}
+        </div>
+      </div>
 
       <Dialog
         open={editing !== null}
@@ -391,6 +416,6 @@ export function GroupTabs({
         }}
         onCancel={() => setPendingDelete(null)}
       />
-    </div>
+    </>
   );
 }

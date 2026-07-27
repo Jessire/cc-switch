@@ -312,38 +312,23 @@ export function ProviderCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border border-border p-4 transition-all duration-300",
-        "bg-card text-card-foreground group",
-        isAutoFailoverEnabled || isProxyTakeover
-          ? "hover:border-emerald-500/50"
-          : "hover:border-border-active",
+        "group relative overflow-hidden rounded-lg border border-border/70 bg-card/45 px-3 py-2.5 text-card-foreground transition-colors duration-200",
+        "hover:border-border-hover hover:bg-muted/30",
         shouldUseGreen &&
-          "border-emerald-500/60 shadow-sm shadow-emerald-500/10",
-        shouldUseBlue && "border-blue-500/60 shadow-sm shadow-blue-500/10",
-        !(isActiveProvider || hasPersistentConfigHighlight) &&
-          "hover:shadow-sm",
+          "border-emerald-500/60 bg-emerald-500/[0.06] hover:border-emerald-500/60 hover:bg-emerald-500/[0.08]",
+        shouldUseBlue &&
+          "border-blue-500/60 bg-blue-500/[0.05] hover:border-blue-500/60 hover:bg-blue-500/[0.07]",
         dragHandleProps?.isDragging &&
-          "cursor-grabbing border-primary shadow-lg scale-105 z-10",
+          "z-10 scale-[1.01] cursor-grabbing border-primary shadow-lg",
       )}
     >
-      <div
-        className={cn(
-          "absolute inset-0 bg-gradient-to-r to-transparent transition-opacity duration-500 pointer-events-none",
-          shouldUseGreen && "from-emerald-500/10",
-          shouldUseBlue && "from-blue-500/10",
-          !shouldUseGreen && !shouldUseBlue && "from-primary/10",
-          isActiveProvider || hasPersistentConfigHighlight
-            ? "opacity-100"
-            : "opacity-0",
-        )}
-      />
-      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="relative flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <button
             type="button"
             className={cn(
-              "-ml-1.5 flex-shrink-0 cursor-grab active:cursor-grabbing p-1.5",
-              "text-muted-foreground/50 hover:text-muted-foreground transition-colors",
+              "-ml-1.5 flex-shrink-0 cursor-grab p-1.5 active:cursor-grabbing",
+              "text-muted-foreground/25 transition-colors hover:text-muted-foreground group-hover:text-muted-foreground/60",
               dragHandleProps?.isDragging && "cursor-grabbing",
             )}
             aria-label={t("provider.dragHandle")}
@@ -357,12 +342,14 @@ export function ProviderCard({
             <Checkbox
               checked={!!isSelected}
               onCheckedChange={() => onToggleSelect?.(provider.id)}
-              aria-label={t("group.selectProvider", { defaultValue: "Select provider" })}
+              aria-label={t("group.selectProvider", {
+                defaultValue: "Select provider",
+              })}
               className="ml-1"
             />
           )}
 
-          <div className="h-8 w-8 flex-shrink-0 rounded-lg bg-muted flex items-center justify-center border border-border group-hover:scale-105 transition-transform duration-300">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-border/70 bg-muted/60">
             <ProviderIcon
               icon={resolveProviderIcon(
                 appId,
@@ -375,16 +362,16 @@ export function ProviderCard({
             />
           </div>
 
-          <div className="min-w-0 flex-1 space-y-1">
-            <div className="flex flex-wrap items-center gap-2 min-h-7">
-              <h3 className="text-base font-semibold leading-none">
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <div className="flex min-h-6 flex-wrap items-center gap-1.5">
+              <h3 className="text-sm font-semibold leading-none">
                 {provider.name}
               </h3>
 
               {membershipGroups.map((group) => (
                 <span
                   key={group.id}
-                  className="inline-flex items-center rounded-md bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-900/40 dark:text-violet-300"
+                  className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground"
                   title={t("group.inGroup", { defaultValue: "已在组内" })}
                 >
                   {group.name}
@@ -502,7 +489,7 @@ export function ProviderCard({
                 type="button"
                 onClick={handleOpenWebsite}
                 className={cn(
-                  "inline-flex max-w-full items-center overflow-hidden text-left text-sm",
+                  "inline-flex max-w-full items-center overflow-hidden text-left text-xs leading-5",
                   isClickableUrl
                     ? "text-blue-500 transition-colors hover:underline dark:text-blue-400 cursor-pointer"
                     : "text-muted-foreground cursor-default",
@@ -516,7 +503,7 @@ export function ProviderCard({
           </div>
         </div>
 
-        <div className="flex items-center ml-auto min-w-0 gap-3">
+        <div className="ml-auto flex min-w-0 items-center gap-2">
           <div className="ml-auto">
             <div className="flex items-center gap-1">
               {isCopilot ? (
@@ -585,7 +572,7 @@ export function ProviderCard({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto transition-opacity duration-200">
+          <div className="flex flex-shrink-0 items-center gap-1 opacity-0 pointer-events-none transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto">
             <ProviderActions
               appId={appId}
               isCurrent={isCurrent}
@@ -646,7 +633,7 @@ export function ProviderCard({
       </div>
 
       {isExpanded && hasMultiplePlans && (
-        <div className="mt-4 pt-4 border-t border-border-default">
+        <div className="mt-2.5 border-t border-border-default pt-2.5">
           <UsageFooter
             provider={provider}
             providerId={provider.id}

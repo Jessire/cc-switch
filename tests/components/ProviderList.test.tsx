@@ -265,6 +265,33 @@ describe("ProviderList Component", () => {
     );
   });
 
+  it("keeps the add-provider action beside the group toolbar", () => {
+    const provider = createProvider();
+    const handleCreate = vi.fn();
+    useDragSortMock.mockReturnValue({
+      sortedProviders: [provider],
+      sensors: [],
+      handleDragEnd: vi.fn(),
+    });
+
+    renderWithQueryClient(
+      <ProviderList
+        providers={{ [provider.id]: provider }}
+        currentProviderId=""
+        appId="claude"
+        onSwitch={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onDuplicate={vi.fn()}
+        onOpenWebsite={vi.fn()}
+        onCreate={handleCreate}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "header.addProvider" }));
+    expect(handleCreate).toHaveBeenCalledTimes(1);
+  });
+
   it("filters providers with the search input", () => {
     const providerAlpha = createProvider({ id: "alpha", name: "Alpha Labs" });
     const providerBeta = createProvider({ id: "beta", name: "Beta Works" });

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   AutoRestartToggle,
@@ -31,14 +32,21 @@ describe("AutoRestartToggle", () => {
     toastSuccessMock.mockReset();
   });
 
-  it("persists both automatic restart settings", () => {
+  it("persists both automatic restart settings", async () => {
+    const user = userEvent.setup();
     render(<AutoRestartToggle activeApp="codex" />);
 
-    const [autoRestartSwitch, groupSkipSwitch] = screen.getAllByRole("switch");
-    fireEvent.click(autoRestartSwitch);
+    const [autoRestartSwitch] = screen.getAllByRole("switch");
+    expect(screen.getAllByRole("switch")).toHaveLength(1);
+    await user.click(autoRestartSwitch);
     expect(isAutoRestartClientEnabled()).toBe(true);
 
-    fireEvent.click(groupSkipSwitch);
+    await user.click(
+      screen.getByRole("button", {
+        name: /autoRestart\.options\.aria|自动重启选项/i,
+      }),
+    );
+    await user.click(await screen.findByRole("menuitemcheckbox"));
     expect(isGroupRestartSuppressed()).toBe(false);
   });
 

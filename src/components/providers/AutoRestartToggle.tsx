@@ -6,8 +6,14 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw, FolderX, Loader2 } from "lucide-react";
+import { ChevronDown, FolderX, Loader2, RefreshCw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -98,7 +104,6 @@ export function AutoRestartToggle({
   const [pending, setPending] = useState(false);
   const [restarting, setRestarting] = useState(false);
   const [groupSkipEnabled, setGroupSkipEnabled] = useState(true);
-  const [groupPending, setGroupPending] = useState(false);
   const supported = appSupportsClientRestart(activeApp);
   const label = appLabel(activeApp);
 
@@ -116,10 +121,8 @@ export function AutoRestartToggle({
   }, []);
 
   const handleGroupToggle = useCallback((checked: boolean) => {
-    setGroupPending(true);
     setGroupSkipEnabled(checked);
     writeGroupSkipEnabled(checked);
-    window.setTimeout(() => setGroupPending(false), 120);
   }, []);
 
   const handleManualRestart = useCallback(async () => {
@@ -154,15 +157,17 @@ export function AutoRestartToggle({
         app: label,
         defaultValue: `${label} 为 CLI / 配置即时生效，无需自动重启客户端`,
       })
-    : enabled
-      ? t("autoRestart.tooltip.enabled", {
-          app: label,
-          defaultValue: `已开启：切换 ${label} 供应商后自动重启客户端`,
+    : !enabled
+      ? t("autoRestart.mode.disabled", {
+          defaultValue: "自动重启已关闭",
         })
-      : t("autoRestart.tooltip.disabled", {
-          app: label,
-          defaultValue: `开启后，切换 ${label} 供应商时自动重启对应客户端`,
-        });
+      : groupSkipEnabled
+        ? t("autoRestart.mode.crossGroup", {
+            defaultValue: "跨分组切换时自动重启",
+          })
+        : t("autoRestart.mode.always", {
+            defaultValue: "每次切换供应商都自动重启",
+          });
 
   const groupTooltipText = !supported
     ? t("autoRestart.groupSkip.unsupported", {
@@ -178,9 +183,9 @@ export function AutoRestartToggle({
         });
 
   return (
-    <div className={cn("flex items-center gap-1.5", className)}>
+    <div className={cn("flex items-center", className)}>
       <div
-        className="flex items-center gap-1 px-1.5 h-8 rounded-lg bg-muted/50 transition-all"
+        className="flex h-8 items-center gap-1 rounded-lg bg-muted/60 px-1.5 transition-colors"
         title={tooltipText}
       >
         <button
@@ -218,31 +223,34 @@ export function AutoRestartToggle({
             defaultValue: "切换供应商后自动重启客户端",
           })}
         />
-      </div>
-      <div
-        className="flex items-center gap-1 px-1.5 h-8 rounded-lg bg-muted/50 transition-all"
-        title={groupTooltipText}
-      >
-        {groupPending ? (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        ) : (
-          <FolderX
-            className={cn(
-              "h-4 w-4 transition-colors",
-              groupSkipEnabled && supported
-                ? "text-sky-500"
-                : "text-muted-foreground",
-            )}
-          />
-        )}
-        <Switch
-          checked={groupSkipEnabled}
-          onCheckedChange={handleGroupToggle}
-          disabled={groupPending || !supported}
-          aria-label={t("autoRestart.groupSkip.aria", {
-            defaultValue: "自建分组内切换中转时不自动重启客户端",
-          })}
-        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="grid h-6 w-5 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-background/80 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-45"
+              disabled={!supported}
+              title={groupTooltipText}
+              aria-label={t("autoRestart.options.aria", {
+                defaultValue: "自动重启选项",
+              })}
+            >
+              <ChevronDown className="h-3.5 w-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuCheckboxItem
+              checked={groupSkipEnabled}
+              onCheckedChange={handleGroupToggle}
+              disabled={!enabled || !supported}
+              className="pl-8 pr-2"
+            >
+              <FolderX className="h-4 w-4 text-muted-foreground" />
+              {t("autoRestart.groupSkip.menu", {
+                defaultValue: "同分组切换时不重启",
+              })}
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

@@ -82,7 +82,7 @@ export function ProviderActions({
   onSetAsDefault,
 }: ProviderActionsProps) {
   const { t } = useTranslation();
-  const iconButtonClass = "h-8 w-8 p-1";
+  const iconButtonClass = "h-7 w-7 rounded-md p-1";
 
   // 累加模式应用（OpenCode 非 OMO / OpenClaw / Hermes）
   const isAdditiveMode =
@@ -227,7 +227,7 @@ export function ProviderActions({
   });
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1">
       {(appId === "openclaw" || appId === "hermes") &&
         isInConfig &&
         onSetAsDefault &&
@@ -273,14 +273,14 @@ export function ProviderActions({
           variant={buttonState.variant}
           onClick={handleMainButtonClick}
           disabled={buttonState.disabled}
-          className={cn("w-[4.5rem] px-2.5", buttonState.className)}
+          className={cn("w-[4.25rem] px-2", buttonState.className)}
         >
           {buttonState.icon}
           {buttonState.text}
         </Button>
       </span>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5">
         <Button
           size="icon"
           variant="ghost"
