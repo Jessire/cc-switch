@@ -7,6 +7,8 @@
 //! - 各 handler 只保留独特的业务逻辑
 //! - Claude 的格式转换逻辑保留在此文件（用于 OpenRouter 旧接口回退）
 
+use super::session::{extract_session_id, SessionIdResult};
+use super::session_router::{parse_model_command, ModelCommand, SessionOverride};
 use super::{
     content_encoding::{decompress_body, get_content_encoding, is_supported_content_encoding},
     error_mapper::{get_error_message, map_proxy_error_to_status},
@@ -48,8 +50,6 @@ use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use bytes::Bytes;
 use http_body_util::BodyExt;
 use serde_json::{json, Value};
-use super::session::{extract_session_id, SessionIdResult};
-use super::session_router::{parse_model_command, ModelCommand, SessionOverride};
 
 // ============================================================================
 // 健康检查和状态查询（简单端点）
@@ -216,7 +216,10 @@ fn model_command_response(body: &Value, text: &str) -> axum::response::Response 
             "content_block_delta",
             json!({"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":text}}),
         ),
-        ("content_block_stop", json!({"type":"content_block_stop","index":0})),
+        (
+            "content_block_stop",
+            json!({"type":"content_block_stop","index":0}),
+        ),
         (
             "message_delta",
             json!({"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":0}}),
@@ -282,7 +285,11 @@ fn apply_model_command(
                     }
                     None => {
                         let names: Vec<&str> = all.values().map(|p| p.name.as_str()).collect();
-                        format!("未找到供应商 {}。可用供应商: {}", provider, names.join(", "))
+                        format!(
+                            "未找到供应商 {}。可用供应商: {}",
+                            provider,
+                            names.join(", ")
+                        )
                     }
                 }
             }

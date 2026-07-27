@@ -134,10 +134,7 @@ export function ProviderGroupAssignButton({
             <Button variant="outline" onClick={() => setCreateOpen(false)}>
               {t("common.cancel")}
             </Button>
-            <Button
-              onClick={handleSubmitCreate}
-              disabled={!nameInput.trim()}
-            >
+            <Button onClick={handleSubmitCreate} disabled={!nameInput.trim()}>
               {t("common.confirm")}
             </Button>
           </DialogFooter>

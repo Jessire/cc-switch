@@ -107,7 +107,10 @@ mod tests {
 
     #[test]
     fn test_parse_model_command_reset() {
-        assert_eq!(parse_model_command("/model reset"), Some(ModelCommand::Reset));
+        assert_eq!(
+            parse_model_command("/model reset"),
+            Some(ModelCommand::Reset)
+        );
         assert_eq!(
             parse_model_command("  /model RESET  "),
             Some(ModelCommand::Reset)

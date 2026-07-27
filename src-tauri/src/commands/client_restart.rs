@@ -121,10 +121,7 @@ fn restart_client_app_sync(app: &str) -> Result<ClientRestartResult, String> {
             kill_attempts: 0,
             launched: false,
             supported: true,
-            message: format!(
-                "{} 自动重启目前仅支持 Windows",
-                target.label
-            ),
+            message: format!("{} 自动重启目前仅支持 Windows", target.label),
         });
     }
 
@@ -259,10 +256,7 @@ fn restart_windows(app: &str, target: &ClientTarget) -> Result<ClientRestartResu
     let message = if launched {
         format!("已自动重启 {} ({launch_note})", target.label)
     } else {
-        format!(
-            "已结束 {} 进程，但未能自动启动，请手动打开",
-            target.label
-        )
+        format!("已结束 {} 进程，但未能自动启动，请手动打开", target.label)
     };
 
     Ok(ClientRestartResult {
@@ -348,7 +342,10 @@ fn list_matching_processes(names: &[&str]) -> Vec<ProcInfo> {
 #[cfg(target_os = "windows")]
 fn pick_launch_path(running: &[ProcInfo], target: &ClientTarget) -> Option<PathBuf> {
     for preferred in target.preferred_launch_names {
-        if let Some(p) = running.iter().find(|r| r.name.eq_ignore_ascii_case(preferred)) {
+        if let Some(p) = running
+            .iter()
+            .find(|r| r.name.eq_ignore_ascii_case(preferred))
+        {
             if !p.exe_path.as_os_str().is_empty() && p.exe_path.is_file() {
                 return Some(p.exe_path.clone());
             }
@@ -431,10 +428,7 @@ fn expand_env_path(pattern: &str) -> PathBuf {
             "%LOCALAPPDATA%",
             std::env::var("LOCALAPPDATA").unwrap_or_default(),
         ),
-        (
-            "%APPDATA%",
-            std::env::var("APPDATA").unwrap_or_default(),
-        ),
+        ("%APPDATA%", std::env::var("APPDATA").unwrap_or_default()),
         (
             "%PROGRAMFILES%",
             std::env::var("ProgramFiles").unwrap_or_default(),

@@ -2,9 +2,9 @@
 
 mod auth;
 mod balance;
+mod client_restart;
 mod codex_oauth;
 mod coding_plan;
-mod client_restart;
 mod config;
 mod copilot;
 mod deeplink;
@@ -39,9 +39,9 @@ mod workspace;
 
 pub use auth::*;
 pub use balance::*;
+pub use client_restart::*;
 pub use codex_oauth::*;
 pub use coding_plan::*;
-pub use client_restart::*;
 pub use config::*;
 pub use copilot::*;
 pub use deeplink::*;
