@@ -48,7 +48,7 @@ use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use bytes::Bytes;
 use http_body_util::BodyExt;
 use serde_json::{json, Value};
-use super::session::extract_session_id;
+use super::session::{extract_session_id, SessionIdResult};
 use super::session_router::{parse_model_command, ModelCommand, SessionOverride};
 
 // ============================================================================
@@ -239,6 +239,135 @@ fn model_command_response(body: &Value, text: &str) -> axum::response::Response 
     (headers, axum::body::Body::from(sse)).into_response()
 }
 
+/// 应用 /model 命令: 写入或清除 session override, 返回提示文本
+fn apply_model_command(
+    state: &ProxyState,
+    cmd: ModelCommand,
+    session_result: &SessionIdResult,
+    app_type_str: &str,
+) -> String {
+    match cmd {
+        ModelCommand::Reset => {
+            if state.session_overrides.clear(&session_result.session_id) {
+                "已清除本会话的模型路由 override, 恢复全局当前供应商。".to_string()
+            } else {
+                "本会话没有生效中的模型路由 override。".to_string()
+            }
+        }
+        ModelCommand::Set { provider, model } => match state.db.get_all_providers(app_type_str) {
+            Ok(all) => {
+                let found = all.values().find(|p| {
+                    p.name.eq_ignore_ascii_case(&provider) || p.id.eq_ignore_ascii_case(&provider)
+                });
+                match found {
+                    Some(p) => {
+                        state.session_overrides.set(
+                            &session_result.session_id,
+                            SessionOverride {
+                                provider_id: p.id.clone(),
+                                model: model.clone(),
+                            },
+                        );
+                        let model_desc = model.as_deref().unwrap_or("(保持请求原模型)");
+                        let mut msg = format!(
+                            "本会话已路由到供应商 {}, 模型: {}。使用 /model reset 恢复。",
+                            p.name, model_desc
+                        );
+                        if !session_result.client_provided {
+                            msg.push_str(
+                                "\n注意: 当前请求未携带客户端 session id, override 可能无法关联后续请求。",
+                            );
+                        }
+                        msg
+                    }
+                    None => {
+                        let names: Vec<&str> = all.values().map(|p| p.name.as_str()).collect();
+                        format!("未找到供应商 {}。可用供应商: {}", provider, names.join(", "))
+                    }
+                }
+            }
+            Err(e) => format!("读取供应商列表失败: {e}"),
+        },
+    }
+}
+
+/// 提取 Responses 格式请求 (Codex) 最后一条 user 消息文本
+fn last_user_input_text(body: &Value) -> Option<String> {
+    let input = body.get("input")?.as_array()?;
+    let msg = input
+        .iter()
+        .rev()
+        .find(|item| item.get("role").and_then(|r| r.as_str()) == Some("user"))?;
+    match msg.get("content") {
+        Some(Value::String(s)) => Some(s.clone()),
+        Some(Value::Array(parts)) => {
+            let texts: Vec<&str> = parts
+                .iter()
+                .filter(|p| {
+                    matches!(
+                        p.get("type").and_then(|t| t.as_str()),
+                        Some("input_text") | Some("text")
+                    )
+                })
+                .filter_map(|p| p.get("text").and_then(|t| t.as_str()))
+                .collect();
+            if texts.is_empty() {
+                None
+            } else {
+                Some(texts.join("\n"))
+            }
+        }
+        _ => None,
+    }
+}
+
+/// Codex (Responses 格式) 的 /model 命令合成响应
+fn codex_model_command_response(
+    body: &Value,
+    text: &str,
+) -> Result<axum::response::Response, ProxyError> {
+    let anthropic_msg = json!({
+        "id": "msg_model_cmd",
+        "type": "message",
+        "role": "assistant",
+        "content": [{"type": "text", "text": text}],
+        "model": body.get("model").and_then(|m| m.as_str()).unwrap_or("unknown"),
+        "stop_reason": "end_turn",
+        "stop_sequence": null,
+        "usage": {"input_tokens": 0, "output_tokens": 0}
+    });
+    let is_stream = body
+        .get("stream")
+        .and_then(|s| s.as_bool())
+        .unwrap_or(false);
+    if is_stream {
+        let events = responses_sse_events_from_anthropic_message(
+            &anthropic_msg,
+            transform_codex_chat::CodexToolContext::default(),
+        );
+        let mut sse: Vec<u8> = Vec::new();
+        for event in events {
+            sse.extend_from_slice(&event);
+        }
+        let mut headers = axum::http::HeaderMap::new();
+        headers.insert(
+            "Content-Type",
+            axum::http::HeaderValue::from_static("text/event-stream"),
+        );
+        headers.insert(
+            "Cache-Control",
+            axum::http::HeaderValue::from_static("no-cache"),
+        );
+        return Ok((headers, axum::body::Body::from(sse)).into_response());
+    }
+    let responses_response =
+        transform_codex_anthropic::anthropic_response_to_responses_with_context(
+            anthropic_msg,
+            &transform_codex_chat::CodexToolContext::default(),
+        )?;
+    Ok(Json(responses_response).into_response())
+}
+
 async fn handle_messages_for_app(
     state: ProxyState,
     request: axum::extract::Request,
@@ -260,68 +389,17 @@ async fn handle_messages_for_app(
     let mut body: Value = serde_json::from_slice(&body_bytes)
         .map_err(|e| ProxyError::Internal(format!("Failed to parse request body: {e}")))?;
 
-    // 会话内 /model 命令: 设置/清除本会话的 provider override, 短路返回
+    // 会话内 /model 或 @model 命令: 设置/清除本会话的 provider override, 短路返回
     if let Some(text) = last_user_message_text(&body) {
         let trimmed = text.trim();
-        if trimmed.starts_with("/model") {
+        if trimmed.starts_with("/model") || trimmed.starts_with("@model") {
             if let Some(cmd) = parse_model_command(trimmed) {
                 let session_result = extract_session_id(&headers, &body, app_type_str);
-                let reply = match cmd {
-                    ModelCommand::Reset => {
-                        if state.session_overrides.clear(&session_result.session_id) {
-                            "已清除本会话的模型路由 override, 恢复全局当前供应商。".to_string()
-                        } else {
-                            "本会话没有生效中的模型路由 override。".to_string()
-                        }
-                    }
-                    ModelCommand::Set { provider, model } => {
-                        match state.db.get_all_providers(app_type_str) {
-                            Ok(all) => {
-                                let found = all.values().find(|p| {
-                                    p.name.eq_ignore_ascii_case(&provider)
-                                        || p.id.eq_ignore_ascii_case(&provider)
-                                });
-                                match found {
-                                    Some(p) => {
-                                        state.session_overrides.set(
-                                            &session_result.session_id,
-                                            SessionOverride {
-                                                provider_id: p.id.clone(),
-                                                model: model.clone(),
-                                            },
-                                        );
-                                        let model_desc = model
-                                            .as_deref()
-                                            .unwrap_or("(保持请求原模型)");
-                                        let mut msg = format!(
-                                            "本会话已路由到供应商 {}, 模型: {}。使用 /model reset 恢复。",
-                                            p.name, model_desc
-                                        );
-                                        if !session_result.client_provided {
-                                            msg.push_str(
-                                                "\n注意: 当前请求未携带客户端 session id, override 可能无法关联后续请求。",
-                                            );
-                                        }
-                                        msg
-                                    }
-                                    None => {
-                                        let names: Vec<&str> = all
-                                            .values()
-                                            .map(|p| p.name.as_str())
-                                            .collect();
-                                        format!(
-                                            "未找到供应商 {}。可用供应商: {}",
-                                            provider,
-                                            names.join(", ")
-                                        )
-                                    }
-                                }
-                            }
-                            Err(e) => format!("读取供应商列表失败: {e}"),
-                        }
-                    }
-                };
-                log::info!("[{tag}] /model command handled, session: {}", session_result.session_id);
+                let reply = apply_model_command(&state, cmd, &session_result, app_type_str);
+                log::info!(
+                    "[{tag}] /model command handled, session: {}",
+                    session_result.session_id
+                );
                 return Ok(model_command_response(&body, &reply));
             }
         }
@@ -963,6 +1041,21 @@ async fn handle_responses_for_app(
     let mut body: Value = serde_json::from_slice(&body_bytes)
         .map_err(|e| ProxyError::Internal(format!("Failed to parse request body: {e}")))?;
 
+    // 会话内 /model 或 @model 命令 (Codex): 设置/清除本会话 provider override, 短路返回
+    if let Some(text) = last_user_input_text(&body) {
+        let trimmed = text.trim();
+        if trimmed.starts_with("/model") || trimmed.starts_with("@model") {
+            if let Some(cmd) = parse_model_command(trimmed) {
+                let session_result = extract_session_id(&headers, &body, app_type_str);
+                let reply = apply_model_command(&state, cmd, &session_result, app_type_str);
+                log::info!(
+                    "[{tag}] /model command handled, session: {}",
+                    session_result.session_id
+                );
+                return codex_model_command_response(&body, &reply);
+            }
+        }
+    }
     let mut ctx =
         RequestContext::new(&state, &body, &headers, app_type.clone(), tag, app_type_str).await?;
     let endpoint = endpoint_with_query(&uri, "/responses");

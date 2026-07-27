@@ -63,7 +63,9 @@ pub enum ModelCommand {
 /// 非 `/model` 开头或参数为空时返回 None。
 pub fn parse_model_command(text: &str) -> Option<ModelCommand> {
     let trimmed = text.trim();
-    let rest = trimmed.strip_prefix("/model")?;
+    let rest = trimmed
+        .strip_prefix("/model")
+        .or_else(|| trimmed.strip_prefix("@model"))?;
     // 必须是 "/model" 结尾或后跟空白，避免误伤 "/modeling"
     if !rest.is_empty() && !rest.starts_with(char::is_whitespace) {
         return None;
