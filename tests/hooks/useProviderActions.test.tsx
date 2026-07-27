@@ -242,6 +242,34 @@ describe("useProviderActions", () => {
     });
   });
 
+  it("restarts the client after a provider switch when enabled", async () => {
+    autoRestartEnabledMock.mockReturnValue(true);
+    switchProviderMutateAsync.mockResolvedValueOnce(undefined);
+    clientRestartMock.mockResolvedValueOnce({
+      app: "codex",
+      killed: true,
+      killAttempts: 1,
+      launched: true,
+      supported: true,
+      message: "restarted",
+    });
+    const { wrapper } = createWrapper();
+    const provider = createProvider({ category: "custom" });
+    const { result } = renderHook(() => useProviderActions("codex"), {
+      wrapper,
+    });
+
+    await act(async () => {
+      await result.current.switchProvider(provider);
+    });
+
+    expect(clientRestartMock).toHaveBeenCalledWith("codex");
+    expect(toastSuccessMock).toHaveBeenCalledWith(
+      "切换成功，已自动重启客户端：restarted",
+      { closeButton: true },
+    );
+  });
+
   it("warns but still switches providers that require proxy when proxy is not running", async () => {
     switchProviderMutateAsync.mockResolvedValueOnce(undefined);
     const { wrapper } = createWrapper();

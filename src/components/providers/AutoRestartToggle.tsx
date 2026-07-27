@@ -10,8 +10,12 @@ import { RefreshCw, FolderX, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import type { AppId } from "@/lib/api";
-import { appSupportsClientRestart } from "@/lib/api/clientRestart";
+import {
+  appSupportsClientRestart,
+  clientRestartApi,
+} from "@/lib/api/clientRestart";
 
 const STORAGE_KEY = "cc-switch-auto-restart-client-v1";
 const GROUP_SKIP_STORAGE_KEY = "cc-switch-skip-restart-in-group-v1";
@@ -92,6 +96,7 @@ export function AutoRestartToggle({
   const { t } = useTranslation();
   const [enabled, setEnabled] = useState(false);
   const [pending, setPending] = useState(false);
+  const [restarting, setRestarting] = useState(false);
   const [groupSkipEnabled, setGroupSkipEnabled] = useState(true);
   const [groupPending, setGroupPending] = useState(false);
   const supported = appSupportsClientRestart(activeApp);
@@ -116,6 +121,33 @@ export function AutoRestartToggle({
     writeGroupSkipEnabled(checked);
     window.setTimeout(() => setGroupPending(false), 120);
   }, []);
+
+  const handleManualRestart = useCallback(async () => {
+    if (!supported || restarting) return;
+    setRestarting(true);
+    try {
+      const result = await clientRestartApi.restart(activeApp);
+      if (!result.supported) {
+        toast.error(result.message);
+      } else if (result.launched) {
+        toast.success(result.message);
+      } else if (result.killed) {
+        toast.error(result.message);
+      } else {
+        toast.info(result.message);
+      }
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      toast.error(
+        t("autoRestart.manual.failed", {
+          detail,
+          defaultValue: "手动重启失败: {{detail}}",
+        }),
+      );
+    } finally {
+      setRestarting(false);
+    }
+  }, [activeApp, restarting, supported, t]);
 
   const tooltipText = !supported
     ? t("autoRestart.tooltip.unsupported", {
@@ -151,22 +183,37 @@ export function AutoRestartToggle({
         className="flex items-center gap-1 px-1.5 h-8 rounded-lg bg-muted/50 transition-all"
         title={tooltipText}
       >
-        {pending ? (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        ) : (
-          <RefreshCw
-            className={cn(
-              "h-4 w-4 transition-colors",
-              enabled && supported
-                ? "text-emerald-500 animate-pulse"
-                : "text-muted-foreground",
-            )}
-          />
-        )}
+        <button
+          type="button"
+          onClick={handleManualRestart}
+          disabled={!supported || restarting}
+          className="grid h-6 w-6 shrink-0 place-items-center rounded-md hover:bg-background/80 disabled:cursor-not-allowed disabled:opacity-45"
+          title={t("autoRestart.manual.tooltip", {
+            app: label,
+            defaultValue: `立即重启 ${label}`,
+          })}
+          aria-label={t("autoRestart.manual.aria", {
+            app: label,
+            defaultValue: `立即重启 ${label}`,
+          })}
+        >
+          {restarting ? (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          ) : (
+            <RefreshCw
+              className={cn(
+                "h-4 w-4 transition-colors",
+                enabled && supported
+                  ? "text-emerald-500"
+                  : "text-muted-foreground",
+              )}
+            />
+          )}
+        </button>
         <Switch
           checked={enabled}
           onCheckedChange={handleToggle}
-          disabled={pending}
+          disabled={pending || !supported}
           aria-label={t("autoRestart.aria", {
             defaultValue: "切换供应商后自动重启客户端",
           })}

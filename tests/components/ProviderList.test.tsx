@@ -308,29 +308,36 @@ describe("ProviderList Component", () => {
     ).toBeInTheDocument();
   });
 
-  it("marks provider switches made from a custom group", () => {
+  it("marks switches between providers that share a custom group", () => {
+    const current = createProvider({ id: "current", name: "Current" });
     const provider = createProvider({ id: "grouped", name: "Grouped" });
     const handleSwitch = vi.fn();
     localStorage.setItem(
       "cc-switch-provider-groups-v1",
       JSON.stringify({
         codex: {
-          groups: [{ id: "gpt", name: "GPT", providerIds: [provider.id] }],
-          activeGroupId: "gpt",
+          groups: [
+            {
+              id: "gpt",
+              name: "GPT",
+              providerIds: [current.id, provider.id],
+            },
+          ],
+          activeGroupId: "__all__",
           tabOrder: ["__all__", "__ungrouped__", "gpt"],
         },
       }),
     );
     useDragSortMock.mockReturnValue({
-      sortedProviders: [provider],
+      sortedProviders: [current, provider],
       sensors: [],
       handleDragEnd: vi.fn(),
     });
 
     renderWithQueryClient(
       <ProviderList
-        providers={{ grouped: provider }}
-        currentProviderId=""
+        providers={{ current, grouped: provider }}
+        currentProviderId="current"
         appId="codex"
         onSwitch={handleSwitch}
         onEdit={vi.fn()}

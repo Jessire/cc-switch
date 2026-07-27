@@ -250,6 +250,11 @@
   },
   "autoRestart": {
     "aria": "切换供应商后自动重启客户端",
+    "manual": {
+      "aria": "立即重启 {{app}}",
+      "tooltip": "立即重启 {{app}}",
+      "failed": "手动重启失败: {{detail}}"
+    },
     "tooltip": {
       "enabled": "已开启：切换 {{app}} 供应商后自动重启客户端",
       "disabled": "开启后，切换 {{app}} 供应商时自动重启对应客户端",
@@ -1416,10 +1421,7 @@
     "reasoningEffortHint": "上游支持 low/high/max 等思考深度控制时启用。启用后会自动启用思考模式，并把 Codex 的 reasoning.effort 转成上游 Chat 参数。",
     "reasoningGroupTitle": "思考能力",
     "reasoningSectionHint": "预设供应商已自动配置；自定义供应商会按名称/地址自动推断。仅当自动识别不准时才需手动覆盖。",
-    "advancedSectionHint": "包含上游格式、思考能力与自定义 User-Agent。使用 Chat Completions 协议的供应商需开启路由接管才能使用。",
-    "saveAndRestartCodex": "保存并重启 Codex",
-    "restartCodexSuccess": "配置已保存，Codex 已重启",
-    "restartCodexFailed": "配置已保存，但 Codex 重启失败: {{error}}"
+    "advancedSectionHint": "包含上游格式、思考能力与自定义 User-Agent。使用 Chat Completions 协议的供应商需开启路由接管才能使用。"
   },
   "geminiConfig": {
     "envFile": "环境变量 (.env)",

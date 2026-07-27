@@ -153,15 +153,19 @@ export function ProviderList({
   );
   const handleProviderSwitch = useCallback(
     (provider: Provider) => {
-      const isWithinCustomGroup =
-        activeGroupId !== ALL_GROUP_ID && activeGroupId !== UNGROUPED_GROUP_ID;
+      const currentGroupIds = new Set(
+        getGroupsOf(currentProviderId).map((group) => group.id),
+      );
+      const isWithinCustomGroup = getGroupsOf(provider.id).some((group) =>
+        currentGroupIds.has(group.id),
+      );
       if (isWithinCustomGroup) {
         onSwitch(provider, { isWithinCustomGroup: true });
       } else {
         onSwitch(provider);
       }
     },
-    [activeGroupId, onSwitch],
+    [currentProviderId, getGroupsOf, onSwitch],
   );
   const handleAssignSelectedTo = useCallback(
     (groupId: string) => {

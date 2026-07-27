@@ -250,6 +250,11 @@
   },
   "autoRestart": {
     "aria": "プロバイダー切り替え後にクライアントを自動再起動",
+    "manual": {
+      "aria": "{{app}} を今すぐ再起動",
+      "tooltip": "{{app}} を今すぐ再起動",
+      "failed": "手動再起動に失敗しました: {{detail}}"
+    },
     "tooltip": {
       "enabled": "有効：{{app}} のプロバイダー切り替え後にクライアントを自動再起動します",
       "disabled": "有効にすると、{{app}} のプロバイダー切り替え時に対応クライアントを自動再起動します",
@@ -1416,10 +1421,7 @@
     "reasoningEffortHint": "上流が low/high/max などの思考の深さの制御に対応している場合に有効化します。有効にすると思考モードも自動的にオンになり、Codex の reasoning.effort を上流の Chat パラメータに変換します。",
     "reasoningGroupTitle": "思考能力",
     "reasoningSectionHint": "プリセットの供給元は自動的に設定され、カスタム供給元は名前/URL から自動推論されます。自動識別が正しくない場合のみ手動で上書きしてください。",
-    "advancedSectionHint": "上流フォーマット、思考能力、カスタム User-Agent の設定を含みます。Chat Completions プロトコルを使用するプロバイダーはルーティング引き継ぎの有効化が必要です。",
-    "saveAndRestartCodex": "保存して Codex を再起動",
-    "restartCodexSuccess": "設定を保存し、Codex を再起動しました",
-    "restartCodexFailed": "設定は保存されましたが、Codex を再起動できませんでした: {{error}}"
+    "advancedSectionHint": "上流フォーマット、思考能力、カスタム User-Agent の設定を含みます。Chat Completions プロトコルを使用するプロバイダーはルーティング引き継ぎの有効化が必要です。"
   },
   "geminiConfig": {
     "envFile": "環境変数 (.env)",

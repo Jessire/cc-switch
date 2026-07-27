@@ -87,6 +87,10 @@ describe("CodexFormFields model menu", () => {
     const checkbox = await screen.findByRole("checkbox", {
       name: /deepseek-v4-flash/,
     });
+    expect(checkbox.closest("label")?.parentElement).toHaveClass(
+      "md:grid-cols-3",
+    );
+    expect(screen.getByRole("spinbutton")).toBeVisible();
     fireEvent.click(checkbox);
 
     await waitFor(() => {

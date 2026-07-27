@@ -262,6 +262,24 @@ function SortableCatalogModelRow({
               })}
           </span>
         </button>
+        <Input
+          type="number"
+          min={1}
+          inputMode="numeric"
+          value={row.contextWindow ?? ""}
+          onChange={(event) =>
+            onUpdate(index, {
+              contextWindow: event.target.value.replace(/[^\d]/g, ""),
+            })
+          }
+          placeholder={t("codexConfig.catalogColumnContext", {
+            defaultValue: "Context window",
+          })}
+          aria-label={t("codexConfig.catalogColumnContext", {
+            defaultValue: "Context window",
+          })}
+          className="h-8 w-28 shrink-0 sm:w-36"
+        />
         <Button
           type="button"
           variant="ghost"
@@ -327,27 +345,6 @@ function SortableCatalogModelRow({
                 />
               )}
             </div>
-          </div>
-          <div className="space-y-1.5 md:col-span-2">
-            <FormLabel className="text-xs">
-              {t("codexConfig.catalogColumnContext", {
-                defaultValue: "Context window",
-              })}
-            </FormLabel>
-            <Input
-              type="number"
-              min={1}
-              inputMode="numeric"
-              value={row.contextWindow ?? ""}
-              onChange={(event) =>
-                onUpdate(index, {
-                  contextWindow: event.target.value.replace(/[^\d]/g, ""),
-                })
-              }
-              placeholder={t("codexConfig.contextWindowPlaceholder", {
-                defaultValue: "e.g. 128000",
-              })}
-            />
           </div>
         </div>
       )}
@@ -736,43 +733,42 @@ export function CodexFormFields({
         />
       )}
 
-      {/* Codex API Key 输入框（托管 OAuth 预设无需 Key） */}
       {!isXaiOauthPreset && (
-        <ApiKeySection
-          id="codexApiKey"
-          label="API Key"
-          value={codexApiKey}
-          onChange={onApiKeyChange}
-          category={category}
-          shouldShowLink={shouldShowApiKeyLink}
-          websiteUrl={websiteUrl}
-          isPartner={isPartner}
-          partnerPromotionKey={partnerPromotionKey}
-          placeholder={{
-            official: t("providerForm.codexOfficialNoApiKey", {
-              defaultValue: "官方供应商无需 API Key",
-            }),
-            thirdParty: t("providerForm.codexApiKeyAutoFill", {
-              defaultValue: "输入 API Key，将自动填充到配置",
-            }),
-          }}
-        />
-      )}
-
-      {/* Codex Base URL 输入框（托管 OAuth 端点由 adapter 硬定向，不展示） */}
-      {shouldShowSpeedTest && !isXaiOauthPreset && (
-        <EndpointField
-          id="codexBaseUrl"
-          label={t("codexConfig.apiUrlLabel")}
-          value={codexBaseUrl}
-          onChange={onBaseUrlChange}
-          placeholder={t("providerForm.codexApiEndpointPlaceholder")}
-          hint={t("providerForm.codexApiHint")}
-          showFullUrlToggle
-          isFullUrl={isFullUrl}
-          onFullUrlChange={onFullUrlChange}
-          onManageClick={() => onEndpointModalToggle(true)}
-        />
+        <div className="grid items-start gap-4 md:grid-cols-2">
+          <ApiKeySection
+            id="codexApiKey"
+            label="API Key"
+            value={codexApiKey}
+            onChange={onApiKeyChange}
+            category={category}
+            shouldShowLink={shouldShowApiKeyLink}
+            websiteUrl={websiteUrl}
+            isPartner={isPartner}
+            partnerPromotionKey={partnerPromotionKey}
+            placeholder={{
+              official: t("providerForm.codexOfficialNoApiKey", {
+                defaultValue: "官方供应商无需 API Key",
+              }),
+              thirdParty: t("providerForm.codexApiKeyAutoFill", {
+                defaultValue: "输入 API Key，将自动填充到配置",
+              }),
+            }}
+          />
+          {shouldShowSpeedTest && (
+            <EndpointField
+              id="codexBaseUrl"
+              label={t("codexConfig.apiUrlLabel")}
+              value={codexBaseUrl}
+              onChange={onBaseUrlChange}
+              placeholder={t("providerForm.codexApiEndpointPlaceholder")}
+              hint={t("providerForm.codexApiHint")}
+              showFullUrlToggle
+              isFullUrl={isFullUrl}
+              onFullUrlChange={onFullUrlChange}
+              onManageClick={() => onEndpointModalToggle(true)}
+            />
+          )}
+        </div>
       )}
 
       {/* 默认模型 —— config.toml 顶层 model，Codex 启动时默认请求的模型。
@@ -965,12 +961,12 @@ export function CodexFormFields({
                 </div>
               </div>
               {availableModels.length > 0 ? (
-                <ScrollArea className="h-52 rounded-md border border-border-default">
-                  <div className="divide-y divide-border-default">
+                <ScrollArea className="h-52">
+                  <div className="grid gap-2 pr-3 md:grid-cols-3">
                     {availableModels.map((model) => (
                       <label
                         key={model.id}
-                        className="flex min-h-10 cursor-pointer items-center gap-2 px-3 py-2 hover:bg-muted/40"
+                        className="flex min-h-14 cursor-pointer items-center gap-2 rounded-md border border-border-default px-3 py-2 hover:bg-muted/40"
                       >
                         <Checkbox
                           checked={false}
