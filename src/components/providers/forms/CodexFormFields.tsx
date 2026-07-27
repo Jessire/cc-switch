@@ -761,7 +761,6 @@ export function CodexFormFields({
               value={codexBaseUrl}
               onChange={onBaseUrlChange}
               placeholder={t("providerForm.codexApiEndpointPlaceholder")}
-              hint={t("providerForm.codexApiHint")}
               showFullUrlToggle
               isFullUrl={isFullUrl}
               onFullUrlChange={onFullUrlChange}
