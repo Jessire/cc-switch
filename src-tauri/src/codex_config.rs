@@ -38,6 +38,13 @@ static CODEX_MODEL_CATALOG_TEMPLATE_CACHE: OnceCell<Value> = OnceCell::new();
 #[cfg(not(test))]
 static CODEX_BUNDLED_MODELS_CACHE: OnceCell<Vec<Value>> = OnceCell::new();
 
+/// Priority offset applied to Codex's re-attached built-in entries. Codex renders
+/// an external catalog in array order (verified against `codex debug models`), but
+/// the field still separates the two groups for anything that sorts by it:
+/// provider rows occupy 1000.., built-ins start here. It doubles as the marker
+/// that tells the reverse parser which rows are cc-switch's own.
+const CODEX_BUNDLED_CATALOG_PRIORITY_OFFSET: u64 = 100_000;
+
 /// Top-level `config.toml` key that controls Codex's built-in web-search tool.
 pub(crate) const CODEX_WEB_SEARCH_FIELD: &str = "web_search";
 /// Value that disables the web-search tool. Some native `/responses` gateways
@@ -878,9 +885,9 @@ fn load_codex_model_template_from_bundled() -> Result<Option<Value>, AppError> {
 ///
 /// `model_catalog_json` REPLACES Codex's built-in catalog instead of extending
 /// it, so a catalog holding only cc-switch's rows makes the Codex Desktop model
-/// picker lose every official entry. Keeping these entries verbatim and
-/// appending the provider's models (priority 1000+) preserves the stock picker
-/// order with the custom models listed after it.
+/// picker lose every official entry. Re-attaching them behind the provider's own
+/// rows keeps every official entry selectable while the models the user actually
+/// configured stay at the top of the picker.
 #[cfg(not(test))]
 fn load_codex_bundled_models_uncached() -> Vec<Value> {
     for candidate in codex_cli_candidates() {
@@ -1043,26 +1050,41 @@ fn codex_model_catalog_from_specs(
     let custom_slugs: std::collections::HashSet<&str> =
         specs.iter().map(|spec| spec.model.as_str()).collect();
 
-    // Codex's own entries are cloned verbatim (they keep their native priority,
-    // < 1000) so the picker keeps showing them first; a bundled slug that the
-    // provider also declares is dropped, otherwise the picker shows it twice
-    // and the provider's row is not the one Codex would resolve.
-    let mut entries: Vec<Value> = bundled
+    // The provider's own models come first so they head the Codex picker.
+    let mut entries: Vec<Value> = specs
         .iter()
-        .filter(|entry| {
-            entry
-                .get("slug")
-                .and_then(|slug| slug.as_str())
-                .is_none_or(|slug| !custom_slugs.contains(slug))
-        })
-        .cloned()
+        .enumerate()
+        .map(|(index, spec)| codex_catalog_model_entry(template, spec, index, profile))
         .collect();
 
+    // Codex's built-ins are re-attached behind them; without this, replacing the
+    // catalog drops every official model from the picker. A bundled slug the
+    // provider also declares is skipped, otherwise the model is listed twice and
+    // the provider's row is not the one Codex would resolve.
     entries.extend(
-        specs
+        bundled
             .iter()
+            .filter(|entry| {
+                entry
+                    .get("slug")
+                    .and_then(|slug| slug.as_str())
+                    .is_none_or(|slug| !custom_slugs.contains(slug))
+            })
             .enumerate()
-            .map(|(index, spec)| codex_catalog_model_entry(template, spec, index, profile)),
+            .map(|(index, entry)| {
+                let mut entry = entry.clone();
+                let native_priority = entry
+                    .get("priority")
+                    .and_then(|value| value.as_u64())
+                    .unwrap_or(index as u64);
+                if let Some(obj) = entry.as_object_mut() {
+                    obj.insert(
+                        "priority".to_string(),
+                        json!(CODEX_BUNDLED_CATALOG_PRIORITY_OFFSET + native_priority),
+                    );
+                }
+                entry
+            }),
     );
 
     json!({ "models": entries })
@@ -1277,12 +1299,16 @@ fn build_simplified_catalog_from_texts(config_text: &str, catalog_text: &str) ->
 
     let mut entries = Vec::with_capacity(models.len());
     for entry in models {
-        // Codex's built-in entries (priority < 1000) are re-attached on every
-        // write; reading them back would turn them into editable provider rows.
+        // Codex's built-in entries are re-attached on every write; reading them
+        // back would turn them into editable provider rows. cc-switch's own rows
+        // are the ones from 1000 up to the built-in offset; an entry carrying no
+        // priority at all predates the field and stays a provider row.
         if entry
             .get("priority")
             .and_then(|priority| priority.as_u64())
-            .is_some_and(|priority| priority < 1000)
+            .is_some_and(|priority| {
+                !(1000..CODEX_BUNDLED_CATALOG_PRIORITY_OFFSET).contains(&priority)
+            })
         {
             continue;
         }
@@ -3554,7 +3580,7 @@ web_search = "disabled"
     }
 
     #[test]
-    fn codex_model_catalog_prepends_bundled_models() {
+    fn codex_model_catalog_lists_custom_models_before_bundled_ones() {
         let mut template = json!({ "slug": "gpt-5.5" });
         fill_template_fields_from_static(&mut template);
         let specs = vec![CodexCatalogModelSpec {
@@ -3566,8 +3592,8 @@ web_search = "disabled"
             base_instructions: None,
         }];
         let bundled = vec![
-            json!({ "slug": "gpt-5.6-sol", "display_name": "5.6 Sol", "priority": 0 }),
-            json!({ "slug": "gpt-5.5", "display_name": "5.5", "priority": 20 }),
+            json!({ "slug": "gpt-5.6-sol", "display_name": "5.6 Sol", "priority": 1 }),
+            json!({ "slug": "gpt-5.5", "display_name": "5.5", "priority": 7 }),
         ];
 
         let catalog = codex_model_catalog_from_specs(
@@ -3578,20 +3604,37 @@ web_search = "disabled"
         );
         let models = catalog["models"].as_array().expect("models array");
 
+        assert_eq!(models.len(), 3, "custom rows first, bundled ones appended");
         assert_eq!(
-            models.len(),
-            3,
-            "bundled entries kept, custom ones appended"
-        );
-        assert_eq!(models[0], bundled[0], "bundled entries are cloned verbatim");
-        assert_eq!(models[1], bundled[1]);
-        assert_eq!(
-            models[2].get("slug").and_then(|slug| slug.as_str()),
+            models[0].get("slug").and_then(|slug| slug.as_str()),
             Some("k3")
         );
         assert_eq!(
-            models[2].get("priority").and_then(|value| value.as_u64()),
+            models[0].get("priority").and_then(|value| value.as_u64()),
             Some(1000)
+        );
+
+        // Built-ins keep their identity but move into the reserved band so the
+        // reverse parser can tell them apart from provider rows.
+        assert_eq!(
+            models[1].get("slug").and_then(|slug| slug.as_str()),
+            Some("gpt-5.6-sol")
+        );
+        assert_eq!(
+            models[1].get("display_name").and_then(|name| name.as_str()),
+            Some("5.6 Sol")
+        );
+        assert_eq!(
+            models[1].get("priority").and_then(|value| value.as_u64()),
+            Some(CODEX_BUNDLED_CATALOG_PRIORITY_OFFSET + 1)
+        );
+        assert_eq!(
+            models[2].get("slug").and_then(|slug| slug.as_str()),
+            Some("gpt-5.5")
+        );
+        assert_eq!(
+            models[2].get("priority").and_then(|value| value.as_u64()),
+            Some(CODEX_BUNDLED_CATALOG_PRIORITY_OFFSET + 7)
         );
     }
 
@@ -3621,13 +3664,13 @@ web_search = "disabled"
 
         assert_eq!(models.len(), 2);
         assert_eq!(
-            models[0].get("slug").and_then(|slug| slug.as_str()),
-            Some("gpt-5.6-sol")
-        );
-        assert_eq!(
-            models[1].get("display_name").and_then(|name| name.as_str()),
+            models[0].get("display_name").and_then(|name| name.as_str()),
             Some("Relay GPT 5.5"),
             "the provider row wins for a slug Codex also ships"
+        );
+        assert_eq!(
+            models[1].get("slug").and_then(|slug| slug.as_str()),
+            Some("gpt-5.6-sol")
         );
     }
 
@@ -3635,9 +3678,10 @@ web_search = "disabled"
     fn simplified_catalog_skips_builtin_priority_entries() {
         let catalog = r#"{
             "models": [
-                { "slug": "gpt-5.6-sol", "display_name": "5.6 Sol", "priority": 0 },
                 { "slug": "custom-one", "display_name": "Custom One", "priority": 1000 },
-                { "slug": "legacy-no-priority", "display_name": "Legacy" }
+                { "slug": "legacy-no-priority", "display_name": "Legacy" },
+                { "slug": "gpt-5.6-sol", "display_name": "5.6 Sol", "priority": 100001 },
+                { "slug": "stale-low-priority", "display_name": "Stale", "priority": 0 }
             ]
         }"#;
 
@@ -3654,7 +3698,7 @@ web_search = "disabled"
 
     #[test]
     fn simplified_catalog_with_only_builtin_entries_yields_none() {
-        let catalog = r#"{ "models": [{ "slug": "gpt-5.6-sol", "priority": 0 }] }"#;
+        let catalog = r#"{ "models": [{ "slug": "gpt-5.6-sol", "priority": 100001 }] }"#;
         assert!(
             build_simplified_catalog_from_texts("", catalog).is_none(),
             "a catalog holding only Codex's built-ins has no provider rows"
