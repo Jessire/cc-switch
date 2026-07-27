@@ -6,6 +6,7 @@ const apiMocks = vi.hoisted(() => ({
   getCurrent: vi.fn(),
   getLiveProviderSettings: vi.fn(),
   getOpenClawLiveProvider: vi.fn(),
+  restartCodex: vi.fn(),
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -17,6 +18,12 @@ vi.mock("@/lib/api", () => ({
   },
   openclawApi: {
     getLiveProvider: apiMocks.getOpenClawLiveProvider,
+  },
+}));
+
+vi.mock("@/lib/api/clientRestart", () => ({
+  clientRestartApi: {
+    restart: apiMocks.restartCodex,
   },
 }));
 
@@ -96,6 +103,7 @@ describe("EditProviderDialog", () => {
     apiMocks.getCurrent.mockReset();
     apiMocks.getLiveProviderSettings.mockReset();
     apiMocks.getOpenClawLiveProvider.mockReset();
+    apiMocks.restartCodex.mockReset();
   });
 
   it("保留 Codex 数据库中的 modelCatalog，避免 live 配置缺字段时清空模型映射", async () => {
@@ -201,5 +209,52 @@ describe("EditProviderDialog", () => {
     expect(
       JSON.parse(screen.getByTestId("settings-config").textContent ?? "{}"),
     ).toEqual(provider.settingsConfig);
+  });
+
+  it("保存并重启 Codex 时先保存供应商再调用客户端重启", async () => {
+    const provider: Provider = {
+      id: "custom",
+      name: "Custom",
+      category: "custom",
+      settingsConfig: {
+        config: 'model_provider = "custom"\n',
+      },
+    };
+    const handleSubmit = vi.fn().mockResolvedValue(undefined);
+    const handleOpenChange = vi.fn();
+    apiMocks.getCurrent.mockResolvedValue(null);
+    apiMocks.restartCodex.mockResolvedValue({
+      app: "codex",
+      killed: true,
+      killAttempts: 1,
+      launched: true,
+      supported: true,
+      message: "restarted",
+    });
+
+    render(
+      <EditProviderDialog
+        open
+        provider={provider}
+        onOpenChange={handleOpenChange}
+        onSubmit={handleSubmit}
+        appId="codex"
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Save and Restart Codex",
+      }),
+    );
+
+    await waitFor(() => expect(handleSubmit).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(apiMocks.restartCodex).toHaveBeenCalledWith("codex"),
+    );
+    expect(handleSubmit.mock.invocationCallOrder[0]).toBeLessThan(
+      apiMocks.restartCodex.mock.invocationCallOrder[0],
+    );
+    expect(handleOpenChange).toHaveBeenCalledWith(false);
   });
 });

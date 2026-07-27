@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Save } from "lucide-react";
+import { Loader2, RefreshCw, Save } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { FullScreenPanel } from "@/components/common/FullScreenPanel";
 import type { Provider } from "@/types";
@@ -9,6 +10,8 @@ import {
   type ProviderFormValues,
 } from "@/components/providers/forms/ProviderForm";
 import { openclawApi, providersApi, vscodeApi, type AppId } from "@/lib/api";
+import { clientRestartApi } from "@/lib/api/clientRestart";
+import { cn } from "@/lib/utils";
 
 interface EditProviderDialogProps {
   open: boolean;
@@ -32,6 +35,8 @@ export function EditProviderDialog({
 }: EditProviderDialogProps) {
   const { t } = useTranslation();
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
+  const [isRestarting, setIsRestarting] = useState(false);
+  const restartAfterSaveRef = useRef(false);
 
   // 默认使用传入的 provider.settingsConfig，若当前编辑对象是"当前生效供应商"，则尝试读取实时配置替换初始值
   const [liveSettings, setLiveSettings] = useState<Record<
@@ -181,6 +186,8 @@ export function EditProviderDialog({
   const handleSubmit = useCallback(
     async (values: ProviderFormValues) => {
       if (!provider) return;
+      const shouldRestartCodex = restartAfterSaveRef.current;
+      restartAfterSaveRef.current = false;
 
       // 注意：values.settingsConfig 已经是最终的配置字符串
       // ProviderForm 已经为不同的 app 类型（Claude/Codex/Gemini）正确组装了配置
@@ -212,9 +219,36 @@ export function EditProviderDialog({
         provider: updatedProvider,
         originalId: provider.id,
       });
+
+      if (shouldRestartCodex && appId === "codex") {
+        setIsRestarting(true);
+        try {
+          const result = await clientRestartApi.restart("codex");
+          if (!result.supported || (!result.killed && !result.launched)) {
+            throw new Error(result.message);
+          }
+          toast.success(
+            t("codexConfig.restartCodexSuccess", {
+              defaultValue: "Configuration saved and Codex restarted",
+            }),
+          );
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          toast.error(
+            t("codexConfig.restartCodexFailed", {
+              error: message,
+              defaultValue:
+                "Configuration saved, but Codex could not restart: {{error}}",
+            }),
+          );
+        } finally {
+          setIsRestarting(false);
+        }
+      }
       onOpenChange(false);
     },
-    [appId, onSubmit, onOpenChange, provider],
+    [appId, onSubmit, onOpenChange, provider, t],
   );
 
   if (!provider || !initialData) {
@@ -227,15 +261,44 @@ export function EditProviderDialog({
       title={t("provider.editProvider")}
       onClose={() => onOpenChange(false)}
       footer={
-        <Button
-          type="submit"
-          form="provider-form"
-          disabled={isFormSubmitting}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Save className="h-4 w-4 mr-2" />
-          {t("common.save")}
-        </Button>
+        <>
+          <Button
+            type="submit"
+            form="provider-form"
+            variant={appId === "codex" ? "outline" : "default"}
+            disabled={isFormSubmitting || isRestarting}
+            onClick={() => {
+              restartAfterSaveRef.current = false;
+            }}
+            className={cn(
+              appId !== "codex" &&
+                "bg-primary text-primary-foreground hover:bg-primary/90",
+            )}
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {t("common.save")}
+          </Button>
+          {appId === "codex" && (
+            <Button
+              type="submit"
+              form="provider-form"
+              disabled={isFormSubmitting || isRestarting}
+              onClick={() => {
+                restartAfterSaveRef.current = true;
+              }}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {isRestarting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+              )}
+              {t("codexConfig.saveAndRestartCodex", {
+                defaultValue: "Save and Restart Codex",
+              })}
+            </Button>
+          )}
+        </>
       }
     >
       <ProviderForm
