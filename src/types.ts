@@ -174,6 +174,8 @@ export interface ProviderMeta {
   custom_endpoints?: Record<string, CustomEndpoint>;
   // 是否在切换/同步到 live 时应用通用配置片段
   commonConfigEnabled?: boolean;
+  // 是否将该 Codex 供应商的已启用模型加入 Codex Desktop 模型菜单
+  codexModelMenuFavorite?: boolean;
   // Claude Desktop 3P 配置写入模式
   claudeDesktopMode?: "direct" | "proxy";
   // Claude Desktop 本地路由模式：Claude-safe route -> upstream model
@@ -260,6 +262,12 @@ export interface CodexCatalogModel {
   model: string;
   displayName?: string;
   contextWindow?: string | number;
+  // 缺省表示启用, 兼容旧模型目录数据
+  enabled?: boolean;
+  // 收藏供应商之间的全局 Codex Desktop 菜单顺序
+  menuOrder?: number;
+  // 同一模型存在多个供应商时, 是否由该供应商占用裸模型 ID
+  isNativeDefault?: boolean;
   // Hidden provider capability metadata for the generated model catalog.
   // supportsParallelToolCalls is native-profile-only; inputModalities wins over
   // automatic text-only model detection for every profile.

@@ -26,7 +26,51 @@ pub fn get_providers(
     app: String,
 ) -> Result<IndexMap<String, Provider>, String> {
     let app_type = AppType::from_str(&app).map_err(|e| e.to_string())?;
-    ProviderService::list(state.inner(), app_type).map_err(|e| e.to_string())
+    let mut providers =
+        ProviderService::list(state.inner(), app_type.clone()).map_err(|e| e.to_string())?;
+
+    // One-time migration for installs created before Codex menu favorites existed.
+    // An explicit false on any provider means migration already happened.
+    if matches!(app_type, AppType::Codex)
+        && !providers.is_empty()
+        && providers.values().all(|provider| {
+            provider
+                .meta
+                .as_ref()
+                .and_then(|meta| meta.codex_model_menu_favorite)
+                .is_none()
+        })
+    {
+        let current_id =
+            ProviderService::current(state.inner(), app_type.clone()).map_err(|e| e.to_string())?;
+        if let Some(mut current) = providers.get(&current_id).cloned() {
+            current
+                .meta
+                .get_or_insert_with(Default::default)
+                .codex_model_menu_favorite = Some(true);
+            state
+                .db
+                .save_provider(app_type.as_str(), &current)
+                .map_err(|e| e.to_string())?;
+            providers.insert(current.id.clone(), current.clone());
+
+            if state
+                .proxy_service
+                .detect_takeover_in_live_config_for_app(&app_type)
+                && futures::executor::block_on(state.proxy_service.is_running())
+            {
+                if let Err(error) = futures::executor::block_on(
+                    state
+                        .proxy_service
+                        .sync_codex_live_from_provider_while_proxy_active(&current),
+                ) {
+                    log::warn!("首次收藏当前 Codex 供应商后刷新模型菜单失败: {error}");
+                }
+            }
+        }
+    }
+
+    Ok(providers)
 }
 
 #[tauri::command]

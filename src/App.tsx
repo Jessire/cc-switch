@@ -1363,6 +1363,29 @@ function App() {
                 )}
                 {currentView === "providers" && (
                   <>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <AutoRestartToggle activeApp={activeApp} />
+                      {activeApp !== "opencode" &&
+                        activeApp !== "openclaw" &&
+                        activeApp !== "hermes" && (
+                          <>
+                            {activeApp === "claude-desktop" ? (
+                              <ClaudeDesktopRouteToggle />
+                            ) : (
+                              settingsData?.enableLocalProxy && (
+                                <ProxyToggle activeApp={activeApp} />
+                              )
+                            )}
+                            {activeApp !== "claude-desktop" &&
+                              settingsData?.enableFailoverToggle && (
+                                <FailoverToggle activeApp={activeApp} />
+                              )}
+                          </>
+                        )}
+                    </div>
+
+                    <div className="mx-0.5 h-6 w-px bg-border/70" />
+
                     <AppSwitcher
                       activeApp={activeApp}
                       onSwitch={setActiveApp}
@@ -1533,28 +1556,6 @@ function App() {
                           )}
                         </motion.div>
                       </AnimatePresence>
-                    </div>
-
-                    <div className="mx-0.5 h-6 w-px bg-border/70" />
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      <AutoRestartToggle activeApp={activeApp} />
-                      {activeApp !== "opencode" &&
-                        activeApp !== "openclaw" &&
-                        activeApp !== "hermes" && (
-                          <>
-                            {activeApp === "claude-desktop" ? (
-                              <ClaudeDesktopRouteToggle />
-                            ) : (
-                              settingsData?.enableLocalProxy && (
-                                <ProxyToggle activeApp={activeApp} />
-                              )
-                            )}
-                            {activeApp !== "claude-desktop" &&
-                              settingsData?.enableFailoverToggle && (
-                                <FailoverToggle activeApp={activeApp} />
-                              )}
-                          </>
-                        )}
                     </div>
                   </>
                 )}

@@ -164,6 +164,13 @@ export const normalizeCodexCatalogModelsForSave = (
       model,
       ...(displayName ? { displayName } : {}),
       ...(contextWindow && contextWindow > 0 ? { contextWindow } : {}),
+      ...(item.enabled === false ? { enabled: false } : {}),
+      ...(typeof item.menuOrder === "number" &&
+      Number.isFinite(item.menuOrder) &&
+      item.menuOrder >= 0
+        ? { menuOrder: Math.trunc(item.menuOrder) }
+        : {}),
+      ...(item.isNativeDefault === true ? { isNativeDefault: true } : {}),
       // Native Responses profile overrides (ignored by the chat/proxy profile).
       ...(typeof item.supportsParallelToolCalls === "boolean"
         ? { supportsParallelToolCalls: item.supportsParallelToolCalls }
@@ -182,7 +189,9 @@ export const syncCodexModelToCatalogFirst = (
   config: string,
   models: CodexCatalogModel[],
 ): string => {
-  const firstModel = models[0]?.model.trim();
+  const firstModel = models
+    .find((item) => item.enabled !== false)
+    ?.model.trim();
   return firstModel ? setCodexModelNameInConfig(config, firstModel) : config;
 };
 

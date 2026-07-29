@@ -2792,21 +2792,14 @@ impl ProxyService {
     fn attach_codex_routed_model_catalog(
         &self,
         live_config: &mut Value,
-        current_provider: &Provider,
+        _current_provider: &Provider,
     ) -> Result<(), String> {
         let all = self
             .db
             .get_all_providers(AppType::Codex.as_str())
             .map_err(|e| format!("读取 Codex 供应商列表失败: {e}"))?;
-        let mut ordered = Vec::with_capacity(all.len());
-        ordered.push(current_provider.clone());
-        ordered.extend(
-            all.values()
-                .filter(|provider| provider.id != current_provider.id)
-                .cloned(),
-        );
-
-        let model_catalog = Self::build_codex_routed_model_catalog(&ordered);
+        let providers = all.values().cloned().collect::<Vec<_>>();
+        let model_catalog = Self::build_codex_routed_model_catalog(&providers);
         let first_model = model_catalog
             .get("models")
             .and_then(Value::as_array)
@@ -2833,74 +2826,30 @@ impl ProxyService {
     }
 
     fn build_codex_routed_model_catalog(providers: &[Provider]) -> Value {
-        let mut models = Vec::new();
-        let mut seen = std::collections::HashSet::new();
-
-        for provider in providers {
-            if provider.id.contains('/') {
-                log::warn!(
-                    "Skipping Codex routed catalog provider with unsupported id: {}",
-                    provider.id
-                );
-                continue;
-            }
-
-            let profile = crate::proxy::providers::resolve_codex_catalog_tool_profile(provider);
-            let profile_name = match profile {
-                crate::codex_config::CodexCatalogToolProfile::ProxyChat => "proxy_chat",
-                crate::codex_config::CodexCatalogToolProfile::NativeResponses => "native_responses",
-                crate::codex_config::CodexCatalogToolProfile::Anthropic => "anthropic",
-            };
-            let configured = provider
-                .settings_config
-                .get("modelCatalog")
-                .and_then(|catalog| catalog.get("models"))
-                .and_then(Value::as_array);
-            let fallback_model = crate::proxy::providers::codex_provider_upstream_model(provider);
-            let fallback_rows;
-            let rows = match configured.filter(|rows| !rows.is_empty()) {
-                Some(rows) => rows.as_slice(),
-                None => {
-                    fallback_rows = fallback_model
-                        .map(|model| vec![json!({ "model": model })])
-                        .unwrap_or_default();
-                    fallback_rows.as_slice()
-                }
-            };
-
-            for row in rows {
-                let Some(actual_model) = row
-                    .get("model")
-                    .and_then(Value::as_str)
-                    .map(str::trim)
-                    .filter(|model| !model.is_empty())
-                else {
-                    continue;
+        let models = crate::proxy::providers::codex_model_menu_entries(providers)
+            .into_iter()
+            .map(|entry| {
+                let profile_name = match entry.tool_profile {
+                    crate::codex_config::CodexCatalogToolProfile::ProxyChat => "proxy_chat",
+                    crate::codex_config::CodexCatalogToolProfile::NativeResponses => {
+                        "native_responses"
+                    }
+                    crate::codex_config::CodexCatalogToolProfile::Anthropic => "anthropic",
                 };
-                let routed_model = format!("{}/{}", provider.id, actual_model);
-                if !seen.insert(routed_model.clone()) {
-                    continue;
-                }
-
-                let model_name = row
-                    .get("displayName")
-                    .or_else(|| row.get("display_name"))
-                    .and_then(Value::as_str)
-                    .map(str::trim)
-                    .filter(|name| !name.is_empty())
-                    .unwrap_or(actual_model);
-                let mut routed = row.clone();
+                let mut routed = entry.source;
                 if let Some(obj) = routed.as_object_mut() {
-                    obj.insert("model".to_string(), json!(routed_model));
-                    obj.insert(
-                        "displayName".to_string(),
-                        json!(format!("{} - {}", provider.name, model_name)),
-                    );
+                    obj.insert("model".to_string(), json!(entry.routed_model));
+                    obj.insert("displayName".to_string(), json!(entry.display_name));
                     obj.insert("routeToolProfile".to_string(), json!(profile_name));
+                    obj.remove("enabled");
+                    obj.remove("menuOrder");
+                    obj.remove("menu_order");
+                    obj.remove("isNativeDefault");
+                    obj.remove("is_native_default");
                 }
-                models.push(routed);
-            }
-        }
+                routed
+            })
+            .collect::<Vec<_>>();
 
         json!({ "models": models })
     }
@@ -3420,7 +3369,8 @@ mod tests {
                     "models": [{
                         "model": "gpt-5.4",
                         "displayName": "GPT 5.4",
-                        "contextWindow": 400_000
+                        "contextWindow": 400_000,
+                        "menuOrder": 0
                     }]
                 }
             }),
@@ -3428,6 +3378,7 @@ mod tests {
         );
         current.meta = Some(ProviderMeta {
             api_format: Some("openai_responses".to_string()),
+            codex_model_menu_favorite: Some(true),
             ..Default::default()
         });
 
@@ -3438,7 +3389,8 @@ mod tests {
                 "modelCatalog": {
                     "models": [{
                         "model": "gpt-5.4",
-                        "displayName": "GPT 5.4"
+                        "displayName": "GPT 5.4",
+                        "menuOrder": 1
                     }]
                 }
             }),
@@ -3446,66 +3398,78 @@ mod tests {
         );
         chat.meta = Some(ProviderMeta {
             api_format: Some("openai_chat".to_string()),
+            codex_model_menu_favorite: Some(true),
             ..Default::default()
         });
 
-        let fallback = Provider::with_id(
+        let mut fallback = Provider::with_id(
             "anthropic-provider".to_string(),
             "Anthropic Relay".to_string(),
             json!({
                 "apiFormat": "anthropic",
-                "model": "anthropic/claude-sonnet-4"
+                "modelCatalog": {
+                    "models": [{
+                        "model": "anthropic/claude-sonnet-4",
+                        "menuOrder": 2
+                    }]
+                }
             }),
             None,
         );
+        fallback.meta = Some(ProviderMeta {
+            codex_model_menu_favorite: Some(true),
+            ..Default::default()
+        });
 
         let catalog = ProxyService::build_codex_routed_model_catalog(&[current, chat, fallback]);
         let models = ProxyService::routed_catalog_models(&catalog);
 
         assert_eq!(models.len(), 3);
-        assert_eq!(models[0]["model"], "native-provider/gpt-5.4");
-        assert_eq!(models[0]["displayName"], "Native Relay - GPT 5.4");
+        assert_eq!(models[0]["model"], "gpt-5.4");
+        assert_eq!(models[0]["displayName"], "GPT 5.4");
         assert_eq!(models[0]["routeToolProfile"], "native_responses");
         assert_eq!(models[0]["contextWindow"], 400_000);
 
         assert_eq!(models[1]["model"], "chat-provider/gpt-5.4");
-        assert_eq!(models[1]["displayName"], "Chat Relay - GPT 5.4");
+        assert_eq!(models[1]["displayName"], "GPT 5.4 · Chat Relay");
         assert_eq!(models[1]["routeToolProfile"], "proxy_chat");
 
-        assert_eq!(
-            models[2]["model"],
-            "anthropic-provider/anthropic/claude-sonnet-4"
-        );
-        assert_eq!(
-            models[2]["displayName"],
-            "Anthropic Relay - anthropic/claude-sonnet-4"
-        );
+        assert_eq!(models[2]["model"], "anthropic/claude-sonnet-4");
+        assert_eq!(models[2]["displayName"], "anthropic/claude-sonnet-4");
         assert_eq!(models[2]["routeToolProfile"], "anthropic");
     }
 
     #[test]
-    fn codex_routed_catalog_from_database_sets_current_provider_model_as_default() {
+    fn codex_routed_catalog_from_database_uses_global_menu_order_as_default() {
         let db = Arc::new(Database::memory().expect("init db"));
-        let current = Provider::with_id(
+        let mut current = Provider::with_id(
             "current-provider".to_string(),
             "Current Relay".to_string(),
             json!({
                 "modelCatalog": {
-                    "models": [{ "model": "current-model" }]
+                    "models": [{ "model": "current-model", "menuOrder": 1 }]
                 }
             }),
             None,
         );
-        let other = Provider::with_id(
+        current.meta = Some(ProviderMeta {
+            codex_model_menu_favorite: Some(true),
+            ..Default::default()
+        });
+        let mut other = Provider::with_id(
             "other-provider".to_string(),
             "Other Relay".to_string(),
             json!({
                 "modelCatalog": {
-                    "models": [{ "model": "other-model" }]
+                    "models": [{ "model": "other-model", "menuOrder": 0 }]
                 }
             }),
             None,
         );
+        other.meta = Some(ProviderMeta {
+            codex_model_menu_favorite: Some(true),
+            ..Default::default()
+        });
         db.save_provider("codex", &other)
             .expect("save other provider");
         db.save_provider("codex", &current)
@@ -3518,15 +3482,13 @@ mod tests {
             .expect("attach routed catalog");
 
         let models = ProxyService::routed_catalog_models(&live["modelCatalog"]);
-        assert_eq!(models[0]["model"], "current-provider/current-model");
-        assert!(models
-            .iter()
-            .any(|model| model["model"] == "other-provider/other-model"));
+        assert_eq!(models[0]["model"], "other-model");
+        assert!(models.iter().any(|model| model["model"] == "current-model"));
         let config: toml::Value =
             toml::from_str(live["config"].as_str().unwrap()).expect("parse routed Codex config");
         assert_eq!(
             config.get("model").and_then(toml::Value::as_str),
-            Some("current-provider/current-model")
+            Some("other-model")
         );
     }
 

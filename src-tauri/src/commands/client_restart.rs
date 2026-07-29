@@ -199,15 +199,12 @@ fn restart_windows(app: &str, target: &ClientTarget) -> Result<ClientRestartResu
     thread::sleep(Duration::from_millis(900));
 
     let mut launched = false;
-    let mut launch_note = String::new();
-
     // 1) MSIX AppsFolder (most reliable for Store/MSIX apps like Codex)
     if let Some(ref aumid) = msix_launch {
         let arg = format!("shell:AppsFolder\\{aumid}");
         match silent_cmd("explorer.exe").arg(&arg).spawn() {
             Ok(_) => {
                 launched = true;
-                launch_note = format!("via {arg}");
                 log::info!("[client-restart] launched {arg}");
             }
             Err(e) => {
@@ -222,7 +219,6 @@ fn restart_windows(app: &str, target: &ClientTarget) -> Result<ClientRestartResu
             match silent_cmd(&path).spawn() {
                 Ok(_) => {
                     launched = true;
-                    launch_note = format!("via {}", path.display());
                     log::info!("[client-restart] launched {}", path.display());
                 }
                 Err(e) => {
@@ -243,7 +239,6 @@ fn restart_windows(app: &str, target: &ClientTarget) -> Result<ClientRestartResu
                 match silent_cmd(&expanded).spawn() {
                     Ok(_) => {
                         launched = true;
-                        launch_note = format!("via {}", expanded.display());
                         log::info!("[client-restart] launched {}", expanded.display());
                         break;
                     }
@@ -265,7 +260,6 @@ fn restart_windows(app: &str, target: &ClientTarget) -> Result<ClientRestartResu
                 let arg = format!("shell:AppsFolder\\{aumid}");
                 if silent_cmd("explorer.exe").arg(&arg).spawn().is_ok() {
                     launched = true;
-                    launch_note = format!("via {arg}");
                     log::info!("[client-restart] launched {arg} (prefix scan)");
                     break;
                 }
@@ -274,7 +268,7 @@ fn restart_windows(app: &str, target: &ClientTarget) -> Result<ClientRestartResu
     }
 
     let message = if launched {
-        format!("已自动重启 {} ({launch_note})", target.label)
+        format!("已自动重启 {}", target.label)
     } else {
         format!("已结束 {} 进程，但未能自动启动，请手动打开", target.label)
     };

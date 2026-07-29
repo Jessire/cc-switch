@@ -192,7 +192,53 @@ impl RequestContext {
             }
         }
 
-        if !routed && app_type_str != "gemini" {
+        if !routed && app_type_str == "codex" {
+            let all = state
+                .db
+                .get_all_providers(app_type_str)
+                .map_err(|e| ProxyError::DatabaseError(e.to_string()))?;
+            let all_providers = all.values().cloned().collect::<Vec<_>>();
+
+            if let Some(entry) = crate::proxy::providers::resolve_codex_model_menu_route(
+                &all_providers,
+                &request_model,
+            ) {
+                log::info!(
+                    "[{}] Codex menu routing: {} -> provider {} model {}",
+                    tag,
+                    request_model,
+                    entry.provider.name,
+                    entry.actual_model
+                );
+                current_provider_id = entry.provider.id.clone();
+                provider = entry.provider;
+                providers = vec![provider.clone()];
+                forced_model = Some(entry.actual_model.clone());
+                request_model = entry.actual_model;
+            } else if let Some((prefix, stripped)) =
+                crate::proxy::session_router::parse_provider_prefix(&request_model)
+            {
+                let Some(p) = all.values().find(|p| {
+                    p.name.eq_ignore_ascii_case(prefix) || p.id.eq_ignore_ascii_case(prefix)
+                }) else {
+                    return Err(ProxyError::InvalidRequest(format!(
+                        "Codex 模型路由已失效: 找不到供应商 '{prefix}'"
+                    )));
+                };
+                log::info!(
+                    "[{}] Legacy provider prefix routing: {} -> provider {} model {}",
+                    tag,
+                    request_model,
+                    p.name,
+                    stripped
+                );
+                current_provider_id = p.id.clone();
+                provider = p.clone();
+                providers = vec![provider.clone()];
+                forced_model = Some(stripped.to_string());
+                request_model = stripped.to_string();
+            }
+        } else if !routed && app_type_str != "gemini" {
             if let Some((prefix, stripped)) =
                 crate::proxy::session_router::parse_provider_prefix(&request_model)
             {
@@ -213,7 +259,6 @@ impl RequestContext {
                         forced_model = Some(stripped.to_string());
                         request_model = stripped.to_string();
                     }
-                    // 未匹配任何 provider: 静默回落，原样转发
                 }
             }
         }

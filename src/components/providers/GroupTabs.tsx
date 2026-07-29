@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   DndContext,
@@ -58,6 +58,7 @@ interface GroupTabsProps {
   onReorderGroups: (orderedIds: ActiveGroupId[]) => void;
   onToggleSelectionMode: () => void;
   onCreateProvider?: () => void;
+  extraAction?: ReactNode;
 }
 
 type EditingState =
@@ -197,6 +198,7 @@ export function GroupTabs({
   onReorderGroups,
   onToggleSelectionMode,
   onCreateProvider,
+  extraAction,
 }: GroupTabsProps) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState<EditingState>(null);
@@ -334,6 +336,7 @@ export function GroupTabs({
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 border-l border-border/70 pl-2">
+          {extraAction}
           <Button
             variant={selectionMode ? "default" : "outline"}
             size="sm"

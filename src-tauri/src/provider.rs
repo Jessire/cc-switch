@@ -407,6 +407,12 @@ pub struct ProviderMeta {
         skip_serializing_if = "Option::is_none"
     )]
     pub common_config_enabled: Option<bool>,
+    /// Whether this Codex provider contributes enabled models to the Desktop menu.
+    #[serde(
+        rename = "codexModelMenuFavorite",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub codex_model_menu_favorite: Option<bool>,
     /// Claude Desktop 3P 写入模式：direct（直连）或 proxy（预留）
     #[serde(rename = "claudeDesktopMode", skip_serializing_if = "Option::is_none")]
     pub claude_desktop_mode: Option<ClaudeDesktopMode>,

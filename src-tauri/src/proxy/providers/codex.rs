@@ -10,7 +10,8 @@ use crate::provider::{CodexChatReasoningConfig, Provider};
 use crate::proxy::error::ProxyError;
 use regex::Regex;
 use serde_json::Value as JsonValue;
-use std::collections::HashSet;
+use std::cmp::Ordering;
+use std::collections::{HashMap, HashSet};
 use std::sync::LazyLock;
 use toml::Value as TomlValue;
 
@@ -274,6 +275,190 @@ pub fn codex_provider_upstream_model(provider: &Provider) -> Option<String> {
                         .or_else(|| extract_codex_model_from_toml(config))
                 })
         })
+}
+
+#[derive(Debug, Clone)]
+pub struct CodexModelMenuEntry {
+    pub provider: Provider,
+    pub source: JsonValue,
+    pub actual_model: String,
+    pub routed_model: String,
+    pub display_name: String,
+    pub tool_profile: crate::codex_config::CodexCatalogToolProfile,
+}
+
+#[derive(Debug)]
+struct CodexModelMenuCandidate {
+    provider: Provider,
+    source: JsonValue,
+    actual_model: String,
+    display_name: String,
+    menu_order: Option<u64>,
+    fallback_order: usize,
+    is_native_default: bool,
+    tool_profile: crate::codex_config::CodexCatalogToolProfile,
+}
+
+fn compare_codex_menu_candidates(
+    left: &CodexModelMenuCandidate,
+    right: &CodexModelMenuCandidate,
+) -> Ordering {
+    match (left.menu_order, right.menu_order) {
+        // Newly enabled rows do not have a global order yet and belong at the front.
+        (None, Some(_)) => Ordering::Less,
+        (Some(_), None) => Ordering::Greater,
+        (Some(left_order), Some(right_order)) => left_order
+            .cmp(&right_order)
+            .then_with(|| left.fallback_order.cmp(&right.fallback_order)),
+        (None, None) => left.fallback_order.cmp(&right.fallback_order),
+    }
+}
+
+/// Build the Codex Desktop menu SSOT shared by catalog projection and request routing.
+/// Only favorited providers and enabled model rows participate.
+pub fn codex_model_menu_entries(providers: &[Provider]) -> Vec<CodexModelMenuEntry> {
+    let mut providers = providers.to_vec();
+    providers.sort_by(|left, right| {
+        left.sort_index
+            .unwrap_or(usize::MAX)
+            .cmp(&right.sort_index.unwrap_or(usize::MAX))
+            .then_with(|| {
+                left.created_at
+                    .unwrap_or(i64::MAX)
+                    .cmp(&right.created_at.unwrap_or(i64::MAX))
+            })
+            .then_with(|| left.name.cmp(&right.name))
+    });
+
+    let mut candidates = Vec::new();
+    let mut fallback_order = 0usize;
+    for provider in providers {
+        let is_favorite = provider
+            .meta
+            .as_ref()
+            .and_then(|meta| meta.codex_model_menu_favorite)
+            .unwrap_or(false);
+        if !is_favorite || provider.id.contains('/') {
+            continue;
+        }
+
+        let Some(rows) = provider
+            .settings_config
+            .get("modelCatalog")
+            .and_then(|catalog| catalog.get("models"))
+            .and_then(JsonValue::as_array)
+        else {
+            continue;
+        };
+
+        for row in rows {
+            let Some(actual_model) = row
+                .get("model")
+                .and_then(JsonValue::as_str)
+                .map(str::trim)
+                .filter(|model| !model.is_empty())
+            else {
+                continue;
+            };
+            if row.get("enabled").and_then(JsonValue::as_bool) == Some(false) {
+                continue;
+            }
+
+            let display_name = row
+                .get("displayName")
+                .or_else(|| row.get("display_name"))
+                .and_then(JsonValue::as_str)
+                .map(str::trim)
+                .filter(|name| !name.is_empty())
+                .unwrap_or(actual_model)
+                .to_string();
+            let menu_order = row
+                .get("menuOrder")
+                .or_else(|| row.get("menu_order"))
+                .and_then(JsonValue::as_u64);
+            let is_native_default = row
+                .get("isNativeDefault")
+                .or_else(|| row.get("is_native_default"))
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(false);
+            let tool_profile = resolve_codex_catalog_tool_profile(&provider);
+
+            candidates.push(CodexModelMenuCandidate {
+                provider: provider.clone(),
+                source: row.clone(),
+                actual_model: actual_model.to_string(),
+                display_name,
+                menu_order,
+                fallback_order,
+                is_native_default,
+                tool_profile,
+            });
+            fallback_order += 1;
+        }
+    }
+
+    candidates.sort_by(compare_codex_menu_candidates);
+
+    let mut grouped_indexes: HashMap<String, Vec<usize>> = HashMap::new();
+    for (index, candidate) in candidates.iter().enumerate() {
+        grouped_indexes
+            .entry(candidate.actual_model.clone())
+            .or_default()
+            .push(index);
+    }
+
+    let mut default_indexes = HashSet::new();
+    for indexes in grouped_indexes.values() {
+        let default_index = indexes
+            .iter()
+            .copied()
+            .find(|index| candidates[*index].is_native_default)
+            .unwrap_or(indexes[0]);
+        default_indexes.insert(default_index);
+    }
+
+    let mut seen_routes = HashSet::new();
+    candidates
+        .into_iter()
+        .enumerate()
+        .filter_map(|(index, candidate)| {
+            let duplicate_count = grouped_indexes
+                .get(&candidate.actual_model)
+                .map_or(0, Vec::len);
+            let is_default = default_indexes.contains(&index);
+            let routed_model = if is_default {
+                candidate.actual_model.clone()
+            } else {
+                format!("{}/{}", candidate.provider.id, candidate.actual_model)
+            };
+            if !seen_routes.insert(routed_model.clone()) {
+                return None;
+            }
+            let display_name = if duplicate_count > 1 && !is_default {
+                format!("{} · {}", candidate.display_name, candidate.provider.name)
+            } else {
+                candidate.display_name
+            };
+
+            Some(CodexModelMenuEntry {
+                provider: candidate.provider,
+                source: candidate.source,
+                actual_model: candidate.actual_model,
+                routed_model,
+                display_name,
+                tool_profile: candidate.tool_profile,
+            })
+        })
+        .collect()
+}
+
+pub fn resolve_codex_model_menu_route(
+    providers: &[Provider],
+    requested_model: &str,
+) -> Option<CodexModelMenuEntry> {
+    codex_model_menu_entries(providers)
+        .into_iter()
+        .find(|entry| entry.routed_model == requested_model)
 }
 
 fn codex_provider_catalog_model_ids(provider: &Provider) -> HashSet<String> {
@@ -1607,5 +1792,62 @@ wire_api = "responses"
             "config": "base_url = \"https://api.x.ai/v1\"\nwire_api = \"responses\""
         }));
         assert!(!provider_needs_responses_namespace_flatten(&plain));
+    }
+
+    fn menu_provider(id: &str, name: &str, models: JsonValue, favorite: bool) -> Provider {
+        let mut provider = Provider::with_id(
+            id.to_string(),
+            name.to_string(),
+            json!({ "modelCatalog": { "models": models } }),
+            None,
+        );
+        provider.meta = Some(crate::provider::ProviderMeta {
+            codex_model_menu_favorite: Some(favorite),
+            ..Default::default()
+        });
+        provider
+    }
+
+    #[test]
+    fn codex_model_menu_filters_and_resolves_duplicate_routes() {
+        let first = menu_provider(
+            "first",
+            "First Relay",
+            json!([
+                { "model": "gpt-5.6", "displayName": "GPT 5.6", "menuOrder": 1 },
+                { "model": "hidden", "enabled": false, "menuOrder": 0 }
+            ]),
+            true,
+        );
+        let second = menu_provider(
+            "second",
+            "Second Relay",
+            json!([{
+                "model": "gpt-5.6",
+                "displayName": "GPT 5.6",
+                "menuOrder": 2,
+                "isNativeDefault": true
+            }]),
+            true,
+        );
+        let ignored = menu_provider(
+            "ignored",
+            "Ignored Relay",
+            json!([{ "model": "ignored-model" }]),
+            false,
+        );
+
+        let entries = codex_model_menu_entries(&[first.clone(), second.clone(), ignored]);
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].routed_model, "first/gpt-5.6");
+        assert_eq!(entries[0].display_name, "GPT 5.6 · First Relay");
+        assert_eq!(entries[1].routed_model, "gpt-5.6");
+        assert_eq!(entries[1].provider.id, "second");
+        assert!(entries.iter().all(|entry| entry.actual_model != "hidden"));
+
+        let resolved = resolve_codex_model_menu_route(&[first, second], "gpt-5.6")
+            .expect("resolve native default route");
+        assert_eq!(resolved.provider.id, "second");
+        assert_eq!(resolved.actual_model, "gpt-5.6");
     }
 }

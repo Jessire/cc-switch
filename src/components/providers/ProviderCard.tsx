@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { GripVertical, ChevronDown, ChevronUp } from "lucide-react";
+import { GripVertical, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type {
   DraggableAttributes,
@@ -78,6 +78,8 @@ interface ProviderCardProps {
   onAssignToGroup?: (groupId: string) => void;
   onRemoveFromGroup?: (groupId: string) => void;
   onCreateGroupAndAssign?: (name: string) => void;
+  onToggleCodexFavorite?: (provider: Provider, favorite: boolean) => void;
+  isCodexFavoritePending?: boolean;
 }
 
 /** 判断是否为官方供应商（无自定义 base URL / API key，直连官方 API） */
@@ -185,6 +187,8 @@ export function ProviderCard({
   onAssignToGroup,
   onRemoveFromGroup,
   onCreateGroupAndAssign,
+  onToggleCodexFavorite,
+  isCodexFavoritePending = false,
 }: ProviderCardProps) {
   const { t } = useTranslation();
 
@@ -370,6 +374,39 @@ export function ProviderCard({
               <h3 className="text-sm font-semibold leading-none">
                 {provider.name}
               </h3>
+
+              {appId === "codex" && onToggleCodexFavorite && (
+                <button
+                  type="button"
+                  className={cn(
+                    "inline-flex h-6 w-6 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-amber-500",
+                    provider.meta?.codexModelMenuFavorite === true &&
+                      "text-amber-500",
+                  )}
+                  onClick={() =>
+                    onToggleCodexFavorite(
+                      provider,
+                      provider.meta?.codexModelMenuFavorite !== true,
+                    )
+                  }
+                  disabled={isCodexFavoritePending}
+                  title={t("codexConfig.favoriteProvider", {
+                    defaultValue: "加入 Codex 模型菜单",
+                  })}
+                  aria-label={t("codexConfig.favoriteProvider", {
+                    defaultValue: "加入 Codex 模型菜单",
+                  })}
+                >
+                  <Star
+                    className="h-4 w-4"
+                    fill={
+                      provider.meta?.codexModelMenuFavorite === true
+                        ? "currentColor"
+                        : "none"
+                    }
+                  />
+                </button>
+              )}
 
               {membershipGroups.map((group) => (
                 <span

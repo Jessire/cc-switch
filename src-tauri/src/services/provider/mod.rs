@@ -1139,6 +1139,7 @@ requires_openai_auth = true
         );
         original.meta = Some(ProviderMeta {
             api_format: Some("openai_responses".into()),
+            codex_model_menu_favorite: Some(true),
             ..Default::default()
         });
         db.save_provider("codex", &original).expect("save provider");
@@ -2363,6 +2364,26 @@ impl ProviderService {
                     log::warn!(
                         "保存供应商后重投影 {app_type:?} MCP 失败（将在下次同步时自愈）: {err}"
                     );
+                }
+            }
+        } else if matches!(app_type, AppType::Codex)
+            && state
+                .proxy_service
+                .detect_takeover_in_live_config_for_app(&app_type)
+            && futures::executor::block_on(state.proxy_service.is_running())
+        {
+            // 收藏、勾选和全局菜单顺序可从任意供应商编辑。Codex Live
+            // 始终以当前供应商为认证基底, 但目录要重新读取全部供应商投影。
+            if let Some(current_id) = effective_current.as_deref() {
+                if let Some(current_provider) =
+                    state.db.get_provider_by_id(current_id, app_type.as_str())?
+                {
+                    futures::executor::block_on(
+                        state
+                            .proxy_service
+                            .sync_codex_live_from_provider_while_proxy_active(&current_provider),
+                    )
+                    .map_err(|e| AppError::Message(format!("同步 Codex Live 配置失败: {e}")))?;
                 }
             }
         }

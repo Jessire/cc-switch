@@ -13,7 +13,7 @@ import {
   type CSSProperties,
 } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Search, X } from "lucide-react";
+import { AlertTriangle, ListTree, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -56,6 +56,7 @@ import {
 } from "@/hooks/useProviderGroups";
 import { GroupTabs } from "@/components/providers/GroupTabs";
 import { BulkAssignBar } from "@/components/providers/BulkAssignBar";
+import { CodexModelMenuDialog } from "@/components/providers/CodexModelMenuDialog";
 
 interface ProviderListProps {
   providers: Record<string, Provider>;
@@ -121,6 +122,7 @@ export function ProviderList({
   } = useProviderGroups(appId);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isCodexModelMenuOpen, setIsCodexModelMenuOpen] = useState(false);
   const appIdRef = useRef(appId);
   // Only reset bulk selection when the app tab changes, not on first mount.
   useEffect(() => {
@@ -322,6 +324,41 @@ export function ProviderList({
 
   // Import current live config as default provider
   const queryClient = useQueryClient();
+  const favoriteMutation = useMutation({
+    mutationFn: async ({
+      provider,
+      favorite,
+    }: {
+      provider: Provider;
+      favorite: boolean;
+    }) => {
+      const updated: Provider = {
+        ...provider,
+        meta: {
+          ...(provider.meta ?? {}),
+          codexModelMenuFavorite: favorite,
+        },
+      };
+      await providersApi.update(updated, "codex");
+      return updated;
+    },
+    onSuccess: async (provider) => {
+      await queryClient.invalidateQueries({ queryKey: ["providers", "codex"] });
+      toast.success(
+        provider.meta?.codexModelMenuFavorite
+          ? t("codexConfig.providerFavorited", {
+              defaultValue: "已加入 Codex 模型菜单",
+            })
+          : t("codexConfig.providerUnfavorited", {
+              defaultValue: "已从 Codex 模型菜单隐藏",
+            }),
+      );
+    },
+    onError: (error: unknown) => {
+      toast.error(extractErrorMessage(error));
+    },
+  });
+
   const importMutation = useMutation({
     mutationFn: async (): Promise<boolean> => {
       if (appId === "opencode") {
@@ -583,6 +620,13 @@ export function ProviderList({
                   const id = createProviderGroup(name);
                   if (id) assignProvidersToGroup(id, [provider.id]);
                 }}
+                onToggleCodexFavorite={(item, favorite) =>
+                  favoriteMutation.mutate({ provider: item, favorite })
+                }
+                isCodexFavoritePending={
+                  favoriteMutation.isPending &&
+                  favoriteMutation.variables?.provider.id === provider.id
+                }
               />
             );
           })}
@@ -620,6 +664,28 @@ export function ProviderList({
         onReorderGroups={reorderGroups}
         onToggleSelectionMode={toggleSelectionMode}
         onCreateProvider={onCreate}
+        extraAction={
+          appId === "codex" ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1 rounded-lg px-2.5 text-xs"
+              onClick={() => setIsCodexModelMenuOpen(true)}
+            >
+              <ListTree className="h-3.5 w-3.5" />
+              {t("codexConfig.modelMenuButton", {
+                defaultValue: "模型菜单",
+              })}
+            </Button>
+          ) : undefined
+        }
+      />
+      <CodexModelMenuDialog
+        open={isCodexModelMenuOpen}
+        onOpenChange={setIsCodexModelMenuOpen}
+        providers={providers}
+        currentProviderId={currentProviderId}
       />
       <AnimatePresence>
         {isSearchOpen && (
@@ -752,6 +818,8 @@ interface SortableProviderCardProps {
   onAssignToGroup?: (groupId: string) => void;
   onRemoveFromGroup?: (groupId: string) => void;
   onCreateGroupAndAssign?: (name: string) => void;
+  onToggleCodexFavorite?: (provider: Provider, favorite: boolean) => void;
+  isCodexFavoritePending?: boolean;
 }
 
 function SortableProviderCard({
@@ -790,6 +858,8 @@ function SortableProviderCard({
   onAssignToGroup,
   onRemoveFromGroup,
   onCreateGroupAndAssign,
+  onToggleCodexFavorite,
+  isCodexFavoritePending,
 }: SortableProviderCardProps) {
   const {
     setNodeRef,
@@ -851,6 +921,8 @@ function SortableProviderCard({
         onAssignToGroup={onAssignToGroup}
         onRemoveFromGroup={onRemoveFromGroup}
         onCreateGroupAndAssign={onCreateGroupAndAssign}
+        onToggleCodexFavorite={onToggleCodexFavorite}
+        isCodexFavoritePending={isCodexFavoritePending}
       />
     </div>
   );

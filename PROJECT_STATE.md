@@ -47,16 +47,25 @@
 - 已取消 Codex 独立默认模型输入区; 菜单第一项写入顶层 `model`, 空菜单保留原值.
 - 已保留 Grok Build 的独立默认模型行为.
 - 已实现紧凑三列模型区和紧凑供应商编辑布局.
+- 已实现供应商收藏与模型勾选共同决定 Codex Desktop 菜单内容; 取消勾选只隐藏, 删除按钮才删除模型记录.
+- 已实现独立的 `Codex 模型菜单`管理器, 支持全局排序、菜单显示名、启停及同名模型默认供应商.
+- 同名模型的默认供应商使用裸模型 ID, 其他供应商使用 `provider-id/model`; 路由与菜单投影共用同一计算规则.
+- 首次升级只自动收藏当前 Codex 供应商; 新收藏供应商的模型默认排在已有顺序之前.
 - 主要提交: `6ff0c70`, `97f0e31`, `5e532a6`, `3c26e0b`, `29576ec`, `dc53d80`.
 
 ### Codex 会话模型路由
 
-- 已实现 Codex Desktop 模型菜单驱动的对话级供应商路由: 菜单显示 `供应商 - 模型`,每个对话可独立选择.
-- 菜单模型 ID 使用 `provider-id/actual-model`;代理按前缀选择供应商并在上游请求前剥离前缀,不切换 CC Switch 全局当前供应商.
-- 已支持 OpenAI Chat,原生 Responses 和 Anthropic 供应商混合出现在同一模型目录,每个菜单项使用自己的工具协议模板.
-- 当前供应商的模型排在路由目录首位并写为默认模型;其他 Codex 供应商继续追加,内置模型保持共存.
-- 原有 `/model` 会话路由和 provider 前缀路由继续保留;Codex Responses 链路已覆盖.
+- 已实现 Codex Desktop 模型菜单驱动的对话级供应商路由, 每个对话可独立选择供应商和模型.
+- 菜单路由按收藏、模型启用状态、全局顺序及同名默认供应商生成; 代理在上游请求前恢复真实模型 ID, 不切换 CC Switch 全局当前供应商.
+- 已支持 OpenAI Chat、原生 Responses 和 Anthropic 供应商混合出现在同一模型目录, 每个菜单项使用自己的工具协议模板.
+- 原有 `/model` 会话路由和 `provider/model` 前缀路由继续保留; 已删除供应商的旧路由返回明确错误, 不静默回落.
 - 主要提交: `773dfd8`, `80db8fa`;本次模型菜单路由提交以 Git 实时状态为准.
+
+### 主界面布局
+
+- 已将自动重启、代理接管和故障转移三个开关作为一组放到顶部中间偏左.
+- 已将应用切换与其后的四个工具图标作为一组移到三个开关右侧, 两组内部顺序保持不变.
+- 已移除自动重启成功提示中的 `(via ...)` 来源括号.
 
 ### 通用配置
 
@@ -74,25 +83,28 @@
 
 ## 当前运行与产物
 
-- 2026-07-29 本次检查时, 正在运行的进程为 `cc-switch`, PID `15904`.
-- 运行路径: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`.
-- 进程启动时间: 2026-07-29 09:30:01, 早于最新功能提交 `670408d`.
-- 当前运行实例不包含本次 Codex Desktop 对话级供应商菜单路由,不得用它验收新功能.
-- 已在独立 Cargo target 中完成 Windows x64 Release 构建,未覆盖或结束当前运行实例.
+- 2026-07-29 本次检查时, 正在运行的 CC Switch 为 `CC-Switch-Custom-New.exe`, PID `21228`.
+- 运行路径: `D:\文件\Agenc Cli\cc-switch\CC-Switch-Custom-New.exe`; 该实例不包含本次收藏与模型菜单管理功能.
+- 正在运行的 Codex Desktop 为 `codex.exe`, PID `7660`; 本次构建和测试均未结束或重启它.
+- 已完成 Windows x64 Release 构建, 未覆盖或结束当前运行实例.
 - 本地旁路交付文件: `D:\文件\Agenc Cli\cc-switch\CC-Switch-Custom-New.exe`.
 - 交付版本 `3.18.0`,大小 `32,487,424` bytes (`30.98 MiB`),PE Machine `0x8664` (`x64`).
 - SHA256: `F4438C1F1A55A6B3CD6FC1B7D6AA05EAEEE3DBA01A8E99EB5C640C10E01058E5`.
+- 本次新交付文件: `D:\文件\Agenc Cli\cc-switch\CC-Switch-Custom-New2.exe`.
+- 新交付版本 `3.18.0`, 大小 `32,527,360` bytes (`31.02 MiB`), PE Machine `0x8664` (`x64`).
+- 新交付 SHA256: `B42C8233D1E342C27EBC1D3CE225FBAFD3D0863546631BAE98AC23CF21B4AB86`.
 - 进程, 文件路径, 版本和哈希均为易变状态; 涉及运行或替换 EXE 前必须重新检查.
 
 ## 待办与待验证
 
 ### 下一次功能构建必须完成
 
-- 在用户允许切换版本后关闭旧 CC Switch,启动 `CC-Switch-Custom-New.exe`,再重启 Codex Desktop 读取新模型目录.
+- 在用户允许切换版本后关闭旧 CC Switch, 启动 `CC-Switch-Custom-New2.exe`, 再重启 Codex Desktop 读取新模型目录.
+- 原生 GUI 验证顶部两组控件位置、供应商名称右侧收藏按钮、`Codex 模型菜单`管理器、编辑页取消勾选与删除的差异.
 - 在至少两个 Codex Desktop 对话中分别选择不同的 `供应商 - 模型`,发起真实请求并核对代理日志中的供应商和剥离后的上游模型.
 - 验证新增统一供应商默认勾选通用配置.
 - 验证显式关闭通用配置后再次编辑或重启仍保持关闭.
-- 原生 GUI 验证未在本次强制执行,原因是旧 CC Switch 单实例仍运行,结束它会违反不中断当前使用的约束.
+- `cua-driver` 后台启动 New2 的探针返回既有 PID `21228`, 证明单实例锁阻止并行运行; 未将旧实例截图误作新版本验收.
 
 ### 需要保持的回归项
 
@@ -103,10 +115,13 @@
 
 ### 本次验证记录
 
-- `cargo test --manifest-path src-tauri/Cargo.toml codex_routed -- --nocapture`: 3 项通过.
-- `cargo test --manifest-path src-tauri/Cargo.toml codex_model_catalog -- --nocapture`: 3 项通过.
+- `cargo test --manifest-path src-tauri/Cargo.toml codex_ -- --nocapture`: 主测试 478 项通过, 其他匹配的集成测试全部通过.
 - `cargo test --manifest-path src-tauri/Cargo.toml session_router::tests -- --nocapture`: 6 项通过.
-- `pnpm tauri build --no-bundle`: 独立 `CARGO_TARGET_DIR` 下 Windows Release 构建通过;renderer 共转换 3311 个模块.
+- `pnpm test:unit`: 前端全量测试通过; `tests/integration/App.test.tsx` 4 项单独复验通过.
+- `pnpm typecheck`, `pnpm format:check`, `cargo fmt -- --check`, `git diff --check`: 全部通过.
+- `pnpm build:renderer`: 生产构建通过, 共转换 3312 个模块.
+- `cargo test --quiet`: 业务测试全部通过; `skill_sync` 有 1 项因当前 Windows 无创建符号链接权限报 `1314`, 其后互斥锁污染项单独重跑通过.
+- `pnpm tauri build --no-bundle`: Windows x64 Release 构建通过, 新产物已旁路复制并核对 SHA256.
 
 ## 当前工作方式
 

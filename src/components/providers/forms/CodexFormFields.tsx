@@ -42,6 +42,7 @@ import {
   Loader2,
   Plus,
   Search,
+  Trash2,
 } from "lucide-react";
 import EndpointSpeedTest from "./EndpointSpeedTest";
 import { ApiKeySection, EndpointField, ModelDropdown } from "./shared";
@@ -145,6 +146,11 @@ function createCatalogRow(seed?: Partial<CodexCatalogModel>): CodexCatalogRow {
     model: seed?.model ?? "",
     displayName: seed?.displayName ?? "",
     contextWindow: seed?.contextWindow ?? "",
+    ...(seed?.enabled === false ? { enabled: false } : {}),
+    ...(typeof seed?.menuOrder === "number"
+      ? { menuOrder: seed.menuOrder }
+      : {}),
+    ...(seed?.isNativeDefault === true ? { isNativeDefault: true } : {}),
     // Carry native-profile overrides verbatim (not user-editable in the row UI,
     // but must survive load->save so the official catalog fidelity is kept).
     ...(seed?.supportsParallelToolCalls !== undefined
@@ -173,6 +179,9 @@ function catalogRowsMatchModels(
       (row.displayName ?? "") === (incoming.displayName ?? "") &&
       String(row.contextWindow ?? "") ===
         String(incoming.contextWindow ?? "") &&
+      (row.enabled !== false) === (incoming.enabled !== false) &&
+      (row.menuOrder ?? null) === (incoming.menuOrder ?? null) &&
+      (row.isNativeDefault === true) === (incoming.isNativeDefault === true) &&
       (row.supportsParallelToolCalls ?? null) ===
         (incoming.supportsParallelToolCalls ?? null) &&
       (row.baseInstructions ?? "") === (incoming.baseInstructions ?? "") &&
@@ -239,12 +248,12 @@ function SortableCatalogModelRow({
           <GripVertical className="h-4 w-4" />
         </Button>
         <Checkbox
-          checked
-          onCheckedChange={(checked) => {
-            if (checked !== true) onRemove();
-          }}
+          checked={row.enabled !== false}
+          onCheckedChange={(checked) =>
+            onUpdate(index, { enabled: checked === true })
+          }
           aria-label={t("codexConfig.disableModel", {
-            defaultValue: "Remove from Codex menu",
+            defaultValue: "Show in Codex menu",
           })}
         />
         <button
@@ -295,6 +304,18 @@ function SortableCatalogModelRow({
           ) : (
             <ChevronRight className="h-4 w-4" />
           )}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+          onClick={onRemove}
+          title={t("codexConfig.deleteModel", {
+            defaultValue: "Delete model",
+          })}
+        >
+          <Trash2 className="h-4 w-4" />
         </Button>
       </div>
 
@@ -709,7 +730,10 @@ export function CodexFormFields({
   const trimmedDefaultModel = codexModel.trim();
   const isDefaultModelOutsideCatalog =
     !!trimmedDefaultModel &&
-    !catalogRows.some((row) => row.model.trim() === trimmedDefaultModel);
+    !catalogRows.some(
+      (row) =>
+        row.enabled !== false && row.model.trim() === trimmedDefaultModel,
+    );
 
   const handleAddDefaultModelToCatalog = useCallback(() => {
     if (!onCatalogModelsChange || !trimmedDefaultModel) return;
@@ -889,7 +913,8 @@ export function CodexFormFields({
               </span>
               <span className="text-xs tabular-nums text-muted-foreground">
                 {t("codexConfig.selectedModelCount", {
-                  count: catalogRows.length,
+                  count: catalogRows.filter((row) => row.enabled !== false)
+                    .length,
                   defaultValue: "{{count}} selected",
                 })}
               </span>

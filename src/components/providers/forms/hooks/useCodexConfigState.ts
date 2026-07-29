@@ -104,6 +104,19 @@ export function useCodexConfigState({ initialData }: UseCodexConfigStateProps) {
                       typeof item?.context_window === "number"
                     ? item.context_window
                     : "",
+              ...(typeof item?.enabled === "boolean"
+                ? { enabled: item.enabled }
+                : {}),
+              ...(typeof item?.menuOrder === "number"
+                ? { menuOrder: item.menuOrder }
+                : typeof item?.menu_order === "number"
+                  ? { menuOrder: item.menu_order }
+                  : {}),
+              ...(typeof item?.isNativeDefault === "boolean"
+                ? { isNativeDefault: item.isNativeDefault }
+                : typeof item?.is_native_default === "boolean"
+                  ? { isNativeDefault: item.is_native_default }
+                  : {}),
               ...(supportsParallelToolCalls !== undefined
                 ? { supportsParallelToolCalls }
                 : {}),
