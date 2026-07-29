@@ -1,6 +1,16 @@
 use crate::error::AppError;
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
 
+pub const AUTO_START_ARG: &str = "--cc-switch-auto-start";
+
+pub fn is_auto_start_invocation(args: &[String]) -> bool {
+    args.iter().any(|arg| arg == AUTO_START_ARG)
+}
+
+pub fn should_start_hidden(silent_startup: bool, args: &[String]) -> bool {
+    silent_startup && is_auto_start_invocation(args)
+}
+
 /// 获取 macOS 上的 .app bundle 路径
 /// 将 `/path/to/CC Switch.app/Contents/MacOS/CC Switch` 转换为 `/path/to/CC Switch.app`
 #[cfg(target_os = "macos")]
@@ -34,6 +44,7 @@ fn get_auto_launch() -> Result<AutoLaunch, AppError> {
     let auto_launch = AutoLaunchBuilder::new()
         .set_app_name(app_name)
         .set_app_path(&app_path.to_string_lossy())
+        .set_args(&[AUTO_START_ARG])
         .build()
         .map_err(|e| AppError::Message(format!("创建 AutoLaunch 失败: {e}")))?;
 
@@ -72,6 +83,16 @@ pub fn is_auto_launch_enabled() -> Result<bool, AppError> {
 mod tests {
     #[allow(unused_imports)]
     use super::*;
+
+    #[test]
+    fn silent_startup_only_hides_auto_start_invocations() {
+        let manual_args = vec!["cc-switch.exe".to_string()];
+        let auto_args = vec!["cc-switch.exe".to_string(), AUTO_START_ARG.to_string()];
+
+        assert!(!should_start_hidden(true, &manual_args));
+        assert!(!should_start_hidden(false, &auto_args));
+        assert!(should_start_hidden(true, &auto_args));
+    }
 
     #[cfg(target_os = "macos")]
     #[test]

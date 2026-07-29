@@ -324,6 +324,7 @@ pub fn run() {
     // 设置 panic hook，在应用崩溃时记录日志到 <app_config_dir>/crash.log（默认 ~/.cc-switch/crash.log）
     panic_hook::setup_panic_hook();
 
+    let launch_args = std::env::args().collect::<Vec<_>>();
     let mut builder = tauri::Builder::default();
 
     #[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
@@ -415,7 +416,7 @@ pub fn run() {
                 .with_state_flags(window_state_flags())
                 .build(),
         )
-        .setup(|app| {
+        .setup(move |app| {
             let _ = rustls::crypto::ring::default_provider().install_default();
 
             // 预先刷新 Store 覆盖配置，确保后续路径读取正确（日志/数据库等）
@@ -1292,21 +1293,29 @@ pub fn run() {
                 }
             }
 
-            // 静默启动：根据设置决定是否显示主窗口
+            // 开机自启配置升级后补写专用启动参数。只有带该参数的系统自启
+            // 才允许隐藏窗口，用户手动双击运行始终显示主界面。
             let settings = crate::settings::get_settings();
+            if settings.launch_on_startup {
+                if let Err(error) = crate::auto_launch::enable_auto_launch() {
+                    log::warn!("刷新开机自启注册失败: {error}");
+                }
+            }
+            let start_hidden =
+                crate::auto_launch::should_start_hidden(settings.silent_startup, &launch_args);
             if let Some(window) = app.get_webview_window("main") {
                 // 在窗口首次显示前同步装饰状态，避免前端加载后再切换导致标题栏闪烁
                 // 仅 Linux 生效：解决 Wayland 下系统窗口按钮不可用的问题
                 #[cfg(target_os = "linux")]
                 let _ = window.set_decorations(!settings.use_app_window_controls);
-                if settings.silent_startup {
-                    // 静默启动模式：保持窗口隐藏
+                if start_hidden {
+                    // 仅开机自启静默模式保持窗口隐藏
                     let _ = window.hide();
                     #[cfg(target_os = "windows")]
                     let _ = window.set_skip_taskbar(true);
                     #[cfg(target_os = "macos")]
                     tray::apply_tray_policy(app.handle(), false);
-                    log::info!("静默启动模式：主窗口已隐藏");
+                    log::info!("开机静默启动：主窗口已隐藏");
                 } else {
                     // 正常启动模式：显示窗口
                     let _ = window.show();

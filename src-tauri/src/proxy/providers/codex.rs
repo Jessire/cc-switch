@@ -317,6 +317,14 @@ fn compare_codex_menu_candidates(
 /// Build the Codex Desktop menu SSOT shared by catalog projection and request routing.
 /// Only favorited providers and enabled model rows participate.
 pub fn codex_model_menu_entries(providers: &[Provider]) -> Vec<CodexModelMenuEntry> {
+    let official_model_slugs = crate::codex_config::codex_bundled_model_slugs();
+    codex_model_menu_entries_with_official_slugs(providers, &official_model_slugs)
+}
+
+fn codex_model_menu_entries_with_official_slugs(
+    providers: &[Provider],
+    official_model_slugs: &HashSet<String>,
+) -> Vec<CodexModelMenuEntry> {
     let mut providers = providers.to_vec();
     providers.sort_by(|left, right| {
         left.sort_index
@@ -408,7 +416,12 @@ pub fn codex_model_menu_entries(providers: &[Provider]) -> Vec<CodexModelMenuEnt
     }
 
     let mut default_indexes = HashSet::new();
-    for indexes in grouped_indexes.values() {
+    for (actual_model, indexes) in &grouped_indexes {
+        // A bare bundled slug always belongs to Codex's official model. Every
+        // third-party row with the same id stays explicitly namespaced.
+        if official_model_slugs.contains(actual_model) {
+            continue;
+        }
         let default_index = indexes
             .iter()
             .copied()
@@ -434,7 +447,9 @@ pub fn codex_model_menu_entries(providers: &[Provider]) -> Vec<CodexModelMenuEnt
             if !seen_routes.insert(routed_model.clone()) {
                 return None;
             }
-            let display_name = if duplicate_count > 1 && !is_default {
+            let display_name = if !is_default
+                && (duplicate_count > 1 || official_model_slugs.contains(&candidate.actual_model))
+            {
                 format!("{} · {}", candidate.display_name, candidate.provider.name)
             } else {
                 candidate.display_name
@@ -1849,5 +1864,27 @@ wire_api = "responses"
             .expect("resolve native default route");
         assert_eq!(resolved.provider.id, "second");
         assert_eq!(resolved.actual_model, "gpt-5.6");
+    }
+
+    #[test]
+    fn official_model_slug_is_never_claimed_by_third_party_provider() {
+        let relay = menu_provider(
+            "relay",
+            "Relay",
+            json!([{
+                "model": "gpt-5.6",
+                "displayName": "GPT 5.6",
+                "isNativeDefault": true
+            }]),
+            true,
+        );
+        let official = HashSet::from(["gpt-5.6".to_string()]);
+
+        let entries = codex_model_menu_entries_with_official_slugs(&[relay], &official);
+
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].routed_model, "relay/gpt-5.6");
+        assert_eq!(entries[0].display_name, "GPT 5.6 · Relay");
+        assert!(entries.iter().all(|entry| entry.routed_model != "gpt-5.6"));
     }
 }

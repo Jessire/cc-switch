@@ -321,7 +321,7 @@ export function useProviderActions(
         ) {
           try {
             const restartResult = await clientRestartApi.restart(activeApp);
-            autoRestarted = restartResult.killed || restartResult.launched;
+            autoRestarted = restartResult.launched;
             autoRestartMessage = restartResult.message;
           } catch (error) {
             autoRestartMessage =

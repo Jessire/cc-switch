@@ -207,6 +207,7 @@ export function GroupTabs({
     null,
   );
   const inputRef = useRef<HTMLInputElement>(null);
+  const groupScrollRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -240,6 +241,31 @@ export function GroupTabs({
     }
   }, [editing]);
 
+  useEffect(() => {
+    const element = groupScrollRef.current;
+    if (!element) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      if (element.scrollWidth <= element.clientWidth) return;
+      const delta =
+        Math.abs(event.deltaX) > Math.abs(event.deltaY)
+          ? event.deltaX
+          : event.deltaY;
+      if (delta === 0) return;
+      const maxScrollLeft = element.scrollWidth - element.clientWidth;
+      const nextScrollLeft = Math.min(
+        maxScrollLeft,
+        Math.max(0, element.scrollLeft + delta),
+      );
+      if (nextScrollLeft === element.scrollLeft) return;
+      event.preventDefault();
+      element.scrollLeft = nextScrollLeft;
+    };
+
+    element.addEventListener("wheel", handleWheel, { passive: false });
+    return () => element.removeEventListener("wheel", handleWheel);
+  }, []);
+
   const dialogTitle = useMemo(() => {
     if (editing?.mode === "rename") return t("group.renameDialogTitle");
     return t("group.newDialogTitle");
@@ -268,7 +294,10 @@ export function GroupTabs({
   return (
     <>
       <div className="flex items-center gap-2">
-        <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div
+          ref={groupScrollRef}
+          className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           <div className="flex w-max items-center gap-2 pr-1">
             <DndContext
               sensors={sensors}

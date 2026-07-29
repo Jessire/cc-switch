@@ -105,9 +105,11 @@ function buildDraftEntries(
 function SortableMenuModelRow({
   entry,
   onChange,
+  onProviderNameChange,
 }: {
   entry: DraftModelEntry;
   onChange: (patch: Partial<CodexCatalogModel>) => void;
+  onProviderNameChange: (name: string) => void;
 }) {
   const { t } = useTranslation();
   const {
@@ -158,15 +160,17 @@ function SortableMenuModelRow({
           className="h-8"
         />
       </div>
-      <div className="min-w-0">
+      <div className="min-w-0 space-y-0.5">
+        <Input
+          value={entry.providerName}
+          onChange={(event) => onProviderNameChange(event.target.value)}
+          aria-label={t("codexConfig.providerName", {
+            defaultValue: "供应商名称",
+          })}
+          className="h-8 text-xs"
+        />
         <div
-          className="truncate text-xs font-medium"
-          title={entry.providerName}
-        >
-          {entry.providerName}
-        </div>
-        <div
-          className="truncate text-[11px] text-muted-foreground"
+          className="truncate px-1 text-[11px] text-muted-foreground"
           title={entry.model.model}
         >
           {entry.model.model}
@@ -221,6 +225,16 @@ export function CodexModelMenuDialog({
     );
   };
 
+  const handleProviderNameChange = (providerId: string, name: string) => {
+    setEntries((current) =>
+      current.map((entry) =>
+        entry.providerId === providerId
+          ? { ...entry, providerName: name }
+          : entry,
+      ),
+    );
+  };
+
   const handleDefaultProviderChange = (modelId: string, key: string) => {
     setEntries((current) =>
       current.map((entry) =>
@@ -255,8 +269,11 @@ export function CodexModelMenuDialog({
     try {
       const nextByProvider = new Map<string, Provider>();
       entries.forEach((entry, menuOrder) => {
+        const normalizedProviderName =
+          entry.providerName.trim() || providers[entry.providerId].name;
         const source = nextByProvider.get(entry.providerId) ?? {
           ...providers[entry.providerId],
+          name: normalizedProviderName,
           settingsConfig: {
             ...providers[entry.providerId].settingsConfig,
             modelCatalog: {
@@ -328,7 +345,10 @@ export function CodexModelMenuDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent
+        zIndex="top"
+        className="max-h-[calc(100vh-2rem)] max-w-3xl overflow-hidden"
+      >
         <DialogHeader>
           <DialogTitle>
             {t("codexConfig.modelMenuManager", {
@@ -337,7 +357,7 @@ export function CodexModelMenuDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 space-y-4 px-6 py-4">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
           {duplicateGroups.length > 0 && (
             <section className="space-y-2">
               <div className="text-xs font-semibold text-foreground">
@@ -382,7 +402,7 @@ export function CodexModelMenuDialog({
             </section>
           )}
 
-          <section className="overflow-hidden rounded-md border border-border-default">
+          <section className="min-h-0 overflow-hidden rounded-md border border-border-default">
             <div className="grid grid-cols-[3.5rem_minmax(9rem,1fr)_minmax(8rem,0.8fr)] gap-2 border-b border-border-default bg-muted/30 px-3 py-2 text-[11px] font-medium text-muted-foreground">
               <span />
               <span>
@@ -413,6 +433,9 @@ export function CodexModelMenuDialog({
                         entry={entry}
                         onChange={(patch) =>
                           handleEntryChange(entry.key, patch)
+                        }
+                        onProviderNameChange={(name) =>
+                          handleProviderNameChange(entry.providerId, name)
                         }
                       />
                     ))}

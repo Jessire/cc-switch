@@ -22,7 +22,8 @@
 - 已实现一个供应商属于多个分组.
 - 已实现供应商卡片显示所属分组.
 - 已实现所有分组标签拖动排序, 包括 `全部` 和 `未分组`; `添加分组` 位于最后.
-- 主要提交: `484b204`, `27c7ce0`, `23a34ff`, `042264d`.
+- 分组标签容器支持鼠标垂直滚轮映射为横向滚动; 到达首尾边界时不阻断页面正常滚动.
+- 主要提交: `484b204`, `27c7ce0`, `23a34ff`, `042264d`; 本轮提交以 Git 实时状态为准.
 
 ### 切换与客户端重启
 
@@ -30,15 +31,20 @@
 - 已实现同组供应商切换时跳过重启.
 - 已消除 Windows 自动重启时的 CMD 弹窗.
 - 已实现独立手动重启按钮; 编辑供应商只保存配置, 不附带“保存并重启”.
-- 已实现自动重启和同组跳过的回归测试.
-- 主要提交: `cbdd576`, `74c9b50`, `0ab6b5a`, `075b496`, `12bc160`.
+- Codex Windows 重启只匹配 `ChatGPT.exe`, 不再把 `codex.exe` 子进程当作独立目标.
+- Windows 重启只结束匹配的 UI 主进程 PID, 不使用 `taskkill /T`; 等全部旧实例退出后再启动, 仅检测到新进程时返回 `launched=true`.
+- 前端自动重启只以 `launched=true` 作为成功, 避免客户端退出后未重新启动仍显示成功.
+- 已实现自动重启、同组跳过和 Windows 进程控制回归测试.
+- 主要提交: `cbdd576`, `74c9b50`, `0ab6b5a`, `075b496`, `12bc160`; 本轮提交以 Git 实时状态为准.
 
 ### 托盘和启动
 
 - 已实现托盘左键双击打开主窗口.
 - 已取消左键单击打开主窗口; 右键保留菜单.
 - 已修复定制 Release 构建嵌入前端资源后可直接打开主窗口.
-- 主要提交: `8031ab8`, `6f386df`.
+- “静默启动”已改为“开机静默启动”: 自启注册命令附加 `--cc-switch-auto-start`, 只有自启调用且设置启用时隐藏主窗口; 手动无参数启动始终显示主窗口.
+- 已启用自启时, 设置同步会刷新注册命令, 将旧的无参数注册项迁移为新参数形式.
+- 主要提交: `8031ab8`, `6f386df`; 本轮提交以 Git 实时状态为准.
 
 ### Codex Desktop 模型
 
@@ -49,9 +55,12 @@
 - 已实现紧凑三列模型区和紧凑供应商编辑布局.
 - 已实现供应商收藏与模型勾选共同决定 Codex Desktop 菜单内容; 取消勾选只隐藏, 删除按钮才删除模型记录.
 - 已实现独立的 `Codex 模型菜单`管理器, 支持全局排序、菜单显示名、启停及同名模型默认供应商.
-- 同名模型的默认供应商使用裸模型 ID, 其他供应商使用 `provider-id/model`; 路由与菜单投影共用同一计算规则.
+- Codex 内置 bundled 模型 ID 永远由官方裸 ID 占用; 第三方同名模型固定使用 `provider-id/model-id`, 不再允许第三方覆盖官方模型.
+- 非内置同名模型仍由默认供应商使用裸模型 ID, 其他供应商使用 `provider-id/model-id`; 路由与菜单投影共用同一计算规则.
+- 模型菜单支持直接修改供应商名称, 同一供应商的全部模型行同步更新.
+- 模型菜单对话框使用视口最大高度和内部滚动, 标题无遮挡, Footer 固定在窗口内, 长列表底部不溢出.
 - 首次升级只自动收藏当前 Codex 供应商; 新收藏供应商的模型默认排在已有顺序之前.
-- 主要提交: `6ff0c70`, `97f0e31`, `5e532a6`, `3c26e0b`, `29576ec`, `dc53d80`.
+- 主要提交: `6ff0c70`, `97f0e31`, `5e532a6`, `3c26e0b`, `29576ec`, `dc53d80`, `7cbedfc`; 本轮提交以 Git 实时状态为准.
 
 ### Codex 会话模型路由
 
@@ -59,7 +68,7 @@
 - 菜单路由按收藏、模型启用状态、全局顺序及同名默认供应商生成; 代理在上游请求前恢复真实模型 ID, 不切换 CC Switch 全局当前供应商.
 - 已支持 OpenAI Chat、原生 Responses 和 Anthropic 供应商混合出现在同一模型目录, 每个菜单项使用自己的工具协议模板.
 - 原有 `/model` 会话路由和 `provider/model` 前缀路由继续保留; 已删除供应商的旧路由返回明确错误, 不静默回落.
-- 主要提交: `773dfd8`, `80db8fa`;本次模型菜单路由提交以 Git 实时状态为准.
+- 主要提交: `773dfd8`, `80db8fa`, `9499694`.
 
 ### 主界面布局
 
@@ -83,45 +92,44 @@
 
 ## 当前运行与产物
 
-- 2026-07-29 本次检查时, 正在运行的 CC Switch 为 `CC-Switch-Custom-New.exe`, PID `21228`.
-- 运行路径: `D:\文件\Agenc Cli\cc-switch\CC-Switch-Custom-New.exe`; 该实例不包含本次收藏与模型菜单管理功能.
-- 正在运行的 Codex Desktop 为 `codex.exe`, PID `7660`; 本次构建和测试均未结束或重启它.
-- 已完成 Windows x64 Release 构建, 未覆盖或结束当前运行实例.
-- 本地旁路交付文件: `D:\文件\Agenc Cli\cc-switch\CC-Switch-Custom-New.exe`.
-- 交付版本 `3.18.0`,大小 `32,487,424` bytes (`30.98 MiB`),PE Machine `0x8664` (`x64`).
-- SHA256: `F4438C1F1A55A6B3CD6FC1B7D6AA05EAEEE3DBA01A8E99EB5C640C10E01058E5`.
-- 本次新交付文件: `D:\文件\Agenc Cli\cc-switch\CC-Switch-Custom-New2.exe`.
-- 新交付版本 `3.18.0`, 大小 `32,527,360` bytes (`31.02 MiB`), PE Machine `0x8664` (`x64`).
-- 新交付 SHA256: `B42C8233D1E342C27EBC1D3CE225FBAFD3D0863546631BAE98AC23CF21B4AB86`.
+- 2026-07-29 最终复核时, 正在运行的 CC Switch 为 `CC-Switch.exe`, PID `24076`.
+- 运行路径: `D:\文件\Agenc Cli\cc-switch\CC-Switch.exe`; 本轮构建和 GUI 测试均未结束或覆盖该实例.
+- 正在运行的 Codex Desktop 为 `ChatGPT.exe`, PID `26136`, MSIX 版本 `26.721.4979.0`; 本轮未结束或重启它.
+- 最新旁路交付文件: `D:\文件\Agenc Cli\cc-switch\CC-Switch-Custom-New3.exe`.
+- 交付版本 `3.18.0`, 大小 `32,533,504` bytes (`31.03 MiB`), PE Machine `0x8664` (`x64`).
+- SHA256: `4B2597E4637DA67E52979EA856D3FED5CA5814C6EA072629A9F356D8844979F8`.
+- 构建时间: `2026-07-29 23:33:45`.
+- `CC-Switch.exe` 和较早的 `CC-Switch-Custom-New2.exe` 均保留, 未覆盖或删除.
 - 进程, 文件路径, 版本和哈希均为易变状态; 涉及运行或替换 EXE 前必须重新检查.
 
 ## 待办与待验证
 
-### 下一次功能构建必须完成
+### 真实客户端边界
 
-- 在用户允许切换版本后关闭旧 CC Switch, 启动 `CC-Switch-Custom-New2.exe`, 再重启 Codex Desktop 读取新模型目录.
-- 原生 GUI 验证顶部两组控件位置、供应商名称右侧收藏按钮、`Codex 模型菜单`管理器、编辑页取消勾选与删除的差异.
-- 在至少两个 Codex Desktop 对话中分别选择不同的 `供应商 - 模型`,发起真实请求并核对代理日志中的供应商和剥离后的上游模型.
-- 验证新增统一供应商默认勾选通用配置.
-- 验证显式关闭通用配置后再次编辑或重启仍保持关闭.
-- `cua-driver` 后台启动 New2 的探针返回既有 PID `21228`, 证明单实例锁阻止并行运行; 未将旧实例截图误作新版本验收.
+- Codex 重启实现已通过 Rust 测试和构建验证, 但为保护当前 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启实测.
+- 在用户明确允许切换版本后, 才关闭旧 CC Switch, 启动 `CC-Switch-Custom-New3.exe`, 并验证真实 Codex Desktop 读取新模型目录与重启行为.
+- 对话级供应商路由仍需在至少两个 Codex Desktop 对话中分别选择不同的 `供应商 - 模型`, 发起真实请求并核对代理日志中的供应商和剥离后的上游模型.
+- 新增统一供应商默认启用通用配置、显式关闭后持久保留, 仍需结合真实用户数据做非破坏性复验.
 
 ### 需要保持的回归项
 
 - 网页 deep link 导出: 官方版可导入的链接, 定制版也必须可导入; 当前最新功能周期没有重新记录完整端到端结果.
 - 托盘行为: 左键双击打开, 左键单击不打开, 右键显示菜单, 再次启动不白屏.
-- 对话级供应商路由: 必须验证 Codex Desktop 同一窗口内的不同对话,不能用 Claude Code,多窗口或仅代理单元测试替代.
-- 上游同步: 每次 merge 后重点检查分组, 重启, Codex 模型菜单, 代理路由, 通用配置和四套语言文件.
+- 对话级供应商路由: 必须验证 Codex Desktop 同一窗口内的不同对话, 不能用 Claude Code、多窗口或仅代理单元测试替代.
+- 上游同步: 每次 merge 后重点检查分组、重启、Codex 模型菜单、代理路由、通用配置和四套语言文件.
 
 ### 本次验证记录
 
-- `cargo test --manifest-path src-tauri/Cargo.toml codex_ -- --nocapture`: 主测试 478 项通过, 其他匹配的集成测试全部通过.
-- `cargo test --manifest-path src-tauri/Cargo.toml session_router::tests -- --nocapture`: 6 项通过.
-- `pnpm test:unit`: 前端全量测试通过; `tests/integration/App.test.tsx` 4 项单独复验通过.
-- `pnpm typecheck`, `pnpm format:check`, `cargo fmt -- --check`, `git diff --check`: 全部通过.
-- `pnpm build:renderer`: 生产构建通过, 共转换 3312 个模块.
-- `cargo test --quiet`: 业务测试全部通过; `skill_sync` 有 1 项因当前 Windows 无创建符号链接权限报 `1314`, 其后互斥锁污染项单独重跑通过.
-- `pnpm tauri build --no-bundle`: Windows x64 Release 构建通过, 新产物已旁路复制并核对 SHA256.
+- 定向 Rust 测试: 重启 5 项、开机静默启动 1 项、官方同名模型 1 项全部通过.
+- `pnpm typecheck`, `pnpm format:check`, `pnpm test:unit`, `pnpm build:renderer`: 全部通过.
+- `cargo fmt -- --check`, `git diff --check`: 全部通过.
+- `cargo test --quiet`: 主测试 `2201 passed`, `2 ignored`, `0 failed`; `skill_sync` 唯一环境阻塞为 Windows 缺少符号链接权限, 错误 `1314`, 相关互斥锁测试已单独通过.
+- `pnpm tauri build --no-bundle`: Windows x64 Release 构建通过, New3 已旁路复制并核对版本、架构、大小和 SHA256.
+- 隔离 Release GUI 验证通过: 手动无参数启动显示主窗口; `--cc-switch-auto-start` 且 `silentStartup=true` 时进程运行但仅有 `22x22` 内部消息窗口, 无正常尺寸主窗口.
+- 隔离 Release GUI 验证通过: 修改供应商名称后同供应商 14 行同步更新, 另一供应商 2 行保持不变; 点击取消后未保存测试值.
+- 隔离 Release GUI 验证通过: 模型长列表滚动到最后一项时标题无遮挡, 底部“取消”和“保存”完整固定在窗口内.
+- 隔离 Release GUI 验证通过: 创建 12 个测试分组后, 垂直滚轮可横向滚动到最后分组和“新建分组”, 也可反向返回 `全部/未分组`.
+- GUI 验证截图与状态保存在 `C:\Users\jery3\.codex\tmp\cc-switch-gui-new3`.
 
 ## 当前工作方式
 
@@ -133,9 +141,9 @@
 
 ## 更新检查清单
 
-- [ ] 重新读取 `git status`, 当前分支, HEAD, upstream 和远端差异.
-- [ ] 重新检查正在运行的 CC Switch 路径和版本.
-- [ ] 将完成的待办移入“已实现”, 删除失效状态, 不追加聊天流水账.
-- [ ] 写入最新实际测试, Release 构建和原生 GUI 验证结论.
-- [ ] 不记录 API Key, token, cookie, OAuth 数据或未脱敏配置.
-- [ ] 状态文档与源码一起验证和提交; 不因更新本文件再次触发循环更新.
+- [x] 重新读取 `git status`, 当前分支, HEAD, upstream 和远端差异.
+- [x] 重新检查正在运行的 CC Switch 路径和版本.
+- [x] 将完成的待办移入“已实现”, 删除失效状态, 不追加聊天流水账.
+- [x] 写入最新实际测试, Release 构建和原生 GUI 验证结论.
+- [x] 不记录 API Key, token, cookie, OAuth 数据或未脱敏配置.
+- [x] 状态文档与源码一起验证和提交; 不因更新本文件再次触发循环更新.
