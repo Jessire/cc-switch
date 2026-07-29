@@ -416,10 +416,18 @@ fn codex_model_menu_entries_with_official_slugs(
     }
 
     let mut default_indexes = HashSet::new();
+    let mut omitted_official_duplicates = HashSet::new();
     for (actual_model, indexes) in &grouped_indexes {
-        // A bare bundled slug always belongs to Codex's official model. Every
-        // third-party row with the same id stays explicitly namespaced.
+        // A bare bundled slug always belongs to Codex's official model. The
+        // selected third-party default represents that official row and is
+        // omitted; the remaining relay rows stay explicitly namespaced.
         if official_model_slugs.contains(actual_model) {
+            let omitted_index = indexes
+                .iter()
+                .copied()
+                .find(|index| candidates[*index].is_native_default)
+                .unwrap_or(indexes[0]);
+            omitted_official_duplicates.insert(omitted_index);
             continue;
         }
         let default_index = indexes
@@ -435,6 +443,9 @@ fn codex_model_menu_entries_with_official_slugs(
         .into_iter()
         .enumerate()
         .filter_map(|(index, candidate)| {
+            if omitted_official_duplicates.contains(&index) {
+                return None;
+            }
             let duplicate_count = grouped_indexes
                 .get(&candidate.actual_model)
                 .map_or(0, Vec::len);
@@ -1867,24 +1878,85 @@ wire_api = "responses"
     }
 
     #[test]
-    fn official_model_slug_is_never_claimed_by_third_party_provider() {
-        let relay = menu_provider(
-            "relay",
-            "Relay",
+    fn official_model_slug_omits_selected_default_and_keeps_other_relays_namespaced() {
+        let first = menu_provider(
+            "first",
+            "First Relay",
             json!([{
                 "model": "gpt-5.6",
                 "displayName": "GPT 5.6",
+                "menuOrder": 0
+            }]),
+            true,
+        );
+        let selected = menu_provider(
+            "selected",
+            "Selected Relay",
+            json!([{
+                "model": "gpt-5.6",
+                "displayName": "GPT 5.6",
+                "menuOrder": 1,
                 "isNativeDefault": true
             }]),
             true,
         );
         let official = HashSet::from(["gpt-5.6".to_string()]);
 
-        let entries = codex_model_menu_entries_with_official_slugs(&[relay], &official);
+        let entries = codex_model_menu_entries_with_official_slugs(&[first, selected], &official);
 
         assert_eq!(entries.len(), 1);
-        assert_eq!(entries[0].routed_model, "relay/gpt-5.6");
-        assert_eq!(entries[0].display_name, "GPT 5.6 · Relay");
+        assert_eq!(entries[0].routed_model, "first/gpt-5.6");
+        assert_eq!(entries[0].display_name, "GPT 5.6 · First Relay");
         assert!(entries.iter().all(|entry| entry.routed_model != "gpt-5.6"));
+    }
+
+    #[test]
+    fn official_model_slug_uses_first_enabled_relay_as_omission_fallback() {
+        let first = menu_provider(
+            "first",
+            "First Relay",
+            json!([{ "model": "gpt-5.6", "menuOrder": 0 }]),
+            true,
+        );
+        let second = menu_provider(
+            "second",
+            "Second Relay",
+            json!([{ "model": "gpt-5.6", "menuOrder": 1 }]),
+            true,
+        );
+        let official = HashSet::from(["gpt-5.6".to_string()]);
+
+        let entries = codex_model_menu_entries_with_official_slugs(&[first, second], &official);
+
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].routed_model, "second/gpt-5.6");
+    }
+
+    #[test]
+    fn disabled_duplicate_default_falls_back_to_first_enabled_model() {
+        let first = menu_provider(
+            "first",
+            "First Relay",
+            json!([{ "model": "claude-x", "menuOrder": 0 }]),
+            true,
+        );
+        let disabled = menu_provider(
+            "disabled",
+            "Disabled Relay",
+            json!([{
+                "model": "claude-x",
+                "menuOrder": 1,
+                "enabled": false,
+                "isNativeDefault": true
+            }]),
+            true,
+        );
+
+        let entries =
+            codex_model_menu_entries_with_official_slugs(&[first, disabled], &HashSet::new());
+
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].routed_model, "claude-x");
+        assert_eq!(entries[0].provider.id, "first");
     }
 }

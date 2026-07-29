@@ -119,6 +119,10 @@ export const providersApi = {
     return await invoke("get_claude_desktop_default_routes");
   },
 
+  async getCodexBundledModelSlugs(): Promise<string[]> {
+    return await invoke("get_codex_bundled_model_slugs");
+  },
+
   async updateTrayMenu(): Promise<boolean> {
     return await invoke("update_tray_menu");
   },

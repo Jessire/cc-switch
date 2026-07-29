@@ -75,13 +75,17 @@ export function AppSwitcher({
         const badgeConfig = APP_BADGE_ICON[app];
         const BadgeIcon = badgeConfig?.icon;
         const isActive = activeApp === app;
+        const isIconOnly = app === "codex" || app === "grokbuild";
         return (
           <button
             key={app}
             type="button"
             onClick={() => handleSwitch(app)}
+            title={appDisplayName[app]}
+            aria-label={appDisplayName[app]}
             className={cn(
-              "group inline-flex items-center px-3 h-8 rounded-md text-sm font-medium transition-all duration-200",
+              "group inline-flex items-center h-8 rounded-md text-sm font-medium transition-all duration-200",
+              isIconOnly ? "px-2" : "px-3",
               isActive
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground hover:bg-background/50",
@@ -118,7 +122,7 @@ export function AppSwitcher({
             <span
               className={cn(
                 "transition-all duration-200 whitespace-nowrap overflow-hidden",
-                compact
+                compact || isIconOnly
                   ? "max-w-0 opacity-0 ml-0"
                   : "max-w-[120px] opacity-100 ml-2",
               )}

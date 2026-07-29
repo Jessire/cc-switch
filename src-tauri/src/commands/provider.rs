@@ -831,6 +831,19 @@ pub fn read_live_provider_settings(app: String) -> Result<serde_json::Value, Str
 }
 
 #[tauri::command]
+pub async fn get_codex_bundled_model_slugs() -> Result<Vec<String>, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        let mut slugs = crate::codex_config::codex_bundled_model_slugs()
+            .into_iter()
+            .collect::<Vec<_>>();
+        slugs.sort();
+        slugs
+    })
+    .await
+    .map_err(|e| format!("读取 Codex 内置模型任务失败: {e}"))
+}
+
+#[tauri::command]
 pub async fn test_api_endpoints(
     urls: Vec<String>,
     #[allow(non_snake_case)] timeoutSecs: Option<u64>,

@@ -4,7 +4,7 @@
 
 ## 状态快照
 
-- 更新时间: 2026-07-29, Asia/Shanghai.
+- 更新时间: 2026-07-30, Asia/Shanghai.
 - 工作目录: `D:\文件\Agenc Cli\cc-switch`.
 - 当前主线: `main`.
 - 用户仓库: `fork`, `https://github.com/Jessire/cc-switch.git`.
@@ -54,9 +54,13 @@
 - 已保留 Grok Build 的独立默认模型行为.
 - 已实现紧凑三列模型区和紧凑供应商编辑布局.
 - 已实现供应商收藏与模型勾选共同决定 Codex Desktop 菜单内容; 取消勾选只隐藏, 删除按钮才删除模型记录.
-- 已实现独立的 `Codex 模型菜单`管理器, 支持全局排序、菜单显示名、启停及同名模型默认供应商.
-- Codex 内置 bundled 模型 ID 永远由官方裸 ID 占用; 第三方同名模型固定使用 `provider-id/model-id`, 不再允许第三方覆盖官方模型.
+- 已实现独立的 `Codex 模型菜单`管理器, 按供应商分组显示模型; 支持分组折叠、供应商名称编辑、整组排序、组内模型排序、菜单显示名和启停.
+- 模型顺序按“供应商组顺序 + 组内顺序”生成连续 `menuOrder`; 模型不得跨供应商组拖动.
+- 同名模型默认项使用圆点标记; 默认项停用后自动迁移到最靠前的同名启用项.
+- Codex 内置 bundled 模型 ID 永远由官方裸 ID 占用; 被标记为默认的第三方同名模型从自定义菜单投影中省略, 其他第三方同名模型使用 `provider-id/model-id`.
 - 非内置同名模型仍由默认供应商使用裸模型 ID, 其他供应商使用 `provider-id/model-id`; 路由与菜单投影共用同一计算规则.
+- bundled 模型通过 Codex CLI 的结构化目录读取, 不按 `gpt-*` 名称猜测官方模型.
+- 第三方 GPT 模型目录支持 `low`, `medium`, `high`, `xhigh`, `max`, `ultra` 六档思考强度及 `Fast`; Fast 转发为 `service_tier=priority`.
 - 模型菜单支持直接修改供应商名称, 同一供应商的全部模型行同步更新.
 - 模型菜单对话框使用视口最大高度和内部滚动, 标题无遮挡, Footer 固定在窗口内, 长列表底部不溢出.
 - 首次升级只自动收藏当前 Codex 供应商; 新收藏供应商的模型默认排在已有顺序之前.
@@ -74,6 +78,8 @@
 
 - 已将自动重启、代理接管和故障转移三个开关作为一组放到顶部中间偏左.
 - 已将应用切换与其后的四个工具图标作为一组移到三个开关右侧, 两组内部顺序保持不变.
+- 宽屏下只有 Codex 和 Grok Build 使用纯图标; 其他应用继续显示图标和名称, 紧凑布局规则不变.
+- 供应商卡片改为约 `70px` 高的单行布局; 头像、名称、收藏、分组、状态和蓝色官网链接同排, URL 优先截断, 右侧配额及悬停操作保留.
 - 已移除自动重启成功提示中的 `(via ...)` 来源括号.
 
 ### 通用配置
@@ -92,14 +98,14 @@
 
 ## 当前运行与产物
 
-- 2026-07-29 最终复核时, 正在运行的 CC Switch 为 `CC-Switch.exe`, PID `24076`.
-- 运行路径: `D:\文件\Agenc Cli\cc-switch\CC-Switch.exe`; 本轮构建和 GUI 测试均未结束或覆盖该实例.
-- 正在运行的 Codex Desktop 为 `ChatGPT.exe`, PID `26136`, MSIX 版本 `26.721.4979.0`; 本轮未结束或重启它.
-- 最新旁路交付文件: `D:\文件\Agenc Cli\cc-switch\CC-Switch-Custom-New3.exe`.
-- 交付版本 `3.18.0`, 大小 `32,533,504` bytes (`31.03 MiB`), PE Machine `0x8664` (`x64`).
-- SHA256: `4B2597E4637DA67E52979EA856D3FED5CA5814C6EA072629A9F356D8844979F8`.
-- 构建时间: `2026-07-29 23:33:45`.
-- `CC-Switch.exe` 和较早的 `CC-Switch-Custom-New2.exe` 均保留, 未覆盖或删除.
+- 2026-07-30 最终复核时, 正在运行的 CC Switch 为 `CC-Switch-Custom-New3.exe`, PID `9080`.
+- 运行路径: `D:\文件\Agenc Cli\cc-switch\CC-Switch-Custom-New3.exe`; 本轮构建和 GUI 测试均未结束或覆盖该实例.
+- 正在运行的 Codex Desktop 主窗口进程为 `ChatGPT.exe`, PID `26044`, MSIX 版本 `26.721.4979.0`; 本轮未结束或重启它.
+- 最新旁路交付文件: `D:\文件\Agenc Cli\cc-switch\CC-Switch-Custom-New4.exe`.
+- 交付版本 `3.18.0`, 大小 `32,572,928` bytes (`31.06 MiB`), PE Machine `0x8664` (`x64`).
+- SHA256: `53231DF397EF7AC8FEFBC954E873008A05AA02DD78252E523CADCF9DF0591512`.
+- 构建时间: `2026-07-30 03:21:56`.
+- `CC-Switch.exe`, `CC-Switch-Custom-New2.exe` 和 `CC-Switch-Custom-New3.exe` 均保留, 未覆盖或删除.
 - 进程, 文件路径, 版本和哈希均为易变状态; 涉及运行或替换 EXE 前必须重新检查.
 
 ## 待办与待验证
@@ -107,7 +113,7 @@
 ### 真实客户端边界
 
 - Codex 重启实现已通过 Rust 测试和构建验证, 但为保护当前 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启实测.
-- 在用户明确允许切换版本后, 才关闭旧 CC Switch, 启动 `CC-Switch-Custom-New3.exe`, 并验证真实 Codex Desktop 读取新模型目录与重启行为.
+- 在用户明确允许切换版本后, 才关闭旧 CC Switch, 启动 `CC-Switch-Custom-New4.exe`, 并验证真实 Codex Desktop 读取新模型目录与重启行为.
 - 对话级供应商路由仍需在至少两个 Codex Desktop 对话中分别选择不同的 `供应商 - 模型`, 发起真实请求并核对代理日志中的供应商和剥离后的上游模型.
 - 新增统一供应商默认启用通用配置、显式关闭后持久保留, 仍需结合真实用户数据做非破坏性复验.
 
@@ -121,15 +127,22 @@
 ### 本次验证记录
 
 - 定向 Rust 测试: 重启 5 项、开机静默启动 1 项、官方同名模型 1 项全部通过.
-- `pnpm typecheck`, `pnpm format:check`, `pnpm test:unit`, `pnpm build:renderer`: 全部通过.
+- `pnpm typecheck`, `pnpm format:check`, `pnpm build:renderer`: 全部通过.
+- `pnpm test:unit`: `85` 个测试文件, `549` 项测试全部通过.
 - `cargo fmt -- --check`, `git diff --check`: 全部通过.
-- `cargo test --quiet`: 主测试 `2201 passed`, `2 ignored`, `0 failed`; `skill_sync` 唯一环境阻塞为 Windows 缺少符号链接权限, 错误 `1314`, 相关互斥锁测试已单独通过.
-- `pnpm tauri build --no-bundle`: Windows x64 Release 构建通过, New3 已旁路复制并核对版本、架构、大小和 SHA256.
+- `cargo test --quiet`: 主测试 `2204 passed`, `2 ignored`, `0 failed`; `skill_sync` 唯一环境阻塞为 Windows 缺少符号链接权限, 错误 `1314`, 相关互斥锁测试已单独通过.
+- `codex debug models --bundled`: 当前 bundled 目录共 `8` 个模型; GPT 支持六档思考强度, `additional_speed_tiers=fast`, `service_tiers=priority`.
+- `pnpm tauri build --no-bundle`: Windows x64 Release 构建通过, New4 已旁路复制并核对版本、架构、大小和 SHA256.
 - 隔离 Release GUI 验证通过: 手动无参数启动显示主窗口; `--cc-switch-auto-start` 且 `silentStartup=true` 时进程运行但仅有 `22x22` 内部消息窗口, 无正常尺寸主窗口.
 - 隔离 Release GUI 验证通过: 修改供应商名称后同供应商 14 行同步更新, 另一供应商 2 行保持不变; 点击取消后未保存测试值.
 - 隔离 Release GUI 验证通过: 模型长列表滚动到最后一项时标题无遮挡, 底部“取消”和“保存”完整固定在窗口内.
 - 隔离 Release GUI 验证通过: 创建 12 个测试分组后, 垂直滚轮可横向滚动到最后分组和“新建分组”, 也可反向返回 `全部/未分组`.
 - GUI 验证截图与状态保存在 `C:\Users\jery3\.codex\tmp\cc-switch-gui-new3`.
+- New4 隔离 Release GUI 验证通过: 宽屏只有 Codex 和 Grok Build 为纯图标, 其余应用标签、三个运行开关和工具区保持原布局.
+- New4 隔离 Release GUI 验证通过: 供应商卡片为单行, 蓝色官网链接可点击且优先截断, 悬停操作未占用常驻布局.
+- New4 隔离 Release GUI 验证通过: 模型菜单按供应商分组, 折叠后模型行消失且另一组完整可见; 供应商名称可编辑; 默认圆点可切换, 停用默认项后自动迁移到同名启用项; 点击取消后测试值未保存.
+- New4 分组与组内排序逻辑由前端状态单测覆盖; 原生拖动因 cua-driver 后台遮挡保护拒绝, 未抢占用户前台执行.
+- New4 GUI 验证截图保存在 `C:\Users\jery3\.codex\tmp\cc-switch-gui-new4`.
 
 ## 当前工作方式
 

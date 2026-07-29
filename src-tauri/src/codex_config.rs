@@ -473,6 +473,16 @@ fn codex_catalog_input_modalities(
     modalities.iter().map(|item| (*item).to_string()).collect()
 }
 
+fn is_third_party_gpt_catalog_model(model: &str) -> bool {
+    model
+        .rsplit('/')
+        .next()
+        .unwrap_or(model)
+        .trim()
+        .to_ascii_lowercase()
+        .starts_with("gpt-")
+}
+
 fn codex_catalog_model_entry(
     template: &Value,
     spec: &CodexCatalogModelSpec,
@@ -490,8 +500,32 @@ fn codex_catalog_model_entry(
     entry_obj.insert("context_window".to_string(), json!(spec.context_window));
     entry_obj.insert("max_context_window".to_string(), json!(spec.context_window));
     entry_obj.insert("priority".to_string(), json!(1000 + priority));
-    entry_obj.insert("additional_speed_tiers".to_string(), json!([]));
-    entry_obj.insert("service_tiers".to_string(), json!([]));
+    if is_third_party_gpt_catalog_model(&spec.model) {
+        entry_obj.insert("default_reasoning_level".to_string(), json!("high"));
+        entry_obj.insert(
+            "supported_reasoning_levels".to_string(),
+            json!([
+                { "effort": "low", "description": "Lighter reasoning for faster responses" },
+                { "effort": "medium", "description": "Balanced reasoning for everyday tasks" },
+                { "effort": "high", "description": "Deeper reasoning for complex tasks" },
+                { "effort": "xhigh", "description": "Extra-high reasoning depth" },
+                { "effort": "max", "description": "Maximum reasoning depth" },
+                { "effort": "ultra", "description": "Ultra reasoning depth" }
+            ]),
+        );
+        entry_obj.insert("additional_speed_tiers".to_string(), json!(["fast"]));
+        entry_obj.insert(
+            "service_tiers".to_string(),
+            json!([{
+                "id": "priority",
+                "name": "Fast",
+                "description": "Lower latency with increased usage"
+            }]),
+        );
+    } else {
+        entry_obj.insert("additional_speed_tiers".to_string(), json!([]));
+        entry_obj.insert("service_tiers".to_string(), json!([]));
+    }
     entry_obj.insert("availability_nux".to_string(), Value::Null);
     entry_obj.insert("upgrade".to_string(), Value::Null);
 
@@ -3071,6 +3105,40 @@ base_url = "https://production.api/v1"
                 .is_some_and(|value| value.is_null()),
             "generated third-party entries should not inherit GPT-5.5 launch messaging"
         );
+    }
+
+    #[test]
+    fn third_party_gpt_catalog_exposes_reasoning_levels_and_fast_tier() {
+        let template = load_codex_native_responses_template();
+        let specs = vec![CodexCatalogModelSpec {
+            model: "relay/gpt-5.6".to_string(),
+            display_name: "GPT 5.6 Relay".to_string(),
+            context_window: 272_000,
+            supports_parallel_tool_calls: None,
+            input_modalities: None,
+            base_instructions: None,
+            route_tool_profile: None,
+        }];
+
+        let catalog = codex_model_catalog_from_specs(
+            &specs,
+            &template,
+            CodexCatalogToolProfile::NativeResponses,
+            &[],
+        );
+        let entry = &catalog["models"][0];
+        let efforts = entry["supported_reasoning_levels"]
+            .as_array()
+            .expect("reasoning levels")
+            .iter()
+            .filter_map(|level| level.get("effort").and_then(Value::as_str))
+            .collect::<Vec<_>>();
+
+        assert_eq!(efforts, ["low", "medium", "high", "xhigh", "max", "ultra"]);
+        assert_eq!(entry["default_reasoning_level"], "high");
+        assert_eq!(entry["additional_speed_tiers"], json!(["fast"]));
+        assert_eq!(entry["service_tiers"][0]["id"], "priority");
+        assert_eq!(entry["service_tiers"][0]["name"], "Fast");
     }
 
     #[test]

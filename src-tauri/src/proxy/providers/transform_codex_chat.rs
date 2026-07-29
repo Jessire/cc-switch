@@ -2146,6 +2146,7 @@ mod tests {
             "tool_choice": {"type": "function", "name": "get_weather"},
             "max_output_tokens": 100,
             "reasoning": {"effort": "high"},
+            "service_tier": "priority",
             "stream": true
         });
 
@@ -2165,6 +2166,7 @@ mod tests {
         assert_eq!(result["tool_choice"]["function"]["name"], "get_weather");
         assert_eq!(result["max_tokens"], 100);
         assert_eq!(result["reasoning_effort"], "high");
+        assert_eq!(result["service_tier"], "priority");
     }
 
     #[test]

@@ -319,7 +319,7 @@ export function ProviderCard({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-lg border border-border/70 bg-card/45 px-3 py-2.5 text-card-foreground transition-colors duration-200",
+        "group relative min-h-[70px] overflow-hidden rounded-lg border border-border/70 bg-card/45 px-3 py-2.5 text-card-foreground transition-colors duration-200",
         "hover:border-border-hover hover:bg-muted/30",
         shouldUseGreen &&
           "border-emerald-500/60 bg-emerald-500/[0.06] hover:border-emerald-500/60 hover:bg-emerald-500/[0.08]",
@@ -329,8 +329,8 @@ export function ProviderCard({
           "z-10 scale-[1.01] cursor-grabbing border-primary shadow-lg",
       )}
     >
-      <div className="relative flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+      <div className="relative flex min-h-12 items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <button
             type="button"
             className={cn(
@@ -356,7 +356,7 @@ export function ProviderCard({
             />
           )}
 
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-border/70 bg-muted/60">
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md border border-border/70 bg-muted/60">
             <ProviderIcon
               icon={resolveProviderIcon(
                 appId,
@@ -365,13 +365,16 @@ export function ProviderCard({
               )}
               name={provider.name}
               color={provider.iconColor}
-              size={20}
+              size={26}
             />
           </div>
 
-          <div className="min-w-0 flex-1 space-y-0.5">
-            <div className="flex min-h-6 flex-wrap items-center gap-1.5">
-              <h3 className="text-sm font-semibold leading-none">
+          <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+            <div className="flex max-w-[60%] min-w-0 items-center gap-1.5 overflow-hidden [&>*]:shrink-0">
+              <h3
+                className="min-w-0 shrink truncate text-[17px] font-semibold leading-6"
+                title={provider.name}
+              >
                 {provider.name}
               </h3>
 
@@ -411,8 +414,8 @@ export function ProviderCard({
               {membershipGroups.map((group) => (
                 <span
                   key={group.id}
-                  className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground"
-                  title={t("group.inGroup", { defaultValue: "已在组内" })}
+                  className="inline-flex h-6 max-w-28 items-center truncate rounded-md bg-muted px-2 text-[11px] font-semibold text-muted-foreground"
+                  title={group.name}
                 >
                   {group.name}
                 </span>
@@ -529,7 +532,7 @@ export function ProviderCard({
                 type="button"
                 onClick={handleOpenWebsite}
                 className={cn(
-                  "inline-flex max-w-full items-center overflow-hidden text-left text-xs leading-5",
+                  "inline-flex min-w-0 flex-1 items-center overflow-hidden text-left text-[15px] leading-6",
                   isClickableUrl
                     ? "text-blue-500 transition-colors hover:underline dark:text-blue-400 cursor-pointer"
                     : "text-muted-foreground cursor-default",
