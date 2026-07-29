@@ -724,6 +724,14 @@ impl UniversalProvider {
         }
     }
 
+    /// Unified providers should carry the shared application configuration by
+    /// default. Preserve an explicit opt-out stored in the universal provider.
+    fn child_provider_meta(&self) -> ProviderMeta {
+        let mut meta = self.meta.clone().unwrap_or_default();
+        meta.common_config_enabled.get_or_insert(true);
+        meta
+    }
+
     /// 生成 Claude 供应商配置
     pub fn to_claude_provider(&self) -> Option<Provider> {
         if !self.apps.claude {
@@ -764,7 +772,7 @@ impl UniversalProvider {
             created_at: self.created_at,
             sort_index: self.sort_index,
             notes: self.notes.clone(),
-            meta: self.meta.clone(),
+            meta: Some(self.child_provider_meta()),
             icon: self.icon.clone(),
             icon_color: self.icon_color.clone(),
             in_failover_queue: false,
@@ -829,7 +837,7 @@ requires_openai_auth = true"#
             created_at: self.created_at,
             sort_index: self.sort_index,
             notes: self.notes.clone(),
-            meta: self.meta.clone(),
+            meta: Some(self.child_provider_meta()),
             icon: self.icon.clone(),
             icon_color: self.icon_color.clone(),
             in_failover_queue: false,
@@ -864,7 +872,7 @@ requires_openai_auth = true"#
             created_at: self.created_at,
             sort_index: self.sort_index,
             notes: self.notes.clone(),
-            meta: self.meta.clone(),
+            meta: Some(self.child_provider_meta()),
             icon: self.icon.clone(),
             icon_color: self.icon_color.clone(),
             in_failover_queue: false,
@@ -1192,6 +1200,39 @@ mod tests {
                 .pointer("/env/ANTHROPIC_DEFAULT_OPUS_MODEL")
                 .and_then(|item| item.as_str()),
             Some("claude-opus")
+        );
+        assert_eq!(
+            provider
+                .meta
+                .as_ref()
+                .and_then(|meta| meta.common_config_enabled),
+            Some(true)
+        );
+    }
+
+    #[test]
+    fn universal_provider_preserves_explicit_common_config_opt_out() {
+        let mut universal = UniversalProvider::new(
+            "u1".to_string(),
+            "Universal".to_string(),
+            "newapi".to_string(),
+            "https://api.example.com".to_string(),
+            "api-key".to_string(),
+        );
+        universal.apps.codex = true;
+        universal.meta = Some(ProviderMeta {
+            common_config_enabled: Some(false),
+            ..Default::default()
+        });
+
+        let provider = universal.to_codex_provider().expect("codex provider");
+
+        assert_eq!(
+            provider
+                .meta
+                .as_ref()
+                .and_then(|meta| meta.common_config_enabled),
+            Some(false)
         );
     }
 
