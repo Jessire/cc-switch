@@ -562,6 +562,9 @@ struct CodexCatalogModelSpec {
     /// back to the template default when absent. Only consulted for
     /// `NativeResponses`.
     base_instructions: Option<String>,
+    /// Per-row routing profile used by the merged takeover catalog. Normal
+    /// provider catalogs leave this unset and inherit the provider profile.
+    route_tool_profile: Option<CodexCatalogToolProfile>,
 }
 
 fn codex_catalog_model_specs(settings: &Value, config_text: &str) -> Vec<CodexCatalogModelSpec> {
@@ -630,6 +633,16 @@ fn codex_catalog_model_specs(settings: &Value, config_text: &str) -> Vec<CodexCa
             .map(str::trim)
             .filter(|text| !text.is_empty())
             .map(str::to_string);
+        let route_tool_profile = model_config
+            .get("routeToolProfile")
+            .or_else(|| model_config.get("route_tool_profile"))
+            .and_then(|value| value.as_str())
+            .and_then(|profile| match profile {
+                "proxy_chat" => Some(CodexCatalogToolProfile::ProxyChat),
+                "native_responses" => Some(CodexCatalogToolProfile::NativeResponses),
+                "anthropic" => Some(CodexCatalogToolProfile::Anthropic),
+                _ => None,
+            });
 
         specs.push(CodexCatalogModelSpec {
             model: model.to_string(),
@@ -638,6 +651,7 @@ fn codex_catalog_model_specs(settings: &Value, config_text: &str) -> Vec<CodexCa
             supports_parallel_tool_calls,
             input_modalities,
             base_instructions,
+            route_tool_profile,
         });
     }
 
@@ -1051,10 +1065,19 @@ fn codex_model_catalog_from_specs(
         specs.iter().map(|spec| spec.model.as_str()).collect();
 
     // The provider's own models come first so they head the Codex picker.
+    let native_template = load_codex_native_responses_template();
     let mut entries: Vec<Value> = specs
         .iter()
         .enumerate()
-        .map(|(index, spec)| codex_catalog_model_entry(template, spec, index, profile))
+        .map(|(index, spec)| {
+            let effective_profile = spec.route_tool_profile.unwrap_or(profile);
+            let effective_template = if effective_profile == CodexCatalogToolProfile::ProxyChat {
+                template
+            } else {
+                &native_template
+            };
+            codex_catalog_model_entry(effective_template, spec, index, effective_profile)
+        })
         .collect();
 
     // Codex's built-ins are re-attached behind them; without this, replacing the
@@ -1103,11 +1126,16 @@ fn codex_model_catalog_from_settings(
     // Native providers use the bundled clean template (no freeform apply_patch,
     // no cache dependency); proxy-chat providers keep cloning Codex's gpt-5.5
     // entry so the proxy can rewrite custom<->function tools as before.
-    let template = match profile {
-        CodexCatalogToolProfile::NativeResponses | CodexCatalogToolProfile::Anthropic => {
+    let needs_proxy_template = profile == CodexCatalogToolProfile::ProxyChat
+        || specs
+            .iter()
+            .any(|spec| spec.route_tool_profile == Some(CodexCatalogToolProfile::ProxyChat));
+    let template = match (needs_proxy_template, profile) {
+        (true, _) => load_codex_model_catalog_template()?,
+        (false, CodexCatalogToolProfile::NativeResponses | CodexCatalogToolProfile::Anthropic) => {
             load_codex_native_responses_template()
         }
-        CodexCatalogToolProfile::ProxyChat => load_codex_model_catalog_template()?,
+        (false, CodexCatalogToolProfile::ProxyChat) => unreachable!(),
     };
     Ok(Some(codex_model_catalog_from_specs(
         &specs,
@@ -2908,6 +2936,7 @@ base_url = "https://production.api/v1"
             supports_parallel_tool_calls: None,
             input_modalities: None,
             base_instructions: None,
+            route_tool_profile: None,
         }];
         let catalog = codex_model_catalog_from_specs(
             &specs,
@@ -3114,6 +3143,7 @@ base_url = "https://production.api/v1"
                 supports_parallel_tool_calls: None,
                 input_modalities: None,
                 base_instructions: None,
+                route_tool_profile: None,
             },
             CodexCatalogModelSpec {
                 model: "deepseek/deepseek-v4-pro".to_string(),
@@ -3122,6 +3152,7 @@ base_url = "https://production.api/v1"
                 supports_parallel_tool_calls: None,
                 input_modalities: None,
                 base_instructions: None,
+                route_tool_profile: None,
             },
             CodexCatalogModelSpec {
                 model: "glm-5.2v".to_string(),
@@ -3130,6 +3161,7 @@ base_url = "https://production.api/v1"
                 supports_parallel_tool_calls: None,
                 input_modalities: None,
                 base_instructions: None,
+                route_tool_profile: None,
             },
             CodexCatalogModelSpec {
                 model: "deepseek-v4-flash".to_string(),
@@ -3138,6 +3170,7 @@ base_url = "https://production.api/v1"
                 supports_parallel_tool_calls: None,
                 input_modalities: Some(vec!["text".to_string(), "image".to_string()]),
                 base_instructions: None,
+                route_tool_profile: None,
             },
             CodexCatalogModelSpec {
                 model: "custom-text-alias".to_string(),
@@ -3146,6 +3179,7 @@ base_url = "https://production.api/v1"
                 supports_parallel_tool_calls: None,
                 input_modalities: Some(vec!["text".to_string()]),
                 base_instructions: None,
+                route_tool_profile: None,
             },
         ];
 
@@ -3217,6 +3251,7 @@ base_url = "https://production.api/v1"
             supports_parallel_tool_calls: None,
             input_modalities: None,
             base_instructions: None,
+            route_tool_profile: None,
         }];
         // Using a gpt-5.5-shaped template under ProxyChat must NOT strip
         // apply_patch_tool_type. (The native template lacks it, so synthesize
@@ -3236,6 +3271,61 @@ base_url = "https://production.api/v1"
             Some("freeform"),
             "ProxyChat must preserve apply_patch_tool_type (no native stripping)"
         );
+    }
+
+    #[test]
+    fn codex_routed_catalog_applies_each_rows_tool_profile() {
+        let mut proxy_template = load_codex_native_responses_template();
+        proxy_template["apply_patch_tool_type"] = json!("freeform");
+        let specs = vec![
+            CodexCatalogModelSpec {
+                model: "chat-provider/gpt-5.4".to_string(),
+                display_name: "Chat Relay - GPT 5.4".to_string(),
+                context_window: 128_000,
+                supports_parallel_tool_calls: None,
+                input_modalities: None,
+                base_instructions: None,
+                route_tool_profile: Some(CodexCatalogToolProfile::ProxyChat),
+            },
+            CodexCatalogModelSpec {
+                model: "native-provider/gpt-5.4".to_string(),
+                display_name: "Native Relay - GPT 5.4".to_string(),
+                context_window: 128_000,
+                supports_parallel_tool_calls: None,
+                input_modalities: None,
+                base_instructions: None,
+                route_tool_profile: Some(CodexCatalogToolProfile::NativeResponses),
+            },
+            CodexCatalogModelSpec {
+                model: "anthropic-provider/anthropic/claude-sonnet-4".to_string(),
+                display_name: "Anthropic Relay - Claude Sonnet 4".to_string(),
+                context_window: 128_000,
+                supports_parallel_tool_calls: None,
+                input_modalities: None,
+                base_instructions: None,
+                route_tool_profile: Some(CodexCatalogToolProfile::Anthropic),
+            },
+        ];
+
+        let catalog = codex_model_catalog_from_specs(
+            &specs,
+            &proxy_template,
+            CodexCatalogToolProfile::ProxyChat,
+            &[],
+        );
+        let models = catalog["models"].as_array().expect("models array");
+
+        assert_eq!(models[0]["slug"], "chat-provider/gpt-5.4");
+        assert_eq!(models[0]["apply_patch_tool_type"], "freeform");
+        assert_eq!(models[1]["slug"], "native-provider/gpt-5.4");
+        assert!(models[1].get("apply_patch_tool_type").is_none());
+        assert_eq!(models[1]["shell_type"], "shell_command");
+        assert_eq!(
+            models[2]["slug"],
+            "anthropic-provider/anthropic/claude-sonnet-4"
+        );
+        assert!(models[2].get("apply_patch_tool_type").is_none());
+        assert_eq!(models[2]["shell_type"], "shell_command");
     }
 
     #[test]
@@ -3590,6 +3680,7 @@ web_search = "disabled"
             supports_parallel_tool_calls: None,
             input_modalities: None,
             base_instructions: None,
+            route_tool_profile: None,
         }];
         let bundled = vec![
             json!({ "slug": "gpt-5.6-sol", "display_name": "5.6 Sol", "priority": 1 }),
@@ -3648,6 +3739,7 @@ web_search = "disabled"
             supports_parallel_tool_calls: None,
             input_modalities: None,
             base_instructions: None,
+            route_tool_profile: None,
         }];
         let bundled = vec![
             json!({ "slug": "gpt-5.6-sol", "priority": 0 }),

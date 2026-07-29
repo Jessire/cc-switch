@@ -51,10 +51,12 @@
 
 ### Codex 会话模型路由
 
-- 已实现代理路径中的 `/model` 会话路由和 provider 前缀路由.
-- 已覆盖 Codex Responses 链路.
-- 主要提交: `773dfd8`, `80db8fa`.
-- 真实验收目标仍是多个 Codex Desktop 窗口分别使用不同模型; 修改相关代码后必须重新做原生端到端验证.
+- 已实现 Codex Desktop 模型菜单驱动的对话级供应商路由: 菜单显示 `供应商 - 模型`,每个对话可独立选择.
+- 菜单模型 ID 使用 `provider-id/actual-model`;代理按前缀选择供应商并在上游请求前剥离前缀,不切换 CC Switch 全局当前供应商.
+- 已支持 OpenAI Chat,原生 Responses 和 Anthropic 供应商混合出现在同一模型目录,每个菜单项使用自己的工具协议模板.
+- 当前供应商的模型排在路由目录首位并写为默认模型;其他 Codex 供应商继续追加,内置模型保持共存.
+- 原有 `/model` 会话路由和 provider 前缀路由继续保留;Codex Responses 链路已覆盖.
+- 主要提交: `773dfd8`, `80db8fa`;本次模型菜单路由提交以 Git 实时状态为准.
 
 ### 通用配置
 
@@ -75,26 +77,36 @@
 - 2026-07-29 本次检查时, 正在运行的进程为 `cc-switch`, PID `15904`.
 - 运行路径: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`.
 - 进程启动时间: 2026-07-29 09:30:01, 早于最新功能提交 `670408d`.
-- 因此不得声称当前运行实例已经包含“统一供应商默认启用通用配置”改动.
-- 最近一次已完整验证的 GitHub Windows Artifact 对应提交 `12bc160`, 同样早于 `670408d`.
+- 当前运行实例不包含本次 Codex Desktop 对话级供应商菜单路由,不得用它验收新功能.
+- 已在独立 Cargo target 中完成 Windows x64 Release 构建,未覆盖或结束当前运行实例.
+- 本地旁路交付文件: `D:\文件\Agenc Cli\cc-switch\CC-Switch-Custom-New.exe`.
+- 交付版本 `3.18.0`,大小 `32,487,424` bytes (`30.98 MiB`),PE Machine `0x8664` (`x64`).
+- SHA256: `F4438C1F1A55A6B3CD6FC1B7D6AA05EAEEE3DBA01A8E99EB5C640C10E01058E5`.
 - 进程, 文件路径, 版本和哈希均为易变状态; 涉及运行或替换 EXE 前必须重新检查.
 
 ## 待办与待验证
 
 ### 下一次功能构建必须完成
 
-- 构建包含 `670408d` 及之后源码的本地 Windows Release EXE.
-- 在不结束当前 Codex Desktop 对话的前提下, 使用旁路文件验证新 EXE.
+- 在用户允许切换版本后关闭旧 CC Switch,启动 `CC-Switch-Custom-New.exe`,再重启 Codex Desktop 读取新模型目录.
+- 在至少两个 Codex Desktop 对话中分别选择不同的 `供应商 - 模型`,发起真实请求并核对代理日志中的供应商和剥离后的上游模型.
 - 验证新增统一供应商默认勾选通用配置.
 - 验证显式关闭通用配置后再次编辑或重启仍保持关闭.
-- 验证通过后更新本节和“当前运行与产物”, 再自动提交相关源码状态.
+- 原生 GUI 验证未在本次强制执行,原因是旧 CC Switch 单实例仍运行,结束它会违反不中断当前使用的约束.
 
 ### 需要保持的回归项
 
 - 网页 deep link 导出: 官方版可导入的链接, 定制版也必须可导入; 当前最新功能周期没有重新记录完整端到端结果.
 - 托盘行为: 左键双击打开, 左键单击不打开, 右键显示菜单, 再次启动不白屏.
-- 多窗口模型路由: 必须验证 Codex Desktop 多窗口, 不能只验证 Claude Code 或代理单元测试.
+- 对话级供应商路由: 必须验证 Codex Desktop 同一窗口内的不同对话,不能用 Claude Code,多窗口或仅代理单元测试替代.
 - 上游同步: 每次 merge 后重点检查分组, 重启, Codex 模型菜单, 代理路由, 通用配置和四套语言文件.
+
+### 本次验证记录
+
+- `cargo test --manifest-path src-tauri/Cargo.toml codex_routed -- --nocapture`: 3 项通过.
+- `cargo test --manifest-path src-tauri/Cargo.toml codex_model_catalog -- --nocapture`: 3 项通过.
+- `cargo test --manifest-path src-tauri/Cargo.toml session_router::tests -- --nocapture`: 6 项通过.
+- `pnpm tauri build --no-bundle`: 独立 `CARGO_TARGET_DIR` 下 Windows Release 构建通过;renderer 共转换 3311 个模块.
 
 ## 当前工作方式
 
