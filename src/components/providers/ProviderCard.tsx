@@ -374,15 +374,17 @@ export function ProviderCard({
             />
           </div>
 
-          <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-            <div className="flex max-w-[60%] min-w-0 items-center gap-1.5 overflow-hidden [&>*]:shrink-0">
+          <div className="grid min-w-0 flex-1 grid-cols-[11rem_1.75rem_8rem_minmax(0,1fr)] items-center gap-x-2 overflow-hidden">
+            <div className="flex min-w-0 items-center overflow-hidden">
               <h3
-                className="min-w-0 shrink truncate text-[17px] font-semibold leading-6"
+                className="min-w-0 truncate text-[17px] font-semibold leading-6"
                 title={provider.name}
               >
                 {provider.name}
               </h3>
+            </div>
 
+            <div className="flex h-6 items-center justify-center">
               {appId === "codex" && onToggleCodexFavorite && (
                 <button
                   type="button"
@@ -415,7 +417,9 @@ export function ProviderCard({
                   />
                 </button>
               )}
+            </div>
 
+            <div className="flex min-w-0 items-center gap-1 overflow-hidden">
               {membershipGroups.map((group) => (
                 <span
                   key={group.id}
@@ -537,7 +541,7 @@ export function ProviderCard({
                 type="button"
                 onClick={handleOpenWebsite}
                 className={cn(
-                  "inline-flex min-w-0 flex-1 items-center overflow-hidden text-left text-[15px] leading-6",
+                  "inline-flex min-w-0 items-center overflow-hidden text-left text-[15px] leading-6",
                   isClickableUrl
                     ? "text-blue-500 transition-colors hover:underline dark:text-blue-400 cursor-pointer"
                     : "text-muted-foreground cursor-default",

@@ -24,6 +24,7 @@
 - 已实现所有分组标签拖动排序, 包括 `全部` 和 `未分组`; `添加分组` 位于最后.
 - 分组标签容器支持鼠标垂直滚轮映射为横向滚动; 指针位于分组栏时始终拦截非零滚轮事件, 到达首尾边界后也不继续滚动页面; 指针离开后恢复页面纵向滚动.
 - 主要提交: `484b204`, `27c7ce0`, `23a34ff`, `042264d`; 本轮提交以 Git 实时状态为准.
+
 ### 切换与客户端重启
 
 - 已实现供应商切换后自动重启对应客户端.
@@ -58,6 +59,7 @@
 - 已保留 Grok Build 的独立默认模型行为, 并保留紧凑三列模型区、视口内滚动和固定 Footer.
 - 首次升级只自动收藏当前 Codex 供应商; 新收藏供应商的模型默认排在已有顺序之前.
 - 主要提交: `6ff0c70`, `97f0e31`, `5e532a6`, `3c26e0b`, `29576ec`, `dc53d80`, `7cbedfc`, `7a566b5`; 本轮提交以 Git 实时状态为准.
+
 ### Codex 会话模型路由
 
 - 已实现 Codex Desktop 模型菜单驱动的对话级供应商路由, 每个对话可独立选择供应商和模型.
@@ -72,6 +74,7 @@
 - 已将应用切换与其后的四个工具图标作为一组移到三个开关右侧, 两组内部顺序保持不变.
 - 宽屏下只有 Codex 和 Grok Build 使用纯图标; 其他应用继续显示图标和名称, 紧凑布局规则不变.
 - 供应商卡片改为约 `70px` 高的单行布局; 头像、名称、收藏、分组、状态和蓝色官网链接同排, URL 优先截断并保留 `title`, 右侧配额及悬停操作保留.
+- 供应商卡片信息区使用固定列 Grid: 名称 176px, 收藏 28px, 分组/状态 128px, 链接占剩余空间; 长名称、分组和链接只会在本列省略, 不再推动收藏、分组或链接的起始位置.
 - 供应商头像按主界面分组统一映射: `GPT/OpenAI -> openai`, `Grok/xAI -> grok`, `Claude/Anthropic -> claude`, `国模/国产 -> kimi`; 多分组按现有顺序取第一个可识别品牌, 未识别时回退供应商原图标或首字头像.
 - 已移除自动重启成功提示中的 `(via ...)` 来源括号; 本轮不修改供应商卡片蓝色焦点边框.
 
@@ -80,6 +83,7 @@
 - 正常启动和正常运行不再检查官方应用更新, 顶部更新提示、更新上下文、应用更新弹窗、通知和红点已移除.
 - 设置页已移除应用检查、下载、安装和 Release Notes 入口, 保留当前版本号、官网、GitHub 和 CLI 工具升级功能.
 - `DatabaseUpgrade.tsx`、`check_app_update_available`、`install_update_and_restart` 和 Tauri updater 插件继续保留, 仅服务数据库不兼容恢复; Skill 更新功能不受影响.
+
 ### 通用配置
 
 - 已将统一供应商生成的子供应商默认设置为启用通用配置.
@@ -96,14 +100,14 @@
 
 ## 当前运行与产物
 
-- 2026-07-30 本轮收尾复核时, 正在运行的 CC Switch 为 `CC Switch-New.exe`, PID `25324`.
-- 运行路径: `D:\文件\Agenc Cli\cc-switch\CC Switch-New.exe`; 本轮未结束、替换或覆盖该实例.
-- 正在运行的 Codex Desktop 相关进程为 `ChatGPT.exe` 与 `codex.exe`, MSIX 版本 `26.721.11231.0`; 本轮未结束或重启它们.
-- 最新交付文件: `D:\文件\Agenc Cli\cc-switch\CC Switch.exe`.
+- 2026-07-30 复核时, 正在运行的 CC Switch 为旧版 `CC Switch.exe`, PID `24088`.
+- 运行路径: `D:\文件\Agenc Cli\cc-switch\CC Switch.exe`; SHA256 `CDC54E52F28279C3D4EF1FFE432567454CBCEE21CBD62E48696831DC0E20C65E`. 本轮未结束、替换或覆盖该实例.
+- 正在运行的 Codex Desktop 未在本轮结束或重启.
+- 最新交付文件: `D:\文件\Agenc Cli\cc-switch\CC Switch-New2.exe`.
 - 交付版本 `3.18.0`, 大小 `32,538,112` bytes (`31.03 MiB`), PE Machine `0x8664` (`x64`).
-- SHA256: `CDC54E52F28279C3D4EF1FFE432567454CBCEE21CBD62E48696831DC0E20C65E`.
-- 构建及复制时间: `2026-07-30 18:02:56`.
-- `CC Switch-New.exe` 仍在运行; 新生成的 `CC Switch.exe` 已旁路保留, 未覆盖或删除旧文件.
+- SHA256: `4A8E4F54C481D3B93E85C59D7D202191CA493CC82F495735BF0CC37FD5384E5F`.
+- 构建及复制时间: `2026-07-30 18:59:12`.
+- 旧版 `CC Switch.exe` 正在运行且持有单实例锁; 最新 `CC Switch-New2.exe` 已旁路保留, 未启动、未覆盖或删除旧文件.
 - 进程, 文件路径, 版本和哈希均为易变状态; 涉及运行或替换 EXE 前必须重新检查.
 
 ## 待办与待验证
@@ -111,7 +115,7 @@
 ### 真实客户端边界
 
 - Codex 重启实现已通过 Rust 测试和构建验证, 但为保护当前 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启实测.
-- 在用户明确允许切换版本后, 才关闭当前 `CC Switch-New.exe`, 启动 `CC Switch.exe`, 并验证真实 Codex Desktop 读取第三方模型目录、官方 bundled 模型已移除和重启行为.
+- 在用户明确允许切换版本后, 才关闭当前旧版 `CC Switch.exe`, 启动 `CC Switch-New2.exe`, 并验证真实 Codex Desktop 读取第三方模型目录、官方 bundled 模型已移除和重启行为.
 - 对话级供应商路由仍需在至少两个 Codex Desktop 对话中分别选择不同的 `供应商 - 模型`, 发起真实请求并核对代理日志中的供应商和剥离后的上游模型.
 - Codex 原生 `/responses` 第三方透传链路已新增 `image_generation` 工具过滤, 仍需在真实 ChatGPT/Codex Desktop + 第三方 Responses provider 上复验 403 不再出现.
 - 新增统一供应商默认启用通用配置、显式关闭后持久保留, 仍需结合真实用户数据做非破坏性复验.
@@ -131,7 +135,7 @@
 - 完整 `cargo test` 仅有 `tests\skill_sync.rs::sync_to_app_removes_disabled_and_orphaned_ssot_symlinks` 因当前 Windows 会话缺少创建符号链接权限而失败 (错误 `1314`); 后续 `uninstall_skill_creates_backup_before_removing_ssot` 因同一测试互斥锁被 poison 而失败. 两项与本轮功能无关.
 - `pnpm tauri build --no-bundle`: Windows x64 Release 构建通过, 已生成 `CC Switch.exe` 并核对版本、架构、大小和 SHA256.
 - 已审计前后端、命令和多语言资源, bundled 官方模型、`isNativeDefault`、默认圆点和官方 ID 回退逻辑均已移除; 空菜单仍保持 CC Switch 托管目录和 `{"models":[]}`.
-- 最新 GUI 未启动: 当前 `CC Switch-New.exe` 持有同一 Tauri 单实例锁. 为避免打扰当前工作, 本轮未关闭它或启动新的 `CC Switch.exe`; 因此新交付文件的真实 Windows GUI 验证仍受单实例锁阻断.
+- 本轮供应商卡片固定列变更已通过 `pnpm typecheck`, `pnpm test:unit`, `pnpm build:renderer` 和 Windows x64 Release 构建. 新版 GUI 未启动: 当前旧版 `CC Switch.exe` 持有同一 Tauri 单实例锁. 为避免打扰当前工作, 本轮未关闭它或启动 `CC Switch-New2.exe`; 因此新交付文件的真实 Windows GUI 验证仍受单实例锁阻断.
 
 ## 当前工作方式
 
