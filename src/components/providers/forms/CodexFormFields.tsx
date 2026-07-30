@@ -150,7 +150,6 @@ function createCatalogRow(seed?: Partial<CodexCatalogModel>): CodexCatalogRow {
     ...(typeof seed?.menuOrder === "number"
       ? { menuOrder: seed.menuOrder }
       : {}),
-    ...(seed?.isNativeDefault === true ? { isNativeDefault: true } : {}),
     // Carry native-profile overrides verbatim (not user-editable in the row UI,
     // but must survive load->save so the official catalog fidelity is kept).
     ...(seed?.supportsParallelToolCalls !== undefined
@@ -181,7 +180,6 @@ function catalogRowsMatchModels(
         String(incoming.contextWindow ?? "") &&
       (row.enabled !== false) === (incoming.enabled !== false) &&
       (row.menuOrder ?? null) === (incoming.menuOrder ?? null) &&
-      (row.isNativeDefault === true) === (incoming.isNativeDefault === true) &&
       (row.supportsParallelToolCalls ?? null) ===
         (incoming.supportsParallelToolCalls ?? null) &&
       (row.baseInstructions ?? "") === (incoming.baseInstructions ?? "") &&

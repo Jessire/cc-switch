@@ -170,7 +170,6 @@ export const normalizeCodexCatalogModelsForSave = (
       item.menuOrder >= 0
         ? { menuOrder: Math.trunc(item.menuOrder) }
         : {}),
-      ...(item.isNativeDefault === true ? { isNativeDefault: true } : {}),
       // Native Responses profile overrides (ignored by the chat/proxy profile).
       ...(typeof item.supportsParallelToolCalls === "boolean"
         ? { supportsParallelToolCalls: item.supportsParallelToolCalls }

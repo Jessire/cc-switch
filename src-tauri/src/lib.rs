@@ -1368,7 +1368,6 @@ pub fn run() {
             commands::update_toml_common_config_snippet,
             commands::extract_common_config_snippet,
             commands::read_live_provider_settings,
-            commands::get_codex_bundled_model_slugs,
             commands::get_settings,
             commands::save_settings,
             commands::has_codex_unify_history_backup,

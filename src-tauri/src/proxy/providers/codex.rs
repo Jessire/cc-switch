@@ -11,7 +11,7 @@ use crate::proxy::error::ProxyError;
 use regex::Regex;
 use serde_json::Value as JsonValue;
 use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::sync::LazyLock;
 use toml::Value as TomlValue;
 
@@ -295,7 +295,6 @@ struct CodexModelMenuCandidate {
     display_name: String,
     menu_order: Option<u64>,
     fallback_order: usize,
-    is_native_default: bool,
     tool_profile: crate::codex_config::CodexCatalogToolProfile,
 }
 
@@ -317,14 +316,6 @@ fn compare_codex_menu_candidates(
 /// Build the Codex Desktop menu SSOT shared by catalog projection and request routing.
 /// Only favorited providers and enabled model rows participate.
 pub fn codex_model_menu_entries(providers: &[Provider]) -> Vec<CodexModelMenuEntry> {
-    let official_model_slugs = crate::codex_config::codex_bundled_model_slugs();
-    codex_model_menu_entries_with_official_slugs(providers, &official_model_slugs)
-}
-
-fn codex_model_menu_entries_with_official_slugs(
-    providers: &[Provider],
-    official_model_slugs: &HashSet<String>,
-) -> Vec<CodexModelMenuEntry> {
     let mut providers = providers.to_vec();
     providers.sort_by(|left, right| {
         left.sort_index
@@ -384,11 +375,6 @@ fn codex_model_menu_entries_with_official_slugs(
                 .get("menuOrder")
                 .or_else(|| row.get("menu_order"))
                 .and_then(JsonValue::as_u64);
-            let is_native_default = row
-                .get("isNativeDefault")
-                .or_else(|| row.get("is_native_default"))
-                .and_then(JsonValue::as_bool)
-                .unwrap_or(false);
             let tool_profile = resolve_codex_catalog_tool_profile(&provider);
 
             candidates.push(CodexModelMenuCandidate {
@@ -398,7 +384,6 @@ fn codex_model_menu_entries_with_official_slugs(
                 display_name,
                 menu_order,
                 fallback_order,
-                is_native_default,
                 tool_profile,
             });
             fallback_order += 1;
@@ -407,50 +392,16 @@ fn codex_model_menu_entries_with_official_slugs(
 
     candidates.sort_by(compare_codex_menu_candidates);
 
-    let mut grouped_indexes: HashMap<String, Vec<usize>> = HashMap::new();
-    for (index, candidate) in candidates.iter().enumerate() {
-        grouped_indexes
-            .entry(candidate.actual_model.clone())
-            .or_default()
-            .push(index);
-    }
-
-    let mut default_indexes = HashSet::new();
-    let mut omitted_official_duplicates = HashSet::new();
-    for (actual_model, indexes) in &grouped_indexes {
-        // A bare bundled slug always belongs to Codex's official model. The
-        // selected third-party default represents that official row and is
-        // omitted; the remaining relay rows stay explicitly namespaced.
-        if official_model_slugs.contains(actual_model) {
-            let omitted_index = indexes
-                .iter()
-                .copied()
-                .find(|index| candidates[*index].is_native_default)
-                .unwrap_or(indexes[0]);
-            omitted_official_duplicates.insert(omitted_index);
-            continue;
-        }
-        let default_index = indexes
-            .iter()
-            .copied()
-            .find(|index| candidates[*index].is_native_default)
-            .unwrap_or(indexes[0]);
-        default_indexes.insert(default_index);
-    }
-
     let mut seen_routes = HashSet::new();
+    let mut bare_models = HashSet::new();
     candidates
         .into_iter()
-        .enumerate()
-        .filter_map(|(index, candidate)| {
-            if omitted_official_duplicates.contains(&index) {
-                return None;
-            }
-            let duplicate_count = grouped_indexes
-                .get(&candidate.actual_model)
-                .map_or(0, Vec::len);
-            let is_default = default_indexes.contains(&index);
-            let routed_model = if is_default {
+        .filter_map(|candidate| {
+            // The first enabled row in the global menu owns the bare model ID.
+            // This intentionally replaces Codex's bundled entry when the IDs
+            // match; later same-model rows remain explicitly namespaced.
+            let owns_bare_model = bare_models.insert(candidate.actual_model.clone());
+            let routed_model = if owns_bare_model {
                 candidate.actual_model.clone()
             } else {
                 format!("{}/{}", candidate.provider.id, candidate.actual_model)
@@ -458,9 +409,7 @@ fn codex_model_menu_entries_with_official_slugs(
             if !seen_routes.insert(routed_model.clone()) {
                 return None;
             }
-            let display_name = if !is_default
-                && (duplicate_count > 1 || official_model_slugs.contains(&candidate.actual_model))
-            {
+            let display_name = if !owns_bare_model {
                 format!("{} · {}", candidate.display_name, candidate.provider.name)
             } else {
                 candidate.display_name
@@ -1835,7 +1784,7 @@ wire_api = "responses"
     }
 
     #[test]
-    fn codex_model_menu_filters_and_resolves_duplicate_routes() {
+    fn codex_model_menu_uses_first_global_entry_for_bare_duplicate_route() {
         let first = menu_provider(
             "first",
             "First Relay",
@@ -1865,20 +1814,21 @@ wire_api = "responses"
 
         let entries = codex_model_menu_entries(&[first.clone(), second.clone(), ignored]);
         assert_eq!(entries.len(), 2);
-        assert_eq!(entries[0].routed_model, "first/gpt-5.6");
-        assert_eq!(entries[0].display_name, "GPT 5.6 · First Relay");
-        assert_eq!(entries[1].routed_model, "gpt-5.6");
-        assert_eq!(entries[1].provider.id, "second");
+        assert_eq!(entries[0].routed_model, "gpt-5.6");
+        assert_eq!(entries[0].display_name, "GPT 5.6");
+        assert_eq!(entries[0].provider.id, "first");
+        assert_eq!(entries[1].routed_model, "second/gpt-5.6");
+        assert_eq!(entries[1].display_name, "GPT 5.6 · Second Relay");
         assert!(entries.iter().all(|entry| entry.actual_model != "hidden"));
 
         let resolved = resolve_codex_model_menu_route(&[first, second], "gpt-5.6")
-            .expect("resolve native default route");
-        assert_eq!(resolved.provider.id, "second");
+            .expect("resolve first global route");
+        assert_eq!(resolved.provider.id, "first");
         assert_eq!(resolved.actual_model, "gpt-5.6");
     }
 
     #[test]
-    fn official_model_slug_omits_selected_default_and_keeps_other_relays_namespaced() {
+    fn bundled_model_slug_is_covered_by_first_relay_and_legacy_default_is_ignored() {
         let first = menu_provider(
             "first",
             "First Relay",
@@ -1900,22 +1850,26 @@ wire_api = "responses"
             }]),
             true,
         );
-        let official = HashSet::from(["gpt-5.6".to_string()]);
+        let entries = codex_model_menu_entries(&[first, selected]);
 
-        let entries = codex_model_menu_entries_with_official_slugs(&[first, selected], &official);
-
-        assert_eq!(entries.len(), 1);
-        assert_eq!(entries[0].routed_model, "first/gpt-5.6");
-        assert_eq!(entries[0].display_name, "GPT 5.6 · First Relay");
-        assert!(entries.iter().all(|entry| entry.routed_model != "gpt-5.6"));
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].routed_model, "gpt-5.6");
+        assert_eq!(entries[0].provider.id, "first");
+        assert_eq!(entries[1].routed_model, "selected/gpt-5.6");
+        assert_eq!(entries[1].display_name, "GPT 5.6 · Selected Relay");
     }
 
     #[test]
-    fn official_model_slug_uses_first_enabled_relay_as_omission_fallback() {
+    fn disabled_earlier_duplicate_does_not_own_bare_route() {
         let first = menu_provider(
             "first",
             "First Relay",
-            json!([{ "model": "gpt-5.6", "menuOrder": 0 }]),
+            json!([{
+                "model": "gpt-5.6",
+                "menuOrder": 0,
+                "enabled": false,
+                "isNativeDefault": true
+            }]),
             true,
         );
         let second = menu_provider(
@@ -1924,39 +1878,32 @@ wire_api = "responses"
             json!([{ "model": "gpt-5.6", "menuOrder": 1 }]),
             true,
         );
-        let official = HashSet::from(["gpt-5.6".to_string()]);
-
-        let entries = codex_model_menu_entries_with_official_slugs(&[first, second], &official);
+        let entries = codex_model_menu_entries(&[first, second]);
 
         assert_eq!(entries.len(), 1);
-        assert_eq!(entries[0].routed_model, "second/gpt-5.6");
+        assert_eq!(entries[0].routed_model, "gpt-5.6");
+        assert_eq!(entries[0].provider.id, "second");
     }
 
     #[test]
-    fn disabled_duplicate_default_falls_back_to_first_enabled_model() {
-        let first = menu_provider(
-            "first",
-            "First Relay",
-            json!([{ "model": "claude-x", "menuOrder": 0 }]),
+    fn menu_order_wins_over_input_provider_order() {
+        let first_in_menu = menu_provider(
+            "first-in-menu",
+            "First In Menu",
+            json!([{ "model": "same-model", "menuOrder": 0 }]),
             true,
         );
-        let disabled = menu_provider(
-            "disabled",
-            "Disabled Relay",
-            json!([{
-                "model": "claude-x",
-                "menuOrder": 1,
-                "enabled": false,
-                "isNativeDefault": true
-            }]),
+        let second_in_menu = menu_provider(
+            "second-in-menu",
+            "Second In Menu",
+            json!([{ "model": "same-model", "menuOrder": 1 }]),
             true,
         );
 
-        let entries =
-            codex_model_menu_entries_with_official_slugs(&[first, disabled], &HashSet::new());
+        let entries = codex_model_menu_entries(&[second_in_menu, first_in_menu]);
 
-        assert_eq!(entries.len(), 1);
-        assert_eq!(entries[0].routed_model, "claude-x");
-        assert_eq!(entries[0].provider.id, "first");
+        assert_eq!(entries[0].routed_model, "same-model");
+        assert_eq!(entries[0].provider.id, "first-in-menu");
+        assert_eq!(entries[1].routed_model, "second-in-menu/same-model");
     }
 }

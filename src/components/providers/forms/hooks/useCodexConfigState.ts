@@ -112,11 +112,6 @@ export function useCodexConfigState({ initialData }: UseCodexConfigStateProps) {
                 : typeof item?.menu_order === "number"
                   ? { menuOrder: item.menu_order }
                   : {}),
-              ...(typeof item?.isNativeDefault === "boolean"
-                ? { isNativeDefault: item.isNativeDefault }
-                : typeof item?.is_native_default === "boolean"
-                  ? { isNativeDefault: item.is_native_default }
-                  : {}),
               ...(supportsParallelToolCalls !== undefined
                 ? { supportsParallelToolCalls }
                 : {}),

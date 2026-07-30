@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CodexCatalogModel, Provider } from "@/types";
 import {
   buildDraftGroups,
-  duplicateModelIds,
   flattenDraftGroups,
-  normalizeDraftDefaults,
   reorderDraftGroups,
   reorderDraftModels,
 } from "./codexModelMenuState";
@@ -100,59 +98,5 @@ describe("codex model menu state", () => {
       "first-a",
     ]);
     expect(reordered[1]).toBe(groups[1]);
-  });
-
-  it("moves the default to the first enabled duplicate when the old default is disabled", () => {
-    const groups = buildDraftGroups({
-      first: provider("first", [{ model: "claude-x", menuOrder: 0 }], 0),
-      second: provider(
-        "second",
-        [
-          {
-            model: "claude-x",
-            menuOrder: 1,
-            enabled: false,
-            isNativeDefault: true,
-          },
-        ],
-        1,
-      ),
-    });
-
-    const normalized = normalizeDraftDefaults(groups, new Set());
-    const entries = flattenDraftGroups(normalized);
-    expect(entries[0].model.isNativeDefault).toBe(true);
-    expect(entries[1].model.isNativeDefault).toBeUndefined();
-  });
-
-  it("treats an official bundled model as a duplicate and keeps only one enabled default", () => {
-    const groups = buildDraftGroups({
-      first: provider("first", [{ model: "gpt-5.6", menuOrder: 0 }], 0),
-      second: provider(
-        "second",
-        [{ model: "gpt-5.6", menuOrder: 1, isNativeDefault: true }],
-        1,
-      ),
-    });
-    const official = new Set(["gpt-5.6"]);
-
-    expect(duplicateModelIds(groups, official)).toEqual(new Set(["gpt-5.6"]));
-    const normalized = normalizeDraftDefaults(groups, official);
-    expect(
-      flattenDraftGroups(normalized)
-        .filter((entry) => entry.model.isNativeDefault === true)
-        .map((entry) => entry.providerId),
-    ).toEqual(["second"]);
-  });
-
-  it("clears a stale default marker from a unique non-official model", () => {
-    const groups = buildDraftGroups({
-      only: provider("only", [{ model: "unique", isNativeDefault: true }], 0),
-    });
-
-    const normalized = normalizeDraftDefaults(groups, new Set());
-    expect(
-      flattenDraftGroups(normalized)[0].model.isNativeDefault,
-    ).toBeUndefined();
   });
 });

@@ -988,23 +988,6 @@ fn load_codex_bundled_models() -> Vec<Value> {
     Vec::new()
 }
 
-/// Return the model ids bundled with the installed Codex Desktop/CLI build.
-/// Third-party menu rows using one of these ids must stay namespaced so the
-/// official bare id remains owned by Codex.
-pub fn codex_bundled_model_slugs() -> HashSet<String> {
-    load_codex_bundled_models()
-        .into_iter()
-        .filter_map(|entry| {
-            entry
-                .get("slug")
-                .and_then(Value::as_str)
-                .map(str::trim)
-                .filter(|slug| !slug.is_empty())
-                .map(str::to_string)
-        })
-        .collect()
-}
-
 fn load_codex_model_template_static() -> Option<Value> {
     let text = include_str!("resources/gpt5_5_template.json");
     match serde_json::from_str(text) {

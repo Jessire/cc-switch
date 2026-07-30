@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -17,8 +17,6 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  Circle,
-  CircleDot,
   GripVertical,
   Loader2,
   Pencil,
@@ -44,13 +42,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { syncCodexModelToCatalogFirst } from "@/components/providers/forms/ProviderForm";
 import {
   buildDraftGroups,
-  duplicateModelIds,
   flattenDraftGroups,
-  normalizeDraftDefaults,
   providerCatalogModels,
   reorderDraftGroups,
   reorderDraftModels,
-  setDraftDefault,
   type DraftModelEntry,
   type DraftProviderGroup,
 } from "@/components/providers/codexModelMenuState";
@@ -64,14 +59,10 @@ interface CodexModelMenuDialogProps {
 
 function SortableMenuModelRow({
   entry,
-  isDuplicate,
   onChange,
-  onSetDefault,
 }: {
   entry: DraftModelEntry;
-  isDuplicate: boolean;
   onChange: (patch: Partial<CodexCatalogModel>) => void;
-  onSetDefault: () => void;
 }) {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
@@ -87,7 +78,6 @@ function SortableMenuModelRow({
     data: { type: "model", providerId: entry.providerId },
   });
   const isEnabled = entry.model.enabled !== false;
-  const isDefault = entry.model.isNativeDefault === true;
   const displayName = entry.model.displayName?.trim() || entry.model.model;
 
   return (
@@ -95,7 +85,7 @@ function SortableMenuModelRow({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        "grid min-h-11 grid-cols-[2rem_1.5rem_minmax(9rem,1fr)_minmax(8rem,0.9fr)_5.25rem_2rem] items-center gap-2 border-t border-border-default px-2 py-1.5",
+        "grid min-h-11 grid-cols-[2rem_1.5rem_minmax(9rem,1fr)_minmax(8rem,0.9fr)_2rem] items-center gap-2 border-t border-border-default px-2 py-1.5",
         !isEnabled && "bg-muted/20 text-muted-foreground",
         isDragging && "relative z-20 bg-background shadow-md",
       )}
@@ -148,33 +138,6 @@ function SortableMenuModelRow({
         {entry.model.model}
       </div>
 
-      {isDuplicate ? (
-        <button
-          type="button"
-          role="radio"
-          aria-checked={isDefault}
-          disabled={!isEnabled}
-          onClick={onSetDefault}
-          className={cn(
-            "inline-flex h-8 items-center justify-center gap-1 rounded-md px-1.5 text-xs transition-colors",
-            isDefault
-              ? "bg-emerald-500/10 font-medium text-emerald-600 dark:text-emerald-400"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            !isEnabled && "cursor-not-allowed opacity-40",
-          )}
-          title={t("codexConfig.setDuplicateDefault")}
-        >
-          {isDefault ? (
-            <CircleDot className="h-4 w-4" />
-          ) : (
-            <Circle className="h-4 w-4" />
-          )}
-          <span>{t("codexConfig.duplicateDefault")}</span>
-        </button>
-      ) : (
-        <span />
-      )}
-
       <Button
         type="button"
         variant="ghost"
@@ -200,19 +163,15 @@ function SortableMenuModelRow({
 function SortableProviderGroup({
   group,
   collapsed,
-  duplicateIds,
   onToggleCollapsed,
   onProviderNameChange,
   onEntryChange,
-  onSetDefault,
 }: {
   group: DraftProviderGroup;
   collapsed: boolean;
-  duplicateIds: ReadonlySet<string>;
   onToggleCollapsed: () => void;
   onProviderNameChange: (name: string) => void;
   onEntryChange: (entryKey: string, patch: Partial<CodexCatalogModel>) => void;
-  onSetDefault: (modelId: string, entryKey: string) => void;
 }) {
   const { t } = useTranslation();
   const {
@@ -288,11 +247,7 @@ function SortableProviderGroup({
             <SortableMenuModelRow
               key={entry.key}
               entry={entry}
-              isDuplicate={duplicateIds.has(entry.model.model.trim())}
               onChange={(patch) => onEntryChange(entry.key, patch)}
-              onSetDefault={() =>
-                onSetDefault(entry.model.model.trim(), entry.key)
-              }
             />
           ))}
         </SortableContext>
@@ -310,14 +265,10 @@ export function CodexModelMenuDialog({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [groups, setGroups] = useState<DraftProviderGroup[]>([]);
-  const [officialModelIds, setOfficialModelIds] = useState<Set<string>>(
-    new Set(),
-  );
   const [collapsedProviderIds, setCollapsedProviderIds] = useState<Set<string>>(
     new Set(),
   );
   const [initialSnapshot, setInitialSnapshot] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -325,54 +276,25 @@ export function CodexModelMenuDialog({
 
   useEffect(() => {
     if (!open) return;
-    let cancelled = false;
-    setIsLoading(true);
-
-    providersApi
-      .getCodexBundledModelSlugs()
-      .catch(() => [] as string[])
-      .then((slugs) => {
-        if (cancelled) return;
-        const officialIds = new Set(slugs);
-        const next = normalizeDraftDefaults(
-          buildDraftGroups(providers),
-          officialIds,
-        );
-        setOfficialModelIds(officialIds);
-        setGroups(next);
-        setCollapsedProviderIds(new Set());
-        setInitialSnapshot(JSON.stringify(next));
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    const next = buildDraftGroups(providers);
+    setGroups(next);
+    setCollapsedProviderIds(new Set());
+    setInitialSnapshot(JSON.stringify(next));
   }, [open, providers]);
-
-  const duplicateIds = useMemo(
-    () => duplicateModelIds(groups, officialModelIds),
-    [groups, officialModelIds],
-  );
 
   const handleEntryChange = (
     key: string,
     patch: Partial<CodexCatalogModel>,
   ) => {
     setGroups((current) =>
-      normalizeDraftDefaults(
-        current.map((group) => ({
-          ...group,
-          entries: group.entries.map((entry) =>
-            entry.key === key
-              ? { ...entry, model: { ...entry.model, ...patch } }
-              : entry,
-          ),
-        })),
-        officialModelIds,
-      ),
+      current.map((group) => ({
+        ...group,
+        entries: group.entries.map((entry) =>
+          entry.key === key
+            ? { ...entry, model: { ...entry.model, ...patch } }
+            : entry,
+        ),
+      })),
     );
   };
 
@@ -384,10 +306,6 @@ export function CodexModelMenuDialog({
           : group,
       ),
     );
-  };
-
-  const handleDefaultChange = (modelId: string, key: string) => {
-    setGroups((current) => setDraftDefault(current, modelId, key));
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -450,13 +368,17 @@ export function CodexModelMenuDialog({
         };
         const models = source.settingsConfig.modelCatalog
           .models as CodexCatalogModel[];
-        const { isNativeDefault: _isNativeDefault, ...model } = entry.model;
+        const {
+          isNativeDefault: _isNativeDefault,
+          is_native_default: _is_native_default,
+          ...model
+        } = entry.model as CodexCatalogModel & {
+          isNativeDefault?: unknown;
+          is_native_default?: unknown;
+        };
         models[entry.modelIndex] = {
           ...model,
           menuOrder,
-          ...(entry.model.isNativeDefault === true
-            ? { isNativeDefault: true }
-            : {}),
         };
         nextByProvider.set(entry.providerId, source);
       });
@@ -513,11 +435,7 @@ export function CodexModelMenuDialog({
         </DialogHeader>
 
         <div className="min-h-0 flex-1 px-6 py-4">
-          {isLoading ? (
-            <div className="flex h-[min(58vh,32rem)] items-center justify-center text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin" />
-            </div>
-          ) : groups.length > 0 ? (
+          {groups.length > 0 ? (
             <ScrollArea className="h-[min(58vh,32rem)] pr-3">
               <DndContext
                 sensors={sensors}
@@ -534,7 +452,6 @@ export function CodexModelMenuDialog({
                         key={group.key}
                         group={group}
                         collapsed={collapsedProviderIds.has(group.providerId)}
-                        duplicateIds={duplicateIds}
                         onToggleCollapsed={() =>
                           setCollapsedProviderIds((current) => {
                             const next = new Set(current);
@@ -550,7 +467,6 @@ export function CodexModelMenuDialog({
                           handleProviderNameChange(group.providerId, name)
                         }
                         onEntryChange={handleEntryChange}
-                        onSetDefault={handleDefaultChange}
                       />
                     ))}
                   </div>
@@ -576,7 +492,7 @@ export function CodexModelMenuDialog({
           <Button
             type="button"
             onClick={handleSave}
-            disabled={!hasChanges || isLoading || isSaving}
+            disabled={!hasChanges || isSaving}
           >
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t("common.save")}

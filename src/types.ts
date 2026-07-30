@@ -266,8 +266,6 @@ export interface CodexCatalogModel {
   enabled?: boolean;
   // 收藏供应商之间的全局 Codex Desktop 菜单顺序
   menuOrder?: number;
-  // 同一模型存在多个供应商时, 是否由该供应商占用裸模型 ID
-  isNativeDefault?: boolean;
   // Hidden provider capability metadata for the generated model catalog.
   // supportsParallelToolCalls is native-profile-only; inputModalities wins over
   // automatic text-only model detection for every profile.

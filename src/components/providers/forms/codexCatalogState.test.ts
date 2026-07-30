@@ -5,7 +5,7 @@ import {
 } from "./ProviderForm";
 
 describe("Codex catalog menu state", () => {
-  it("preserves disabled and global menu metadata", () => {
+  it("preserves disabled and global menu metadata while removing the retired default flag", () => {
     expect(
       normalizeCodexCatalogModelsForSave([
         {
@@ -14,7 +14,7 @@ describe("Codex catalog menu state", () => {
           enabled: false,
           menuOrder: 3.9,
           isNativeDefault: true,
-        },
+        } as unknown as import("@/types").CodexCatalogModel,
       ]),
     ).toEqual([
       {
@@ -22,7 +22,6 @@ describe("Codex catalog menu state", () => {
         displayName: "Model A",
         enabled: false,
         menuOrder: 3,
-        isNativeDefault: true,
       },
     ]);
   });
