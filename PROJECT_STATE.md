@@ -104,6 +104,7 @@
 - 正在运行的 `CC Switch-New5.exe` 与 Codex Desktop 均未在 v3.19.0 构建、隔离 GUI 验证或清理过程中结束、覆盖或重启。
 - 最新 Windows x64 Release 构建: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`, 版本 `3.19.0`, 大小 `32,750,592` bytes (`31.23 MiB`), SHA256 `7CD44197EB135729409E0EE768051C038BAC96A880FD39016A0A7FDAB1CCDF4F`.
 - GitHub Release 上传文件已从该构建产物逐字节校验复制至 `C:\Users\jery3\.codex\tmp\cc-switch-release\CC-Switch-Custom-v3.19.0-Windows-x64.exe`; 文件未加入 Git, 未替换当前运行实例, 未删除或改写用户数据、设置和备份。
+- GitHub Release 已发布: `v3.19.0-custom.1`, 标题 `CC Switch Custom v3.19.0`, 目标构建提交 `c1522aff3643752e90dd62425b4f6b3eedbb6ac9`, 下载地址 `https://github.com/Jessire/cc-switch/releases/download/v3.19.0-custom.1/CC-Switch-Custom-v3.19.0-Windows-x64.exe`.
 - 进程, 文件路径, 版本和哈希均为易变状态; 涉及运行或替换 EXE 前必须重新检查.
 
 ## 待办与待验证
