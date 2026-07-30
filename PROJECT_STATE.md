@@ -4,7 +4,8 @@
 
 ## 状态快照
 
-- 更新时间: 2026-07-30, Asia/Shanghai.
+- 更新时间: 2026-07-31, Asia/Shanghai.
+- 当前上游基线: `origin/main` 的 `v3.19.0` 提交 `3c1154bed95a9e7cc8fe8664f046cde5560141a0`; 合并冲突按 Jessire 定制实现保留。
 - 工作目录: `D:\文件\Agenc Cli\cc-switch`.
 - 当前主线: `main`.
 - 用户仓库: `fork`, `https://github.com/Jessire/cc-switch.git`.
@@ -99,14 +100,10 @@
 
 ## 当前运行与产物
 
-- 2026-07-30 复核时, 正在运行的 CC Switch 为 `CC Switch-New4.exe`, PID `25668`, 监听 `127.0.0.1:15721`.
-- 运行路径: `D:\文件\Agenc Cli\cc-switch\CC Switch-New4.exe`; 版本 `3.18.0`, SHA256 `FD25419E752C702885D9A8C041764D00D6876E9EB9271125C9BF1DB485B97322`.
-- 正在运行的 CC Switch 和 Codex Desktop 均未在本轮结束或重启.
-- 最新交付文件: `D:\文件\Agenc Cli\cc-switch\CC Switch-New5.exe`.
-- 交付版本 `3.18.0`, 大小 `32,541,184` bytes (`31.03 MiB`), PE Machine `0x8664` (`x64`).
-- SHA256: `8B39D059EA32F7B56652768B9AFD4887B43778D935320C3CF10E3004D30C5B3D`.
-- 构建及复制日期: `2026-07-30`.
-- `CC Switch-New5.exe` 为旁路交付文件, 未覆盖当前运行实例, 未删除或改写用户数据、设置和备份.
+- 2026-07-31 复核时, 正在运行的 CC Switch 为 `CC Switch-New5.exe`, 路径 `D:\文件\Agenc Cli\cc-switch\CC Switch-New5.exe`; 版本 `3.18.0`, SHA256 `8B39D059EA32F7B56652768B9AFD4887B43778D935320C3CF10E3004D30C5B3D`.
+- 正在运行的 `CC Switch-New5.exe` 与 Codex Desktop 均未在 v3.19.0 构建、隔离 GUI 验证或清理过程中结束、覆盖或重启。
+- 最新 Windows x64 Release 构建: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`, 版本 `3.19.0`, 大小 `32,750,592` bytes (`31.23 MiB`), SHA256 `7CD44197EB135729409E0EE768051C038BAC96A880FD39016A0A7FDAB1CCDF4F`.
+- GitHub Release 上传文件已从该构建产物逐字节校验复制至 `C:\Users\jery3\.codex\tmp\cc-switch-release\CC-Switch-Custom-v3.19.0-Windows-x64.exe`; 文件未加入 Git, 未替换当前运行实例, 未删除或改写用户数据、设置和备份。
 - 进程, 文件路径, 版本和哈希均为易变状态; 涉及运行或替换 EXE 前必须重新检查.
 
 ## 待办与待验证
@@ -129,6 +126,9 @@
 
 ### 本次验证记录
 
+- 上游 `v3.19.0` 合并后已通过 `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm format:check`, `pnpm exec vitest run tests/components/ProviderCardLayout.test.ts`, `pnpm test:unit`, `pnpm build:renderer`, `cargo fmt --check`, `cargo test responses_tool_filter --lib`, `cargo test codex_model --lib`, `cargo test universal_provider --lib`, `cargo test --lib` 和 `pnpm tauri build --no-bundle`.
+- 已用独立应用标识和隔离数据库副本实际启动 v3.19.0 Windows Release GUI; 主窗口无白屏, 供应商卡片保持名称、收藏、分组和官网链接的一排自然流布局, 卡片操作按钮默认悬浮显示, 顶部应用切换器按可用宽度统一收缩. 隔离预览实例验证后已退出并清理, 未影响正式实例.
+- 上游冲突文件 `src/App.tsx` 与 `src/components/AppSwitcher.tsx` 保留定制版自动紧凑逻辑: 宽度足够时 Codex、Grok Build 仅图标, 其他应用显示图标和名称; 宽度不足时统一折叠为图标.
 - Codex 菜单定向前端测试 `6` 项、Codex provider Rust 模块测试 `45` 项和当前前端单元测试全部通过.
 - `pnpm typecheck`, Prettier 校验, `pnpm test:unit`, `pnpm build:renderer`, `cargo fmt --check` 全部通过.
 - `cargo test responses_tool_filter --lib`: `9` 项定向测试通过, 覆盖顶层 `tools`, 直接与 `allowed_tools` 形式的 `tool_choice`, `input[].additional_tools` 载体、用户内容保护、残留 marker 路径诊断和 Codex native 路径 gate.
