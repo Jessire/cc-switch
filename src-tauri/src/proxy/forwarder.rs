@@ -1571,15 +1571,6 @@ impl RequestForwarder {
             );
         }
 
-        if codex_native_responses_tool_filter
-            && remove_unsupported_responses_tools(&mut request_body, &["image_generation"])
-        {
-            log::debug!(
-                "[Codex] Filtered unsupported native Responses tools before upstream forward (provider={})",
-                provider.id
-            );
-        }
-
         if matches!(app_type, AppType::Codex | AppType::GrokBuild) {
             self.apply_media_prevention(&mut request_body, provider);
         }
@@ -1596,6 +1587,20 @@ impl RequestForwarder {
                 if apply_local_proxy_body_overrides(&mut filtered_body, overrides) {
                     filtered_body = prepare_upstream_request_body(filtered_body);
                 }
+            }
+        }
+        if codex_native_responses_tool_filter {
+            let tool_filter_result =
+                remove_unsupported_responses_tools(&mut filtered_body, &["image_generation"]);
+            if tool_filter_result.changed() {
+                log::info!(
+                    "[Codex] Removed unsupported native Responses image tool declarations before upstream forward (provider={}, endpoint={}, tools_removed={}, additional_tool_carriers_removed={}, tool_choice_cleared={})",
+                    provider.id,
+                    effective_endpoint,
+                    tool_filter_result.removed_tools,
+                    tool_filter_result.removed_additional_tool_carriers,
+                    tool_filter_result.cleared_tool_choice,
+                );
             }
         }
         // 出站 body 定稿后刷新真值（覆盖 Codex chat 上游模型覆写、转换层模型改写）
