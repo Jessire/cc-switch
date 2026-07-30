@@ -73,8 +73,7 @@
 - 已将自动重启、代理接管和故障转移三个开关作为一组放到顶部中间偏左.
 - 已将应用切换与其后的四个工具图标作为一组移到三个开关右侧, 两组内部顺序保持不变.
 - 宽屏下只有 Codex 和 Grok Build 使用纯图标; 其他应用继续显示图标和名称, 紧凑布局规则不变.
-- 供应商卡片改为约 `70px` 高的单行布局; 头像、名称、收藏、分组、状态和蓝色官网链接同排, URL 优先截断并保留 `title`, 右侧配额及悬停操作保留.
-- 供应商卡片信息区使用固定列 Grid: 名称 176px, 收藏 28px, 分组/状态 128px, 链接占剩余空间; 长名称、分组和链接只会在本列省略, 不再推动收藏、分组或链接的起始位置.
+- 供应商卡片保持约 `70px` 高的自然流单行布局; 头像、名称、收藏、分组、状态和蓝色官网链接依次紧凑衔接, 不设置固定列宽, 长内容按原逻辑省略并保留 `title`, 右侧配额及悬停操作保留.
 - 供应商头像按主界面分组统一映射: `GPT/OpenAI -> openai`, `Grok/xAI -> grok`, `Claude/Anthropic -> claude`, `国模/国产 -> kimi`; 多分组按现有顺序取第一个可识别品牌, 未识别时回退供应商原图标或首字头像.
 - 已移除自动重启成功提示中的 `(via ...)` 来源括号; 本轮不修改供应商卡片蓝色焦点边框.
 
@@ -100,14 +99,14 @@
 
 ## 当前运行与产物
 
-- 2026-07-30 复核时, 正在运行的 CC Switch 为 `CC Switch-New3.exe`, PID `23172`, 监听 `127.0.0.1:15721`.
-- 运行路径: `D:\文件\Agenc Cli\cc-switch\CC Switch-New3.exe`; 版本 `3.18.0`, SHA256 `D1F7C745D671ADE38AFFEB33A78AC4732DFADE81969C801E1364C7D2D52FCDCA`.
-- 正在运行的 Codex Desktop 未在本轮结束或重启.
-- 最新交付文件: `D:\文件\Agenc Cli\cc-switch\CC Switch-New3.exe`.
-- 交付版本 `3.18.0`, 大小 `32,538,112` bytes (`31.03 MiB`), PE Machine `0x8664` (`x64`).
-- SHA256: `D1F7C745D671ADE38AFFEB33A78AC4732DFADE81969C801E1364C7D2D52FCDCA`.
-- 构建及复制时间: `2026-07-30 19:28:48`.
-- 旧版 `CC Switch.exe` 已停止; `CC Switch-New3.exe` 已旁路启动并接管本地代理, 未覆盖或删除用户数据、设置和备份.
+- 2026-07-30 复核时, 正在运行的 CC Switch 为 `CC Switch-New4.exe`, PID `25668`, 监听 `127.0.0.1:15721`.
+- 运行路径: `D:\文件\Agenc Cli\cc-switch\CC Switch-New4.exe`; 版本 `3.18.0`, SHA256 `FD25419E752C702885D9A8C041764D00D6876E9EB9271125C9BF1DB485B97322`.
+- 正在运行的 CC Switch 和 Codex Desktop 均未在本轮结束或重启.
+- 最新交付文件: `D:\文件\Agenc Cli\cc-switch\CC Switch-New5.exe`.
+- 交付版本 `3.18.0`, 大小 `32,541,184` bytes (`31.03 MiB`), PE Machine `0x8664` (`x64`).
+- SHA256: `8B39D059EA32F7B56652768B9AFD4887B43778D935320C3CF10E3004D30C5B3D`.
+- 构建及复制日期: `2026-07-30`.
+- `CC Switch-New5.exe` 为旁路交付文件, 未覆盖当前运行实例, 未删除或改写用户数据、设置和备份.
 - 进程, 文件路径, 版本和哈希均为易变状态; 涉及运行或替换 EXE 前必须重新检查.
 
 ## 待办与待验证
@@ -115,9 +114,9 @@
 ### 真实客户端边界
 
 - Codex 重启实现已通过 Rust 测试和构建验证, 但为保护当前 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启实测.
-- 当前已运行 `CC Switch-New3.exe`; 为保护当前 Codex 对话, 仍未在真实 `ChatGPT.exe` 上验证第三方模型目录读取、官方 bundled 模型移除和重启行为.
+- 当前已运行 `CC Switch-New4.exe`; 为保护当前 Codex 对话, 仍未在真实 `ChatGPT.exe` 上验证第三方模型目录读取、官方 bundled 模型移除和重启行为.
 - 对话级供应商路由仍需在至少两个 Codex Desktop 对话中分别选择不同的 `供应商 - 模型`, 发起真实请求并核对代理日志中的供应商和剥离后的上游模型.
-- Codex 原生 `/responses` 第三方透传链路已按 GitHub Issue `#5190`、`#3683` 的范围在最终出站 body 过滤 `image_generation`: 顶层 `tools`, 直接 `tool_choice`, `tool_choice.allowed_tools.tools` 和 `input[].additional_tools.tools` 均覆盖; 保留 `function`、`web_search` 等非图像工具及用户内容. `#3683` 所述 Desktop `config.toml` 开关失效不再依赖, 由本地代理末端处理. 已用当前运行的 `CC Switch-New3.exe` 向 Fengwind API 发送带有该声明的纯文本请求, 返回 HTTP `200`, 未再出现图像权限 `403`.
+- Codex 原生 `/responses` 第三方透传链路已按 GitHub Issue `#5190`、`#3683` 的范围在最终出站 body 过滤 `image_generation`: 顶层 `tools`, 直接 `tool_choice`, `tool_choice.allowed_tools.tools` 和 `input[].additional_tools.tools` 均覆盖; 保留 `function`、`web_search` 等非图像工具及用户内容. `#3683` 所述 Desktop `config.toml` 开关失效不再依赖, 由本地代理末端处理. 过滤后的残留检测只记录 JSON pointer 路径, 不记录请求正文、凭据或 URL; 非原生路径绕过过滤时记录安全警告. 此链路已通过真实纯文本请求返回 HTTP `200`, 未再出现图像权限 `403`.
 - 2026-07-30 尝试只读核对当前 Codex Desktop 会话的模型菜单, 未发送聊天请求或改动模型. Electron 内容区拒绝后台点击, 前台激活亦被 Windows 拒绝, 因此菜单和 Desktop 端到端会话验证仍为未完成边界; 代理到 Fengwind 的真实请求验证不受影响.
 - 新增统一供应商默认启用通用配置、显式关闭后持久保留, 仍需结合真实用户数据做非破坏性复验.
 
@@ -130,14 +129,15 @@
 
 ### 本次验证记录
 
-- Codex 菜单定向前端测试 `6` 项、Codex provider Rust 模块测试 `45` 项、Rust 库测试 `2212 passed`, `2 ignored` 全部通过.
+- Codex 菜单定向前端测试 `6` 项、Codex provider Rust 模块测试 `45` 项和当前前端单元测试全部通过.
 - `pnpm typecheck`, Prettier 校验, `pnpm test:unit`, `pnpm build:renderer`, `cargo fmt --check` 全部通过.
-- `cargo test responses_tool_filter --lib`: 8 项定向测试通过, 覆盖顶层 `tools`, 直接与 `allowed_tools` 形式的 `tool_choice`, `input[].additional_tools` 载体, 用户内容保护和 Codex native 路径 gate.
-- 完整 `cargo test` 仅有 `tests\skill_sync.rs::sync_to_app_removes_disabled_and_orphaned_ssot_symlinks` 因当前 Windows 会话缺少创建符号链接权限而失败 (错误 `1314`); 后续 `uninstall_skill_creates_backup_before_removing_ssot` 因同一测试互斥锁被 poison 而失败. 两项与本轮功能无关.
-- `pnpm tauri build --no-bundle`: Windows x64 Release 构建通过. 交付 `CC Switch-New3.exe` (v3.18.0, x64, 32,538,112 bytes, SHA256 `D1F7C745D671ADE38AFFEB33A78AC4732DFADE81969C801E1364C7D2D52FCDCA`), 未覆盖正在运行的旧版.
+- `cargo test responses_tool_filter --lib`: `9` 项定向测试通过, 覆盖顶层 `tools`, 直接与 `allowed_tools` 形式的 `tool_choice`, `input[].additional_tools` 载体、用户内容保护、残留 marker 路径诊断和 Codex native 路径 gate.
+- `cargo test --lib`: `2215 passed`, `0 failed`, `2 ignored`.
+- `pnpm tauri build --no-bundle`: Windows x64 Release 构建通过. 交付 `CC Switch-New5.exe` (v3.18.0, x64, 32,541,184 bytes, SHA256 `8B39D059EA32F7B56652768B9AFD4887B43778D935320C3CF10E3004D30C5B3D`), 未覆盖正在运行的 `CC Switch-New4.exe`.
 - 已审计前后端、命令和多语言资源, bundled 官方模型、`isNativeDefault`、默认圆点和官方 ID 回退逻辑均已移除; 空菜单仍保持 CC Switch 托管目录和 `{"models":[]}`.
-- 本轮供应商卡片固定列变更已通过 `pnpm typecheck`, `pnpm test:unit`, `pnpm build:renderer` 和 Windows x64 Release 构建.
-- 当前运行的 `CC Switch-New3.exe` 已完成本地代理真实链路验证: 请求包含 `tools: [{"type":"image_generation"}]` 的纯文本 `/responses` 请求返回 HTTP `200`; 日志确认在上游转发前移除 `1` 个不支持的图像工具声明, 未记录请求正文或凭据.
+- 供应商卡片已恢复为名称、收藏、分组和官网链接自然衔接的单排布局; 定向布局测试、完整前端验证和 Windows x64 Release 构建通过.
+- 已使用独立应用标识和隔离数据库副本启动实际 Windows Release GUI, 截图确认供应商卡片与参考图一致且全部信息保持一排; 验证后仅关闭隔离预览实例, 当前 `CC Switch-New4.exe` 和 Codex Desktop 未受影响.
+- 真实代理链路验证记录仍有效: 含 `image_generation` 声明的纯文本 `/responses` 请求返回 HTTP `200`, 上游转发前移除不支持的图像工具声明; 新增诊断只输出残留路径, 不记录请求正文、凭据或 URL.
 
 ## 当前工作方式
 
