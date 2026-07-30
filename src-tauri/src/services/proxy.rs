@@ -3426,7 +3426,7 @@ mod tests {
 
         assert_eq!(models.len(), 3);
         assert_eq!(models[0]["model"], "gpt-5.4");
-        assert_eq!(models[0]["displayName"], "GPT 5.4");
+        assert_eq!(models[0]["displayName"], "GPT 5.4 · Native Relay");
         assert_eq!(models[0]["routeToolProfile"], "native_responses");
         assert_eq!(models[0]["contextWindow"], 400_000);
 
@@ -3435,7 +3435,10 @@ mod tests {
         assert_eq!(models[1]["routeToolProfile"], "proxy_chat");
 
         assert_eq!(models[2]["model"], "anthropic/claude-sonnet-4");
-        assert_eq!(models[2]["displayName"], "anthropic/claude-sonnet-4");
+        assert_eq!(
+            models[2]["displayName"],
+            "anthropic/claude-sonnet-4 · Anthropic Relay"
+        );
         assert_eq!(models[2]["routeToolProfile"], "anthropic");
     }
 

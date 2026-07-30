@@ -10,7 +10,7 @@ export interface DraftModelEntry {
 export interface DraftProviderGroup {
   key: string;
   providerId: string;
-  providerName: string;
+  menuGroupName: string;
   entries: DraftModelEntry[];
 }
 
@@ -65,7 +65,8 @@ export function buildDraftGroups(
         group: {
           key: `provider:${provider.id}`,
           providerId: provider.id,
-          providerName: provider.name,
+          menuGroupName:
+            provider.meta?.codexModelMenuGroupName?.trim() || provider.name,
           entries,
         },
         fallbackOrder,

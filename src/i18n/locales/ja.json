@@ -1410,6 +1410,7 @@
     "providerUnfavorited": "Codex モデルメニューから非表示にしました",
     "modelMenuButton": "モデルメニュー",
     "modelMenuManager": "Codex モデルメニュー",
+    "menuGroupName": "モデルメニューの短いグループ名",
     "dragProviderGroup": "ドラッグしてプロバイダーを並べ替え",
     "providerModelCount": "{{count}} モデル",
     "expandProviderModels": "プロバイダーのモデルを展開",

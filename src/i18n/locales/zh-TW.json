@@ -1375,6 +1375,7 @@
     "providerUnfavorited": "已從 Codex 模型選單隱藏",
     "modelMenuButton": "模型選單",
     "modelMenuManager": "Codex 模型選單",
+    "menuGroupName": "模型選單短分組",
     "dragProviderGroup": "拖曳調整供應商順序",
     "providerModelCount": "{{count}} 個模型",
     "expandProviderModels": "展開供應商模型",

@@ -1227,8 +1227,14 @@ requires_openai_auth = true
         let live_config = fs::read_to_string(crate::codex_config::get_codex_config_path())
             .expect("read Codex config.toml after mapping removal");
         assert!(
-            !live_config.contains("model_catalog_json"),
-            "removing mappings during takeover must clear the stale catalog pointer"
+            live_config.contains("model_catalog_json"),
+            "an empty managed menu must retain the CC Switch catalog pointer so Codex Desktop cannot fall back to bundled models"
+        );
+        let catalog: Value = read_json_file(&catalog_path).expect("read empty managed catalog");
+        assert_eq!(
+            catalog["models"],
+            json!([]),
+            "removing mappings during takeover must write an explicitly empty managed catalog"
         );
 
         state

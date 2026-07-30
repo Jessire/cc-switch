@@ -85,7 +85,7 @@ function SortableMenuModelRow({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        "grid min-h-11 grid-cols-[2rem_1.5rem_minmax(9rem,1fr)_minmax(8rem,0.9fr)_2rem] items-center gap-2 border-t border-border-default px-2 py-1.5",
+        "group/model-row grid min-h-11 grid-cols-[2rem_1.5rem_minmax(9rem,1fr)_minmax(8rem,0.9fr)_2rem] items-center gap-2 border-t border-border-default px-2 py-1.5",
         !isEnabled && "bg-muted/20 text-muted-foreground",
         isDragging && "relative z-20 bg-background shadow-md",
       )}
@@ -142,7 +142,12 @@ function SortableMenuModelRow({
         type="button"
         variant="ghost"
         size="icon"
-        className="h-7 w-7 text-muted-foreground"
+        className={cn(
+          "h-7 w-7 text-muted-foreground transition-opacity",
+          isEditing
+            ? "opacity-100"
+            : "opacity-25 group-hover/model-row:opacity-100 group-focus-within/model-row:opacity-100",
+        )}
         onClick={() => setIsEditing((current) => !current)}
         title={
           isEditing
@@ -164,13 +169,13 @@ function SortableProviderGroup({
   group,
   collapsed,
   onToggleCollapsed,
-  onProviderNameChange,
+  onMenuGroupNameChange,
   onEntryChange,
 }: {
   group: DraftProviderGroup;
   collapsed: boolean;
   onToggleCollapsed: () => void;
-  onProviderNameChange: (name: string) => void;
+  onMenuGroupNameChange: (name: string) => void;
   onEntryChange: (entryKey: string, patch: Partial<CodexCatalogModel>) => void;
 }) {
   const { t } = useTranslation();
@@ -225,9 +230,9 @@ function SortableProviderGroup({
         </Button>
 
         <Input
-          value={group.providerName}
-          onChange={(event) => onProviderNameChange(event.target.value)}
-          aria-label={t("codexConfig.providerName")}
+          value={group.menuGroupName}
+          onChange={(event) => onMenuGroupNameChange(event.target.value)}
+          aria-label={t("codexConfig.menuGroupName")}
           className="h-8 border-transparent bg-transparent px-2 text-sm font-semibold shadow-none hover:border-input focus:border-input focus:bg-background"
         />
 
@@ -298,11 +303,11 @@ export function CodexModelMenuDialog({
     );
   };
 
-  const handleProviderNameChange = (providerId: string, name: string) => {
+  const handleMenuGroupNameChange = (providerId: string, name: string) => {
     setGroups((current) =>
       current.map((group) =>
         group.providerId === providerId
-          ? { ...group, providerName: name }
+          ? { ...group, menuGroupName: name }
           : group,
       ),
     );
@@ -351,11 +356,14 @@ export function CodexModelMenuDialog({
         const group = groups.find(
           (item) => item.providerId === entry.providerId,
         );
-        const normalizedProviderName =
-          group?.providerName.trim() || original.name;
+        const normalizedMenuGroupName =
+          group?.menuGroupName.trim() || original.name;
         const source = nextByProvider.get(entry.providerId) ?? {
           ...original,
-          name: normalizedProviderName,
+          meta: {
+            ...original.meta,
+            codexModelMenuGroupName: normalizedMenuGroupName,
+          },
           settingsConfig: {
             ...original.settingsConfig,
             modelCatalog: {
@@ -463,8 +471,8 @@ export function CodexModelMenuDialog({
                             return next;
                           })
                         }
-                        onProviderNameChange={(name) =>
-                          handleProviderNameChange(group.providerId, name)
+                        onMenuGroupNameChange={(name) =>
+                          handleMenuGroupNameChange(group.providerId, name)
                         }
                         onEntryChange={handleEntryChange}
                       />

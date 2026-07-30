@@ -48,6 +48,20 @@ describe("codex model menu state", () => {
     ).toEqual(["second", "first-a", "first-b"]);
   });
 
+  it("uses the independent menu group name without changing the provider name", () => {
+    const source = provider("provider", [{ model: "gpt-5.6" }], 0);
+    source.name = "Imported Very Long Provider Name";
+    source.meta = {
+      ...source.meta,
+      codexModelMenuGroupName: "Any",
+    };
+
+    const groups = buildDraftGroups({ provider: source });
+
+    expect(groups[0].menuGroupName).toBe("Any");
+    expect(source.name).toBe("Imported Very Long Provider Name");
+  });
+
   it("puts a newly unordered provider group before persisted groups", () => {
     const groups = buildDraftGroups({
       existing: provider("existing", [{ model: "existing", menuOrder: 0 }], 0),

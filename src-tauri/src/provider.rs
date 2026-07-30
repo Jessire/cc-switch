@@ -413,6 +413,12 @@ pub struct ProviderMeta {
         skip_serializing_if = "Option::is_none"
     )]
     pub codex_model_menu_favorite: Option<bool>,
+    /// Short source label shown after every third-party model in the Codex menu.
+    #[serde(
+        rename = "codexModelMenuGroupName",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub codex_model_menu_group_name: Option<String>,
     /// Claude Desktop 3P 写入模式：direct（直连）或 proxy（预留）
     #[serde(rename = "claudeDesktopMode", skip_serializing_if = "Option::is_none")]
     pub claude_desktop_mode: Option<ClaudeDesktopMode>,

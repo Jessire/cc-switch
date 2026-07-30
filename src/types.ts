@@ -176,6 +176,8 @@ export interface ProviderMeta {
   commonConfigEnabled?: boolean;
   // 是否将该 Codex 供应商的已启用模型加入 Codex Desktop 模型菜单
   codexModelMenuFavorite?: boolean;
+  // Codex 模型菜单中追加到模型名称后的独立短分组名
+  codexModelMenuGroupName?: string;
   // Claude Desktop 3P 配置写入模式
   claudeDesktopMode?: "direct" | "proxy";
   // Claude Desktop 本地路由模式：Claude-safe route -> upstream model

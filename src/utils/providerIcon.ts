@@ -24,3 +24,34 @@ export function resolveProviderIcon(
 
   return normalizedIcon;
 }
+
+const GROUP_ICON_RULES: ReadonlyArray<{
+  icon: string;
+  keywords: readonly string[];
+}> = [
+  { icon: "openai", keywords: ["gpt", "openai"] },
+  { icon: "grok", keywords: ["grok", "xai"] },
+  { icon: "claude", keywords: ["claude", "anthropic"] },
+  { icon: "kimi", keywords: ["国模", "国产"] },
+];
+
+/**
+ * Pick a shared brand avatar from the provider's group memberships. Group order
+ * is authoritative, so a provider in several recognized groups uses the first
+ * matching group and remains stable when its external provider name changes.
+ */
+export function resolveGroupedProviderIcon(
+  groupNames: readonly string[],
+): string | undefined {
+  for (const groupName of groupNames) {
+    const normalizedName = groupName.trim().toLocaleLowerCase();
+    if (!normalizedName) continue;
+
+    const match = GROUP_ICON_RULES.find(({ keywords }) =>
+      keywords.some((keyword) => normalizedName.includes(keyword)),
+    );
+    if (match) return match.icon;
+  }
+
+  return undefined;
+}

@@ -31,7 +31,10 @@ import {
 } from "@/utils/providerCapabilities";
 import { useProviderHealth } from "@/lib/query/failover";
 import { useUsageQuery } from "@/lib/query/queries";
-import { resolveProviderIcon } from "@/utils/providerIcon";
+import {
+  resolveGroupedProviderIcon,
+  resolveProviderIcon,
+} from "@/utils/providerIcon";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface DragHandleProps {
@@ -202,6 +205,12 @@ export function ProviderCard({
   const fallbackUrlText = t("provider.notConfigured", {
     defaultValue: "未配置接口地址",
   });
+  const groupedIcon = resolveGroupedProviderIcon(
+    membershipGroups.map((group) => group.name),
+  );
+  const displayIcon =
+    groupedIcon ??
+    resolveProviderIcon(appId, provider.icon, provider.iconColor);
 
   const displayUrl = useMemo(() => {
     return extractApiUrl(provider, fallbackUrlText);
@@ -358,13 +367,9 @@ export function ProviderCard({
 
           <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md border border-border/70 bg-muted/60">
             <ProviderIcon
-              icon={resolveProviderIcon(
-                appId,
-                provider.icon,
-                provider.iconColor,
-              )}
+              icon={displayIcon}
               name={provider.name}
-              color={provider.iconColor}
+              color={groupedIcon ? undefined : provider.iconColor}
               size={26}
             />
           </div>

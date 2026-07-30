@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { cn } from "@/lib/utils";
+import { consumeGroupTabsWheel } from "./groupTabsWheel";
 import {
   ALL_GROUP_ID,
   UNGROUPED_GROUP_ID,
@@ -246,20 +247,10 @@ export function GroupTabs({
     if (!element) return;
 
     const handleWheel = (event: WheelEvent) => {
-      if (element.scrollWidth <= element.clientWidth) return;
-      const delta =
-        Math.abs(event.deltaX) > Math.abs(event.deltaY)
-          ? event.deltaX
-          : event.deltaY;
-      if (delta === 0) return;
-      const maxScrollLeft = element.scrollWidth - element.clientWidth;
-      const nextScrollLeft = Math.min(
-        maxScrollLeft,
-        Math.max(0, element.scrollLeft + delta),
-      );
-      if (nextScrollLeft === element.scrollLeft) return;
-      event.preventDefault();
-      element.scrollLeft = nextScrollLeft;
+      // While the pointer is over the group strip, the wheel belongs to this
+      // horizontal scroller even at either boundary. This prevents the page
+      // from suddenly continuing vertically after the remaining groups appear.
+      consumeGroupTabsWheel(element, event);
     };
 
     element.addEventListener("wheel", handleWheel, { passive: false });

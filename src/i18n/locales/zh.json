@@ -1410,6 +1410,7 @@
     "providerUnfavorited": "已从 Codex 模型菜单隐藏",
     "modelMenuButton": "模型菜单",
     "modelMenuManager": "Codex 模型菜单",
+    "menuGroupName": "模型菜单短分组",
     "dragProviderGroup": "拖动调整供应商顺序",
     "providerModelCount": "{{count}} 个模型",
     "expandProviderModels": "展开供应商模型",

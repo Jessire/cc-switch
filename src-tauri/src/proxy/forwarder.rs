@@ -15,6 +15,7 @@ use super::{
         codex_chat_history::CodexChatHistoryStore, gemini_shadow::GeminiShadowStore, get_adapter,
         AuthInfo, AuthStrategy, ProviderAdapter, ProviderType,
     },
+    responses_tool_filter::remove_unsupported_responses_tools,
     thinking_budget_rectifier::{rectify_thinking_budget, should_rectify_thinking_budget},
     thinking_rectifier::{
         normalize_thinking_type, rectify_anthropic_request, should_rectify_thinking_signature,
@@ -1151,6 +1152,13 @@ impl RequestForwarder {
             && super::providers::should_convert_codex_responses_to_anthropic(provider, endpoint);
         let codex_official_auth_passthrough = matches!(app_type, AppType::Codex)
             && super::providers::is_codex_official_provider(provider);
+        let codex_native_responses_tool_filter = should_filter_codex_native_responses_tools(
+            app_type,
+            endpoint,
+            codex_responses_to_chat,
+            codex_responses_to_anthropic,
+            codex_official_auth_passthrough,
+        );
 
         if codex_official_auth_passthrough {
             validate_codex_official_authorization(headers)?;
@@ -1559,6 +1567,15 @@ impl RequestForwarder {
         {
             log::debug!(
                 "[Codex] Sanitized xAI-unsupported Responses fields (provider={})",
+                provider.id
+            );
+        }
+
+        if codex_native_responses_tool_filter
+            && remove_unsupported_responses_tools(&mut request_body, &["image_generation"])
+        {
+            log::debug!(
+                "[Codex] Filtered unsupported native Responses tools before upstream forward (provider={})",
                 provider.id
             );
         }
@@ -2840,6 +2857,27 @@ fn is_claude_messages_path(path: &str) -> bool {
     matches!(path, "/v1/messages" | "/claude/v1/messages")
 }
 
+fn is_codex_responses_path(endpoint: &str) -> bool {
+    matches!(
+        split_endpoint_and_query(endpoint).0,
+        "/responses" | "/v1/responses" | "/responses/compact" | "/v1/responses/compact"
+    )
+}
+
+fn should_filter_codex_native_responses_tools(
+    app_type: &AppType,
+    endpoint: &str,
+    codex_responses_to_chat: bool,
+    codex_responses_to_anthropic: bool,
+    codex_official_auth_passthrough: bool,
+) -> bool {
+    matches!(app_type, AppType::Codex)
+        && is_codex_responses_path(endpoint)
+        && !codex_responses_to_chat
+        && !codex_responses_to_anthropic
+        && !codex_official_auth_passthrough
+}
+
 fn rewrite_codex_responses_endpoint_to_chat(endpoint: &str) -> (String, Option<String>) {
     let (_path, query) = split_endpoint_and_query(endpoint);
     let passthrough_query = query.map(ToString::to_string);
@@ -4110,6 +4148,60 @@ mod tests {
 
         assert_eq!(endpoint, "/v1/responses?x-id=1");
         assert_eq!(passthrough_query.as_deref(), Some("x-id=1"));
+    }
+
+    #[test]
+    fn native_responses_tool_filter_gate_only_applies_to_codex_native_responses() {
+        assert!(should_filter_codex_native_responses_tools(
+            &AppType::Codex,
+            "/v1/responses",
+            false,
+            false,
+            false,
+        ));
+        assert!(should_filter_codex_native_responses_tools(
+            &AppType::Codex,
+            "/responses/compact?accept=image",
+            false,
+            false,
+            false,
+        ));
+
+        assert!(!should_filter_codex_native_responses_tools(
+            &AppType::GrokBuild,
+            "/v1/responses",
+            false,
+            false,
+            false,
+        ));
+        assert!(!should_filter_codex_native_responses_tools(
+            &AppType::Codex,
+            "/chat/completions",
+            false,
+            false,
+            false,
+        ));
+        assert!(!should_filter_codex_native_responses_tools(
+            &AppType::Codex,
+            "/v1/responses",
+            true,
+            false,
+            false,
+        ));
+        assert!(!should_filter_codex_native_responses_tools(
+            &AppType::Codex,
+            "/v1/responses",
+            false,
+            true,
+            false,
+        ));
+        assert!(!should_filter_codex_native_responses_tools(
+            &AppType::Codex,
+            "/v1/responses",
+            false,
+            false,
+            true,
+        ));
     }
 
     #[test]

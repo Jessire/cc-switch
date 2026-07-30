@@ -1410,6 +1410,7 @@
     "providerUnfavorited": "Hidden from the Codex model menu",
     "modelMenuButton": "Model menu",
     "modelMenuManager": "Codex model menu",
+    "menuGroupName": "Model Menu Group",
     "dragProviderGroup": "Drag to reorder providers",
     "providerModelCount": "{{count}} models",
     "expandProviderModels": "Expand provider models",

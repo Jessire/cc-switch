@@ -409,11 +409,15 @@ pub fn codex_model_menu_entries(providers: &[Provider]) -> Vec<CodexModelMenuEnt
             if !seen_routes.insert(routed_model.clone()) {
                 return None;
             }
-            let display_name = if !owns_bare_model {
-                format!("{} · {}", candidate.display_name, candidate.provider.name)
-            } else {
-                candidate.display_name
-            };
+            let menu_group_name = candidate
+                .provider
+                .meta
+                .as_ref()
+                .and_then(|meta| meta.codex_model_menu_group_name.as_deref())
+                .map(str::trim)
+                .filter(|name| !name.is_empty())
+                .unwrap_or(candidate.provider.name.as_str());
+            let display_name = format!("{} · {}", candidate.display_name, menu_group_name);
 
             Some(CodexModelMenuEntry {
                 provider: candidate.provider,
@@ -1815,7 +1819,7 @@ wire_api = "responses"
         let entries = codex_model_menu_entries(&[first.clone(), second.clone(), ignored]);
         assert_eq!(entries.len(), 2);
         assert_eq!(entries[0].routed_model, "gpt-5.6");
-        assert_eq!(entries[0].display_name, "GPT 5.6");
+        assert_eq!(entries[0].display_name, "GPT 5.6 · First Relay");
         assert_eq!(entries[0].provider.id, "first");
         assert_eq!(entries[1].routed_model, "second/gpt-5.6");
         assert_eq!(entries[1].display_name, "GPT 5.6 · Second Relay");
@@ -1855,8 +1859,30 @@ wire_api = "responses"
         assert_eq!(entries.len(), 2);
         assert_eq!(entries[0].routed_model, "gpt-5.6");
         assert_eq!(entries[0].provider.id, "first");
+        assert_eq!(entries[0].display_name, "GPT 5.6 · First Relay");
         assert_eq!(entries[1].routed_model, "selected/gpt-5.6");
         assert_eq!(entries[1].display_name, "GPT 5.6 · Selected Relay");
+    }
+
+    #[test]
+    fn menu_group_name_is_independent_from_provider_name() {
+        let mut provider = menu_provider(
+            "long-provider",
+            "Imported Provider Name That May Change",
+            json!([{ "model": "gpt-5.6", "displayName": "5.6 Sol", "menuOrder": 0 }]),
+            true,
+        );
+        provider
+            .meta
+            .as_mut()
+            .expect("provider meta")
+            .codex_model_menu_group_name = Some("Any".to_string());
+
+        let entries = codex_model_menu_entries(&[provider]);
+
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].routed_model, "gpt-5.6");
+        assert_eq!(entries[0].display_name, "5.6 Sol · Any");
     }
 
     #[test]
