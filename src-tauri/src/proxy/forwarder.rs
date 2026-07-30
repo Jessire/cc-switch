@@ -15,7 +15,9 @@ use super::{
         codex_chat_history::CodexChatHistoryStore, gemini_shadow::GeminiShadowStore, get_adapter,
         AuthInfo, AuthStrategy, ProviderAdapter, ProviderType,
     },
-    responses_tool_filter::remove_unsupported_responses_tools,
+    responses_tool_filter::{
+        remaining_unsupported_tool_marker_paths, remove_unsupported_responses_tools,
+    },
     thinking_budget_rectifier::{rectify_thinking_budget, should_rectify_thinking_budget},
     thinking_rectifier::{
         normalize_thinking_type, rectify_anthropic_request, should_rectify_thinking_signature,
@@ -1602,6 +1604,26 @@ impl RequestForwarder {
                     tool_filter_result.cleared_tool_choice,
                 );
             }
+
+            let marker_paths =
+                remaining_unsupported_tool_marker_paths(&filtered_body, &["image_generation"]);
+            if !marker_paths.is_empty() {
+                log::warn!(
+                    "[Codex] Unsupported native Responses image marker remained after documented-carrier filter (provider={}, endpoint={}, marker_paths={:?}, request_content_omitted=true)",
+                    provider.id,
+                    effective_endpoint,
+                    marker_paths,
+                );
+            }
+        } else if matches!(app_type, AppType::Codex) && is_codex_responses_path(endpoint) {
+            log::warn!(
+                "[Codex] Native Responses image tool filter bypassed (provider={}, endpoint={}, responses_to_chat={}, responses_to_anthropic={}, official_auth_passthrough={}, request_content_omitted=true)",
+                provider.id,
+                endpoint,
+                codex_responses_to_chat,
+                codex_responses_to_anthropic,
+                codex_official_auth_passthrough,
+            );
         }
         // 出站 body 定稿后刷新真值（覆盖 Codex chat 上游模型覆写、转换层模型改写）
         if let Some(m) = filtered_body

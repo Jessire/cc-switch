@@ -52,6 +52,97 @@ pub(crate) fn remove_unsupported_responses_tools(
     result
 }
 
+/// Return the JSON-pointer locations of unsupported tool markers that remain
+/// after filtering the documented carriers.
+///
+/// This is intentionally diagnostic-only and never records request values,
+/// prompts, credentials, or URLs. It is bounded so an unexpected payload cannot
+/// produce an unbounded log line. The helper exists to extend the filter only
+/// when a real Codex Desktop request proves a new carrier shape.
+pub(crate) fn remaining_unsupported_tool_marker_paths(
+    body: &Value,
+    unsupported_tool_types: &[&str],
+) -> Vec<String> {
+    const MAX_PATHS: usize = 8;
+
+    let unsupported: HashSet<&str> = unsupported_tool_types
+        .iter()
+        .copied()
+        .map(str::trim)
+        .filter(|tool_type| !tool_type.is_empty())
+        .collect();
+    if unsupported.is_empty() {
+        return Vec::new();
+    }
+
+    let mut paths = Vec::new();
+    collect_unsupported_tool_marker_paths(body, &unsupported, "", &mut paths, MAX_PATHS);
+    paths
+}
+
+fn collect_unsupported_tool_marker_paths(
+    value: &Value,
+    unsupported_tool_types: &HashSet<&str>,
+    pointer: &str,
+    paths: &mut Vec<String>,
+    max_paths: usize,
+) {
+    if paths.len() >= max_paths {
+        return;
+    }
+
+    match value {
+        Value::Object(object) => {
+            for (key, child) in object {
+                if paths.len() >= max_paths {
+                    return;
+                }
+
+                let child_pointer =
+                    format!("{pointer}/{}", key.replace('~', "~0").replace('/', "~1"));
+                if child
+                    .as_str()
+                    .map(str::trim)
+                    .is_some_and(|marker| unsupported_tool_types.contains(marker))
+                {
+                    paths.push(child_pointer.clone());
+                }
+
+                collect_unsupported_tool_marker_paths(
+                    child,
+                    unsupported_tool_types,
+                    &child_pointer,
+                    paths,
+                    max_paths,
+                );
+            }
+        }
+        Value::Array(items) => {
+            for (index, child) in items.iter().enumerate() {
+                if paths.len() >= max_paths {
+                    return;
+                }
+                let child_pointer = format!("{pointer}/{index}");
+                if child
+                    .as_str()
+                    .map(str::trim)
+                    .is_some_and(|marker| unsupported_tool_types.contains(marker))
+                {
+                    paths.push(child_pointer.clone());
+                }
+                collect_unsupported_tool_marker_paths(
+                    child,
+                    unsupported_tool_types,
+                    &child_pointer,
+                    paths,
+                    max_paths,
+                );
+            }
+        }
+        _ => {}
+    }
+}
+
 fn filter_additional_tools_carriers(
     body: &mut Value,
     unsupported_tool_types: &HashSet<&str>,
@@ -293,6 +384,30 @@ mod tests {
         assert_eq!(result.removed_additional_tool_carriers, 1);
         assert_eq!(body["input"].as_array().unwrap().len(), 1);
         assert_eq!(body["input"][0]["content"], json!("hello"));
+    }
+
+    #[test]
+    fn reports_only_unfiltered_marker_paths_without_payload_values() {
+        let mut body = json!({
+            "tools": [{"type": "image_generation"}],
+            "input": [{
+                "type": "message",
+                "content": [{
+                    "type": "input_text",
+                    "text": "this must not be reported"
+                }]
+            }],
+            "future_tool_settings": {
+                "preferred_tool": "image_generation"
+            }
+        });
+
+        let result = remove_unsupported_responses_tools(&mut body, &["image_generation"]);
+        assert_eq!(result.removed_tools, 1);
+        assert_eq!(
+            remaining_unsupported_tool_marker_paths(&body, &["image_generation"]),
+            vec!["/future_tool_settings/preferred_tool"]
+        );
     }
 
     #[test]
