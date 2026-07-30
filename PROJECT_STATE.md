@@ -117,7 +117,8 @@
 - Codex 重启实现已通过 Rust 测试和构建验证, 但为保护当前 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启实测.
 - 当前已运行 `CC Switch-New3.exe`; 为保护当前 Codex 对话, 仍未在真实 `ChatGPT.exe` 上验证第三方模型目录读取、官方 bundled 模型移除和重启行为.
 - 对话级供应商路由仍需在至少两个 Codex Desktop 对话中分别选择不同的 `供应商 - 模型`, 发起真实请求并核对代理日志中的供应商和剥离后的上游模型.
-- Codex 原生 `/responses` 第三方透传链路已在最终出站 body 过滤 `image_generation`: 顶层 `tools`, `tool_choice.allowed_tools.tools` 和 `input[].additional_tools.tools` 均覆盖; 已用当前运行的 `CC Switch-New3.exe` 向 Fengwind API 发送带有该声明的纯文本请求, 返回 HTTP `200`, 未再出现图像权限 `403`.
+- Codex 原生 `/responses` 第三方透传链路已按 GitHub Issue `#5190`、`#3683` 的范围在最终出站 body 过滤 `image_generation`: 顶层 `tools`, 直接 `tool_choice`, `tool_choice.allowed_tools.tools` 和 `input[].additional_tools.tools` 均覆盖; 保留 `function`、`web_search` 等非图像工具及用户内容. `#3683` 所述 Desktop `config.toml` 开关失效不再依赖, 由本地代理末端处理. 已用当前运行的 `CC Switch-New3.exe` 向 Fengwind API 发送带有该声明的纯文本请求, 返回 HTTP `200`, 未再出现图像权限 `403`.
+- 2026-07-30 尝试只读核对当前 Codex Desktop 会话的模型菜单, 未发送聊天请求或改动模型. Electron 内容区拒绝后台点击, 前台激活亦被 Windows 拒绝, 因此菜单和 Desktop 端到端会话验证仍为未完成边界; 代理到 Fengwind 的真实请求验证不受影响.
 - 新增统一供应商默认启用通用配置、显式关闭后持久保留, 仍需结合真实用户数据做非破坏性复验.
 
 ### 需要保持的回归项
