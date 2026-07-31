@@ -4,7 +4,7 @@
 
 ## 状态快照
 
-- 更新时间: 2026-07-30, Asia/Shanghai.
+- 更新时间: 2026-07-31, Asia/Shanghai.
 - 工作目录: `D:\文件\Agenc Cli\cc-switch`.
 - 当前主线: `main`, 跟踪 `fork/main`.
 - 用户仓库: `fork`, `https://github.com/Jessire/cc-switch.git`.
@@ -49,10 +49,10 @@
 ## 当前构建、发布和运行实例
 
 - v3.19.0 上游合并提交: `c1522aff3643752e90dd62425b4f6b3eedbb6ac9` (`Merge upstream v3.19.0`). 冲突文件 `src/App.tsx` 与 `src/components/AppSwitcher.tsx` 保留定制版自动紧凑行为, 其余上游有效改动已合并.
-- 最新本地 Windows x64 Release 构建: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 版本 `3.19.0`, 大小 `32,750,592` bytes (`31.23 MiB`), SHA256 `7CD44197EB135729409E0EE768051C038BAC96A880FD39016A0A7FDAB1CCDF4F`.
-- 自定义 GitHub Release: `v3.19.0-custom.1`, 标签指向 `c1522aff3643752e90dd62425b4f6b3eedbb6ac9`; Release 资产为 `CC-Switch-Custom-v3.19.0-Windows-x64.exe`, 大小 `32,750,592` bytes, SHA256 与本地构建一致.
-- 本地发布副本: `C:\Users\jery3\.codex\tmp\cc-switch-release\CC-Switch-Custom-v3.19.0-Windows-x64.exe`. 该文件未加入 Git, 不替换当前运行实例.
-- 当前唯一运行的 CC Switch: `D:\文件\Agenc Cli\cc-switch\CC Switch-New5.exe`; 文件版本 `3.18.0`, SHA256 `8B39D059EA32F7B56652768B9AFD4887B43778D935320C3CF10E3004D30C5B3D`. 本轮未结束、覆盖或重启它, Codex Desktop 也未受影响.
+- 本地 `src-tauri\target` 构建缓存已清理, 当前工作树不保留本地 Release 产物; 需要时使用 `pnpm tauri build --no-bundle` 重新构建.
+- 自定义 GitHub Release: `v3.19.0-custom.1`, 标签指向 `c1522aff3643752e90dd62425b4f6b3eedbb6ac9`; Release 资产为 `CC-Switch-Custom-v3.19.0-Windows-x64.exe`, 大小 `32,750,592` bytes, SHA256 `7CD44197EB135729409E0EE768051C038BAC96A880FD39016A0A7FDAB1CCDF4F`.
+- 当前唯一运行的 CC Switch: `D:\Download\CC-Switch-Custom-v3.19.0-Windows-x64.exe`; PID `16516`, 文件版本 `3.19.0`, 大小 `32,750,592` bytes, SHA256 `7CD44197EB135729409E0EE768051C038BAC96A880FD39016A0A7FDAB1CCDF4F`. 本轮未结束、覆盖或重启它, Codex Desktop 也未受影响.
+- 仓库根目录 6 个旧 v3.18.0 EXE、可重建构建缓存及已确认无运行实例的 CC Switch 临时构建目录已清理; 数据库、配置、备份和客户端真实配置均未触碰.
 
 ## 已完成验证
 
