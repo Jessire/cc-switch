@@ -88,9 +88,10 @@ function SortableMenuModelRow({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        "group/model-row grid min-h-12 grid-cols-[1.5rem_1.75rem_minmax(0,1fr)] items-center gap-2 rounded-lg border border-border-default bg-background px-2 py-1 transition-colors",
+        "group/model-row grid min-h-12 grid-cols-[1.5rem_1.75rem_minmax(0,1fr)] items-center gap-2 rounded-md border border-transparent bg-transparent px-2 py-1.5 transition-colors hover:bg-muted/50 hover:border-border-default",
         !isEnabled && "bg-muted/20 text-muted-foreground",
-        isDragging && "relative z-20 shadow-lg",
+        isDragging &&
+          "relative z-20 bg-background shadow-md ring-1 ring-border-default",
       )}
     >
       <span
@@ -183,14 +184,14 @@ function SortableProviderGroup({
         aria-label={t("codexConfig.enableProviderModels", {
           defaultValue: "Show this group's models in the Codex menu",
         })}
-        className="h-8 w-8 rounded-xl"
+        className="h-7 w-7 rounded-lg"
       />
 
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className="h-8 w-6 shrink-0 cursor-grab text-muted-foreground active:cursor-grabbing"
+        className="h-7 w-7 shrink-0 cursor-grab rounded-md text-muted-foreground active:cursor-grabbing"
         title={t("codexConfig.dragProviderGroup")}
         {...attributes}
         {...listeners}
@@ -205,7 +206,7 @@ function SortableProviderGroup({
         className="h-8 min-w-0 flex-1 border-transparent bg-transparent px-1 text-base font-medium shadow-none hover:border-input focus:border-input focus:bg-background"
       />
 
-      <span className="shrink-0 rounded-full bg-background/80 px-3 py-1.5 text-sm font-normal text-muted-foreground">
+      <span className="shrink-0 px-1 text-xs font-normal tabular-nums text-muted-foreground">
         {t("codexConfig.providerModelCount", {
           count: group.entries.length,
         })}
@@ -222,7 +223,7 @@ function SortableProviderGroup({
         className={cn(
           layout === "inline"
             ? "contents"
-            : "grid grid-cols-1 gap-2 p-2 md:grid-cols-3",
+            : "grid grid-cols-1 gap-1 px-2 pb-2 pt-1 md:grid-cols-3",
         )}
       >
         {group.entries.map((entry, index) => (
@@ -243,17 +244,17 @@ function SortableProviderGroup({
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
         "overflow-hidden rounded-xl border border-border-default bg-background",
-        isDragging && "relative z-10 shadow-lg",
+        isDragging && "relative z-10 shadow-md ring-1 ring-border-default",
       )}
     >
       {compactRow ? (
-        <div className="grid min-h-12 grid-cols-[minmax(10rem,0.9fr)_repeat(2,minmax(0,1fr))] items-center gap-2 bg-muted/35 px-3 py-2">
+        <div className="grid min-h-11 grid-cols-[minmax(10rem,0.9fr)_repeat(2,minmax(0,1fr))] items-center gap-1.5 bg-muted/35 px-2.5 py-1.5">
           {groupHeader}
           {models("inline")}
         </div>
       ) : (
         <>
-          <div className="bg-muted/35 px-3 py-2">{groupHeader}</div>
+          <div className="bg-muted/35 px-3 py-1.5">{groupHeader}</div>
           {models("grid")}
         </>
       )}
@@ -395,6 +396,16 @@ export function CodexModelMenuDialog({
   };
 
   const hasChanges = JSON.stringify(groups) !== initialSnapshot;
+  const totalModelCount = groups.reduce(
+    (total, group) => total + group.entries.length,
+    0,
+  );
+  const enabledModelCount = groups.reduce(
+    (total, group) =>
+      total +
+      group.entries.filter((entry) => entry.model.enabled !== false).length,
+    0,
+  );
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -488,30 +499,40 @@ export function CodexModelMenuDialog({
         zIndex="top"
         className="max-h-[calc(100vh-2rem)] max-w-4xl overflow-hidden"
       >
-        <DialogHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <DialogTitle className="shrink-0">
+        <DialogHeader className="gap-2 px-6 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+          <DialogTitle className="shrink-0 text-base">
             {t("codexConfig.modelMenuManager")}
           </DialogTitle>
-          <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-1.5">
-            <Input
-              value={renameFrom}
-              onChange={(event) => {
-                setRenameFrom(event.target.value);
-              }}
-              placeholder={t("codexConfig.batchRenameFrom")}
-              aria-label={t("codexConfig.batchRenameFrom")}
-              className="h-8 w-28 text-xs sm:w-32"
-            />
-            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <Input
-              value={renameTo}
-              onChange={(event) => {
-                setRenameTo(event.target.value);
-              }}
-              placeholder={t("codexConfig.batchRenameTo")}
-              aria-label={t("codexConfig.batchRenameTo")}
-              className="h-8 w-28 text-xs sm:w-32"
-            />
+          <div className="flex min-w-0 flex-1 flex-wrap items-end justify-end gap-x-1.5 gap-y-1.5">
+            <label className="flex flex-col gap-1">
+              <span className="px-1 text-[11px] leading-none text-muted-foreground">
+                {t("codexConfig.batchRenameFrom")}
+              </span>
+              <Input
+                value={renameFrom}
+                onChange={(event) => {
+                  setRenameFrom(event.target.value);
+                }}
+                placeholder={t("codexConfig.batchRenameFromPlaceholder")}
+                aria-label={t("codexConfig.batchRenameFrom")}
+                className="h-8 w-32 text-xs sm:w-40"
+              />
+            </label>
+            <ArrowRight className="mb-2 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <label className="flex flex-col gap-1">
+              <span className="px-1 text-[11px] leading-none text-muted-foreground">
+                {t("codexConfig.batchRenameTo")}
+              </span>
+              <Input
+                value={renameTo}
+                onChange={(event) => {
+                  setRenameTo(event.target.value);
+                }}
+                placeholder={t("codexConfig.batchRenameToPlaceholder")}
+                aria-label={t("codexConfig.batchRenameTo")}
+                className="h-8 w-32 text-xs sm:w-40"
+              />
+            </label>
             <Popover
               open={isRenamePreviewOpen}
               onOpenChange={setIsRenamePreviewOpen}
@@ -525,6 +546,9 @@ export function CodexModelMenuDialog({
                   className="h-8 gap-1 rounded-md px-2 text-xs"
                 >
                   {t("codexConfig.batchRenamePreview")}
+                  {renameMatches.length > 0 && (
+                    <span className="tabular-nums">{renameMatches.length}</span>
+                  )}
                   <ChevronDown className="h-3.5 w-3.5" />
                 </Button>
               </PopoverTrigger>
@@ -580,6 +604,7 @@ export function CodexModelMenuDialog({
             </Popover>
             <Button
               type="button"
+              variant="outline"
               size="sm"
               onClick={handleBatchRename}
               disabled={!renameFrom.trim() || renameMatches.length === 0}
@@ -590,9 +615,9 @@ export function CodexModelMenuDialog({
           </div>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 px-6 py-4">
+        <div className="min-h-0 flex-1 px-4 py-3 sm:px-6 sm:py-3">
           {groups.length > 0 ? (
-            <ScrollArea className="h-[min(58vh,32rem)] pr-3">
+            <ScrollArea className="h-[min(62vh,36rem)] pr-2">
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -602,7 +627,7 @@ export function CodexModelMenuDialog({
                   items={groups.map((group) => group.key)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {groups.map((group) => (
                       <SortableProviderGroup
                         key={group.key}
@@ -627,23 +652,31 @@ export function CodexModelMenuDialog({
           )}
         </div>
 
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSaving}
-          >
-            {t("common.cancel")}
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSave}
-            disabled={!hasChanges || isSaving}
-          >
-            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t("common.save")}
-          </Button>
+        <DialogFooter className="gap-3 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mr-auto text-xs tabular-nums text-muted-foreground">
+            {t("codexConfig.modelMenuEnabledCount", {
+              enabled: enabledModelCount,
+              total: totalModelCount,
+            })}
+          </div>
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSaving}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={!hasChanges || isSaving}
+            >
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("common.save")}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
