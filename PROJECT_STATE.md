@@ -51,9 +51,9 @@
 ## 当前构建、发布和运行实例
 
 - v3.19.0 上游合并提交: `c1522aff3643752e90dd62425b4f6b3eedbb6ac9` (`Merge upstream v3.19.0`). 冲突文件 `src/App.tsx` 与 `src/components/AppSwitcher.tsx` 保留定制版自动紧凑行为, 其余上游有效改动已合并.
-- 最近一次本地 Windows x64 Release 构建产物: `C:\Users\jery3\.codex\tmp\CC Switch-Compact-20260801.exe`; 文件版本 `3.19.0`, 大小 `32,754,688` bytes, SHA256 `A9224D2ACB22AC070B953BB6D03D88DDBEB48AAAD848A09C1A7B6E41C47CFC47`. 原版本仍保留在 `C:\Users\jery3\.codex\tmp\cc-switch-release-target-20260801\release\cc-switch.exe`.
+- 最近一次本地 Windows x64 Release 构建产物: `C:\Users\jery3\.codex\tmp\CC Switch.exe`; 文件版本 `3.19.0`, 大小 `32,754,688` bytes, SHA256 `6FAC7AC44395900AF03928EF6633B0C8EB80049BC8448FB0931526ACDB91D951`. 旧版 `CC Switch-Compact-20260801.exe` 和原旁路构建目录均保留.
 - 自定义 GitHub Release: `v3.19.0-custom.1`, 标签指向 `c1522aff3643752e90dd62425b4f6b3eedbb6ac9`; Release 资产为 `CC-Switch-Custom-v3.19.0-Windows-x64.exe`, 大小 `32,750,592` bytes, SHA256 `7CD44197EB135729409E0EE768051C038BAC96A880FD39016A0A7FDAB1CCDF4F`.
-- 当前运行实例: PID `11896` 仍运行旧版 `C:\Users\jery3\.codex\tmp\cc-switch-release-target-20260801\release\cc-switch.exe`; 本次新 EXE 未启动, 未结束旧实例.
+- 当前运行实例: 无 `cc-switch.exe` 进程. 新版本已覆盖 `C:\Users\jery3\.codex\tmp\CC Switch.exe`, 未触碰数据库、配置和客户端真实配置.
 - 仓库根目录 6 个旧 v3.18.0 EXE、可重建构建缓存及已确认无运行实例的 CC Switch 临时构建目录已清理; 数据库、配置、备份和客户端真实配置均未触碰.
 
 ## 已完成验证
@@ -68,7 +68,7 @@
 ## 未完成边界与回归重点
 
 - 为保护正在进行的 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启, 未在真实 Desktop 会话中验证第三方模型菜单读取和对话级路由.
-- 本轮紧凑批量重命名布局已通过 `pnpm format:check`, `pnpm typecheck`, `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts`, `git diff --check` 和独立旁路 `pnpm tauri build --no-bundle`; 新 EXE 已另存并完成版本、大小和 SHA256 校验. 未启动新 EXE 进行窗口级点击复核, 旧版进程仍保持运行.
+- 本轮批量重命名布局已通过 `pnpm format:check`, `pnpm typecheck`, `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts`, `git diff --check` 和旁路 `pnpm tauri build --no-bundle`; 新版本已覆盖 `CC Switch.exe` 并完成版本、大小和 SHA256 校验. 未启动新 EXE 进行窗口级点击复核.
 - 对话级供应商路由仍需在至少两个 Codex Desktop 对话中选择不同 `供应商 - 模型`, 发起真实请求并核对代理日志的供应商及剥离后的上游模型.
 - 影响托盘、deep link、分组、重启、模型菜单、代理路由或通用配置的后续改动, 必须按对应真实 Windows 行为重新验证, 不得只凭构建通过收口.
 
