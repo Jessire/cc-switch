@@ -1380,6 +1380,10 @@ function ProviderFormFull({
       initialData?.meta?.providerType === "xai_oauth";
 
     let settingsConfig: string;
+    let normalizedCodexCatalogModels: CodexCatalogModel[] =
+      appId === "codex" && category !== "official"
+        ? normalizeCodexCatalogModelsForSave(codexCatalogModels)
+        : [];
 
     if (appId === "codex") {
       try {
@@ -1391,13 +1395,9 @@ function ProviderFormFull({
         // 模型映射与「路由接管」解耦：对所有非官方供应商，填了就持久化
         //（Chat 生成兼容路由、原生 Responses 生成 model-catalogs.json），
         // 留空归一化为 [] 即不写。后端只看 modelCatalog.models 是否非空。
-        const normalizedCatalogModels =
-          category !== "official"
-            ? normalizeCodexCatalogModelsForSave(codexCatalogModels)
-            : [];
         normalizedCodexConfig = syncCodexModelToCatalogFirst(
           normalizedCodexConfig,
-          normalizedCatalogModels,
+          normalizedCodexCatalogModels,
         );
         const configObj = {
           auth: authJson,
@@ -1407,8 +1407,8 @@ function ProviderFormFull({
           config: string;
           modelCatalog?: { models: CodexCatalogModel[] };
         };
-        if (normalizedCatalogModels.length > 0) {
-          configObj.modelCatalog = { models: normalizedCatalogModels };
+        if (normalizedCodexCatalogModels.length > 0) {
+          configObj.modelCatalog = { models: normalizedCodexCatalogModels };
         }
         settingsConfig = JSON.stringify(configObj);
       } catch (err) {
@@ -1558,6 +1558,12 @@ function ProviderFormFull({
             : appId === "gemini"
               ? useGeminiCommonConfigFlag
               : undefined,
+      codexModelMenuFavorite:
+        appId === "codex" && category !== "official"
+          ? normalizedCodexCatalogModels.some(
+              (model) => model.enabled !== false,
+            )
+          : baseMeta?.codexModelMenuFavorite,
       endpointAutoSelect,
       claudeDesktopMode: undefined,
       // 保存 providerType（用于识别 Copilot / Codex OAuth 等特殊供应商）
@@ -2284,6 +2290,7 @@ function ProviderFormFull({
           {appId === "codex" && (
             <CodexFormFields
               providerId={providerId}
+              providerName={form.watch("name")}
               isXaiOauthPreset={
                 presetProviderType === "xai_oauth" ||
                 initialData?.meta?.providerType === "xai_oauth"

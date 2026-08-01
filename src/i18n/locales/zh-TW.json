@@ -1387,6 +1387,7 @@
     "menuGroupName": "模型選單短分組",
     "dragProviderGroup": "拖曳調整供應商順序",
     "providerModelCount": "{{count}} 個模型",
+    "setContextWindow": "設定上下文視窗為 {{value}}",
     "expandProviderModels": "展開供應商模型",
     "collapseProviderModels": "收合供應商模型",
     "editModelName": "修改選單顯示名稱",

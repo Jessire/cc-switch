@@ -1422,6 +1422,7 @@
     "menuGroupName": "Model Menu Group",
     "dragProviderGroup": "Drag to reorder providers",
     "providerModelCount": "{{count}} models",
+    "setContextWindow": "Set context window to {{value}}",
     "expandProviderModels": "Expand provider models",
     "collapseProviderModels": "Collapse provider models",
     "editModelName": "Edit menu display name",

@@ -199,6 +199,17 @@ export function ProviderCard({
   const isAnyOmo = isOmo || isOmoSlim;
   const handleDisableAnyOmo = isOmoSlim ? onDisableOmoSlim : onDisableOmo;
   const isAdditiveMode = appId === "opencode" && !isAnyOmo;
+  const codexCatalogModels = Array.isArray(
+    provider.settingsConfig?.modelCatalog?.models,
+  )
+    ? provider.settingsConfig.modelCatalog.models
+    : undefined;
+  const isCodexModelMenuFavorite =
+    provider.meta?.codexModelMenuFavorite === true &&
+    (codexCatalogModels === undefined ||
+      codexCatalogModels.some(
+        (model: { enabled?: boolean }) => model.enabled !== false,
+      ));
 
   const { data: health } = useProviderHealth(provider.id, appId);
 
@@ -388,14 +399,10 @@ export function ProviderCard({
                   type="button"
                   className={cn(
                     "inline-flex h-6 w-6 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-amber-500",
-                    provider.meta?.codexModelMenuFavorite === true &&
-                      "text-amber-500",
+                    isCodexModelMenuFavorite && "text-amber-500",
                   )}
                   onClick={() =>
-                    onToggleCodexFavorite(
-                      provider,
-                      provider.meta?.codexModelMenuFavorite !== true,
-                    )
+                    onToggleCodexFavorite(provider, !isCodexModelMenuFavorite)
                   }
                   disabled={isCodexFavoritePending}
                   title={t("codexConfig.favoriteProvider", {
@@ -407,11 +414,7 @@ export function ProviderCard({
                 >
                   <Star
                     className="h-4 w-4"
-                    fill={
-                      provider.meta?.codexModelMenuFavorite === true
-                        ? "currentColor"
-                        : "none"
-                    }
+                    fill={isCodexModelMenuFavorite ? "currentColor" : "none"}
                   />
                 </button>
               )}

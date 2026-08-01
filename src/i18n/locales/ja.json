@@ -1422,6 +1422,7 @@
     "menuGroupName": "モデルメニューの短いグループ名",
     "dragProviderGroup": "ドラッグしてプロバイダーを並べ替え",
     "providerModelCount": "{{count}} モデル",
+    "setContextWindow": "コンテキストウィンドウを {{value}} に設定",
     "expandProviderModels": "プロバイダーのモデルを展開",
     "collapseProviderModels": "プロバイダーのモデルを折りたたむ",
     "editModelName": "メニュー表示名を編集",

@@ -101,7 +101,7 @@ describe("CodexFormFields model menu", () => {
         {
           model: "deepseek-v4-flash",
           displayName: "DeepSeek V4 Flash",
-          contextWindow: "",
+          contextWindow: "1000000",
         },
         {
           model: "existing-model",

@@ -499,77 +499,66 @@ export function CodexModelMenuDialog({
         zIndex="top"
         className="max-h-[calc(100vh-2rem)] max-w-4xl overflow-hidden"
       >
-        <DialogHeader className="gap-2 px-6 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+        <DialogHeader className="gap-3 px-6 py-3 sm:flex-row sm:items-start sm:justify-between">
           <DialogTitle className="shrink-0 text-base">
             {t("codexConfig.modelMenuManager")}
           </DialogTitle>
-          <div className="flex min-w-0 flex-1 flex-wrap items-end justify-end gap-x-1.5 gap-y-1.5">
-            <label className="flex flex-col gap-1">
-              <span className="px-1 text-[11px] leading-none text-muted-foreground">
-                {t("codexConfig.batchRenameFrom")}
-              </span>
-              <Input
-                value={renameFrom}
-                onChange={(event) => {
-                  setRenameFrom(event.target.value);
-                }}
-                placeholder={t("codexConfig.batchRenameFromPlaceholder")}
-                aria-label={t("codexConfig.batchRenameFrom")}
-                className="h-8 w-32 text-xs sm:w-40"
-              />
-            </label>
-            <ArrowRight className="mb-2 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <label className="flex flex-col gap-1">
-              <span className="px-1 text-[11px] leading-none text-muted-foreground">
-                {t("codexConfig.batchRenameTo")}
-              </span>
-              <Input
-                value={renameTo}
-                onChange={(event) => {
-                  setRenameTo(event.target.value);
-                }}
-                placeholder={t("codexConfig.batchRenameToPlaceholder")}
-                aria-label={t("codexConfig.batchRenameTo")}
-                className="h-8 w-32 text-xs sm:w-40"
-              />
-            </label>
-            <Popover
-              open={isRenamePreviewOpen}
-              onOpenChange={setIsRenamePreviewOpen}
-            >
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={renameMatches.length === 0}
-                  className="h-8 gap-1 rounded-md px-2 text-xs"
-                >
-                  {t("codexConfig.batchRenamePreview")}
-                  {renameMatches.length > 0 && (
-                    <span className="tabular-nums">{renameMatches.length}</span>
-                  )}
-                  <ChevronDown className="h-3.5 w-3.5" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                side="bottom"
-                align="end"
-                sideOffset={6}
-                className="z-[130] w-[min(520px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] p-2"
+          <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-x-2">
+            <div className="min-w-0 space-y-1">
+              <label className="flex flex-col gap-1">
+                <span className="px-1 text-[11px] leading-none text-muted-foreground">
+                  {t("codexConfig.batchRenameFrom")}
+                </span>
+                <Input
+                  value={renameFrom}
+                  onChange={(event) => {
+                    setRenameFrom(event.target.value);
+                  }}
+                  placeholder={t("codexConfig.batchRenameFromPlaceholder")}
+                  aria-label={t("codexConfig.batchRenameFrom")}
+                  className="h-8 w-full text-xs"
+                />
+              </label>
+              <Popover
+                open={isRenamePreviewOpen}
+                onOpenChange={setIsRenamePreviewOpen}
               >
-                <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
-                  <span className="font-medium text-foreground">
-                    {t("codexConfig.batchRenamePreview")}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {t("codexConfig.batchRenameMatchCount", {
-                      count: renameMatches.length,
-                    })}
-                  </span>
-                </div>
-                <ScrollArea className="h-52 max-h-[calc(100vh-10rem)] pr-1">
-                  <div className="space-y-0.5 pr-2">
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={renameMatches.length === 0}
+                    className="h-7 w-full justify-between gap-1 rounded-md px-2 text-xs"
+                  >
+                    <span>{t("codexConfig.batchRenamePreview")}</span>
+                    <span className="flex items-center gap-1">
+                      {renameMatches.length > 0 && (
+                        <span className="tabular-nums">
+                          {renameMatches.length}
+                        </span>
+                      )}
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  side="bottom"
+                  align="start"
+                  sideOffset={6}
+                  className="z-[130] max-h-[min(360px,calc(100vh-2rem))] w-[min(520px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain p-2 [scrollbar-gutter:stable]"
+                >
+                  <div className="sticky top-0 z-10 mb-1.5 flex items-center justify-between gap-2 bg-popover pb-1 text-xs">
+                    <span className="font-medium text-foreground">
+                      {t("codexConfig.batchRenamePreview")}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {t("codexConfig.batchRenameMatchCount", {
+                        count: renameMatches.length,
+                      })}
+                    </span>
+                  </div>
+                  <div className="space-y-0.5">
                     {renameMatches.map((match) => (
                       <div
                         key={match.entryKey}
@@ -599,19 +588,40 @@ export function CodexModelMenuDialog({
                       </div>
                     ))}
                   </div>
-                </ScrollArea>
-              </PopoverContent>
-            </Popover>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleBatchRename}
-              disabled={!renameFrom.trim() || renameMatches.length === 0}
-              className="h-8 rounded-md px-2.5 text-xs"
-            >
-              {t("codexConfig.batchRenameAction")}
-            </Button>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="mt-6 flex h-8 items-center justify-center text-muted-foreground">
+              <ArrowRight className="h-3.5 w-3.5" />
+            </div>
+
+            <div className="min-w-0 space-y-1">
+              <label className="flex flex-col gap-1">
+                <span className="px-1 text-[11px] leading-none text-muted-foreground">
+                  {t("codexConfig.batchRenameTo")}
+                </span>
+                <Input
+                  value={renameTo}
+                  onChange={(event) => {
+                    setRenameTo(event.target.value);
+                  }}
+                  placeholder={t("codexConfig.batchRenameToPlaceholder")}
+                  aria-label={t("codexConfig.batchRenameTo")}
+                  className="h-8 w-full text-xs"
+                />
+              </label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleBatchRename}
+                disabled={!renameFrom.trim() || renameMatches.length === 0}
+                className="h-7 w-full rounded-md px-2.5 text-xs"
+              >
+                {t("codexConfig.batchRenameAction")}
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 

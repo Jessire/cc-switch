@@ -57,6 +57,11 @@ import { CustomUserAgentField } from "./CustomUserAgentField";
 import { LocalProxyRequestOverridesField } from "./LocalProxyRequestOverridesField";
 import { cn } from "@/lib/utils";
 import { formatCodexModelDisplayName } from "@/utils/codexModelDisplay";
+import {
+  CODEX_CONTEXT_WINDOW_PRESETS,
+  getCodexContextWindowOrDefault,
+  inferCodexContextWindow,
+} from "@/utils/codexContextWindow";
 import type {
   ClaudeApiKeyField,
   CodexApiFormat,
@@ -74,6 +79,7 @@ interface EndpointCandidate {
 interface CodexFormFieldsProps {
   appId?: AppId;
   providerId?: string;
+  providerName?: string;
   // xAI OAuth 托管预设（Grok 订阅）：隐藏 API Key / 端点输入，挂账号选择区块
   isXaiOauthPreset?: boolean;
   isXaiOauthAuthenticated?: boolean;
@@ -140,12 +146,21 @@ interface CodexFormFieldsProps {
 
 type CodexCatalogRow = CodexCatalogModel & { rowId: string };
 
-function createCatalogRow(seed?: Partial<CodexCatalogModel>): CodexCatalogRow {
+function createCatalogRow(
+  seed?: Partial<CodexCatalogModel>,
+  providerName = "",
+): CodexCatalogRow {
+  const contextWindow = getCodexContextWindowOrDefault(
+    seed?.contextWindow,
+    seed?.model ?? "",
+    providerName,
+  );
+
   return {
     rowId: crypto.randomUUID(),
     model: seed?.model ?? "",
     displayName: seed?.displayName ?? "",
-    contextWindow: seed?.contextWindow ?? "",
+    contextWindow: contextWindow ?? "",
     ...(seed?.enabled === false ? { enabled: false } : {}),
     ...(typeof seed?.menuOrder === "number"
       ? { menuOrder: seed.menuOrder }
@@ -269,24 +284,57 @@ function SortableCatalogModelRow({
               })}
           </span>
         </button>
-        <Input
-          type="number"
-          min={1}
-          inputMode="numeric"
-          value={row.contextWindow ?? ""}
-          onChange={(event) =>
-            onUpdate(index, {
-              contextWindow: event.target.value.replace(/[^\d]/g, ""),
-            })
-          }
-          placeholder={t("codexConfig.catalogColumnContext", {
-            defaultValue: "Context window",
-          })}
-          aria-label={t("codexConfig.catalogColumnContext", {
-            defaultValue: "Context window",
-          })}
-          className="h-8 w-28 shrink-0 sm:w-36"
-        />
+        <div className="flex shrink-0 items-center gap-1">
+          <Input
+            type="number"
+            min={1}
+            inputMode="numeric"
+            value={row.contextWindow ?? ""}
+            onChange={(event) =>
+              onUpdate(index, {
+                contextWindow: event.target.value.replace(/[^\d]/g, ""),
+              })
+            }
+            placeholder={t("codexConfig.catalogColumnContext", {
+              defaultValue: "Context window",
+            })}
+            aria-label={t("codexConfig.catalogColumnContext", {
+              defaultValue: "Context window",
+            })}
+            className="h-8 w-24 shrink-0 sm:w-28"
+          />
+          <div className="flex items-center gap-0.5">
+            {CODEX_CONTEXT_WINDOW_PRESETS.map((preset) => {
+              const isActive = String(row.contextWindow ?? "") === preset.value;
+              return (
+                <Button
+                  key={preset.value}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "h-7 min-w-9 rounded-md px-1 text-[10px] tabular-nums",
+                    isActive &&
+                      "border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary",
+                  )}
+                  onClick={() =>
+                    onUpdate(index, { contextWindow: preset.value })
+                  }
+                  title={t("codexConfig.setContextWindow", {
+                    value: preset.label,
+                    defaultValue: `Set context window to ${preset.label}`,
+                  })}
+                  aria-label={t("codexConfig.setContextWindow", {
+                    value: preset.label,
+                    defaultValue: `Set context window to ${preset.label}`,
+                  })}
+                >
+                  {preset.label}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
         <Button
           type="button"
           variant="ghost"
@@ -374,6 +422,7 @@ function SortableCatalogModelRow({
 export function CodexFormFields({
   appId = "codex",
   providerId,
+  providerName = "",
   isXaiOauthPreset,
   isXaiOauthAuthenticated,
   selectedXaiAccountId,
@@ -480,7 +529,7 @@ export function CodexFormFields({
   }, [hasAnyAdvancedValue, isXaiOauthPreset]);
 
   const [catalogRows, setCatalogRows] = useState<CodexCatalogRow[]>(() =>
-    catalogModels.map((m) => createCatalogRow(m)),
+    catalogModels.map((m) => createCatalogRow(m, providerName)),
   );
   const [expandedCatalogRows, setExpandedCatalogRows] = useState<Set<string>>(
     new Set(),
@@ -498,11 +547,11 @@ export function CodexFormFields({
   useEffect(() => {
     setCatalogRows((current) => {
       if (catalogRowsMatchModels(current, catalogModels)) return current;
-      return catalogModels.map((m) => createCatalogRow(m));
+      return catalogModels.map((m) => createCatalogRow(m, providerName));
     });
     // 同步更新 ref，避免父组件传入新数据时子→父 effect 误判为本地修改
     lastSentModelsRef.current = catalogModels;
-  }, [catalogModels]);
+  }, [catalogModels, providerName]);
 
   // 子 → 父：rowId 是视图层概念，不应进入持久化数据；剥离后再回传。
   // 注意：依赖数组不包含 catalogModels，避免父→子更新触发子→父回调形成循环。
@@ -625,18 +674,29 @@ export function CodexFormFields({
 
   const handleAddCatalogRow = useCallback(() => {
     if (!onCatalogModelsChange) return;
-    const next = createCatalogRow();
+    const next = createCatalogRow(undefined, providerName);
     setCatalogRows((current) => [next, ...current]);
     setExpandedCatalogRows((current) => new Set(current).add(next.rowId));
-  }, [onCatalogModelsChange]);
+  }, [onCatalogModelsChange, providerName]);
 
   const handleUpdateCatalogRow = useCallback(
     (index: number, patch: Partial<CodexCatalogModel>) => {
       setCatalogRows((current) =>
-        current.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+        current.map((row, i) => {
+          if (i !== index) return row;
+          const next = { ...row, ...patch };
+          if ("model" in patch && !String(row.contextWindow ?? "").trim()) {
+            const inferred = inferCodexContextWindow(
+              String(patch.model ?? row.model),
+              providerName,
+            );
+            if (inferred) next.contextWindow = inferred;
+          }
+          return next;
+        }),
       );
     },
-    [],
+    [providerName],
   );
 
   const handleRemoveCatalogRow = useCallback((rowId: string) => {
@@ -660,15 +720,18 @@ export function CodexFormFields({
       setCatalogRows((current) => {
         if (current.some((row) => row.model.trim() === modelId)) return current;
         return [
-          createCatalogRow({
-            model: modelId,
-            displayName: formatCodexModelDisplayName(modelId),
-          }),
+          createCatalogRow(
+            {
+              model: modelId,
+              displayName: formatCodexModelDisplayName(modelId),
+            },
+            providerName,
+          ),
           ...current,
         ];
       });
     },
-    [onCatalogModelsChange],
+    [onCatalogModelsChange, providerName],
   );
 
   const handleCatalogDragEnd = useCallback((event: DragEndEvent) => {
@@ -736,13 +799,16 @@ export function CodexFormFields({
   const handleAddDefaultModelToCatalog = useCallback(() => {
     if (!onCatalogModelsChange || !trimmedDefaultModel) return;
     setCatalogRows((current) => [
-      createCatalogRow({
-        model: trimmedDefaultModel,
-        displayName: formatCodexModelDisplayName(trimmedDefaultModel),
-      }),
+      createCatalogRow(
+        {
+          model: trimmedDefaultModel,
+          displayName: formatCodexModelDisplayName(trimmedDefaultModel),
+        },
+        providerName,
+      ),
       ...current,
     ]);
-  }, [onCatalogModelsChange, trimmedDefaultModel]);
+  }, [onCatalogModelsChange, providerName, trimmedDefaultModel]);
 
   return (
     <>

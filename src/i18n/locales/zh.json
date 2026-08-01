@@ -1422,6 +1422,7 @@
     "menuGroupName": "模型菜单短分组",
     "dragProviderGroup": "拖动调整供应商顺序",
     "providerModelCount": "{{count}} 个模型",
+    "setContextWindow": "设置上下文窗口为 {{value}}",
     "expandProviderModels": "展开供应商模型",
     "collapseProviderModels": "收起供应商模型",
     "editModelName": "修改菜单显示名",
