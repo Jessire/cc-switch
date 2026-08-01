@@ -49,6 +49,7 @@ import {
 
 interface GroupTabsProps {
   groups: ProviderGroup[];
+  providerCounts: ReadonlyMap<string, number>;
   tabOrder: ActiveGroupId[];
   activeGroupId: ActiveGroupId;
   selectionMode: boolean;
@@ -189,6 +190,7 @@ function SortableTabChip({
 
 export function GroupTabs({
   groups,
+  providerCounts,
   tabOrder,
   activeGroupId,
   selectionMode,
@@ -322,7 +324,7 @@ export function GroupTabs({
                       key={group.id}
                       id={group.id}
                       label={group.name}
-                      count={group.providerIds.length}
+                      count={providerCounts.get(group.id) ?? 0}
                       active={activeGroupId === group.id}
                       showMenu
                       onSelect={() => onSelectGroup(group.id)}

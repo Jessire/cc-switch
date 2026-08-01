@@ -120,6 +120,18 @@ export function ProviderList({
     getGroupsOf,
     filterByActiveGroup,
   } = useProviderGroups(appId);
+  const providerCounts = useMemo(
+    () =>
+      new Map(
+        providerGroups.map((group) => [
+          group.id,
+          group.providerIds.filter((providerId) =>
+            Boolean(providers[providerId]),
+          ).length,
+        ]),
+      ),
+    [providerGroups, providers],
+  );
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isCodexModelMenuOpen, setIsCodexModelMenuOpen] = useState(false);
@@ -654,6 +666,7 @@ export function ProviderList({
       )}
       <GroupTabs
         groups={providerGroups}
+        providerCounts={providerCounts}
         tabOrder={tabOrder}
         activeGroupId={activeGroupId}
         selectionMode={selectionMode}

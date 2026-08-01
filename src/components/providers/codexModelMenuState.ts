@@ -14,6 +14,13 @@ export interface DraftProviderGroup {
   entries: DraftModelEntry[];
 }
 
+export interface DraftModelRenameMatch {
+  entryKey: string;
+  modelId: string;
+  before: string;
+  after: string;
+}
+
 export function providerCatalogModels(provider: Provider): CodexCatalogModel[] {
   const catalog = provider.settingsConfig?.modelCatalog;
   return Array.isArray(catalog?.models)
@@ -106,6 +113,48 @@ export function flattenDraftGroups(
   groups: DraftProviderGroup[],
 ): DraftModelEntry[] {
   return groups.flatMap((group) => group.entries);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function replaceCaseInsensitive(
+  value: string,
+  search: string,
+  replacement: string,
+): string {
+  return value.replace(
+    new RegExp(escapeRegExp(search), "gi"),
+    () => replacement,
+  );
+}
+
+export function findDraftModelRenameMatches(
+  groups: DraftProviderGroup[],
+  search: string,
+  replacement: string,
+): DraftModelRenameMatch[] {
+  const normalizedSearch = search.trim();
+  if (!normalizedSearch) return [];
+
+  return flattenDraftGroups(groups).flatMap((entry) => {
+    const before = entry.model.displayName?.trim() || entry.model.model;
+    if (
+      !before.toLocaleLowerCase().includes(normalizedSearch.toLocaleLowerCase())
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        entryKey: entry.key,
+        modelId: entry.model.model,
+        before,
+        after: replaceCaseInsensitive(before, normalizedSearch, replacement),
+      },
+    ];
+  });
 }
 
 function moveItem<T>(items: T[], from: number, to: number): T[] {

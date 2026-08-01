@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -10,10 +10,12 @@ import {
 import {
   SortableContext,
   useSortable,
+  rectSortingStrategy,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+  ArrowRight,
   Check,
   ChevronDown,
   ChevronRight,
@@ -38,15 +40,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { syncCodexModelToCatalogFirst } from "@/components/providers/forms/ProviderForm";
 import {
   buildDraftGroups,
+  findDraftModelRenameMatches,
   flattenDraftGroups,
   providerCatalogModels,
   reorderDraftGroups,
   reorderDraftModels,
   type DraftModelEntry,
+  type DraftModelRenameMatch,
   type DraftProviderGroup,
 } from "@/components/providers/codexModelMenuState";
 
@@ -59,9 +68,11 @@ interface CodexModelMenuDialogProps {
 
 function SortableMenuModelRow({
   entry,
+  position,
   onChange,
 }: {
   entry: DraftModelEntry;
+  position: number;
   onChange: (patch: Partial<CodexCatalogModel>) => void;
 }) {
   const { t } = useTranslation();
@@ -85,22 +96,18 @@ function SortableMenuModelRow({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        "group/model-row grid min-h-11 grid-cols-[2rem_1.5rem_minmax(9rem,1fr)_minmax(8rem,0.9fr)_2rem] items-center gap-2 border-t border-border-default px-2 py-1.5",
+        "group/model-row grid min-h-12 grid-cols-[1.5rem_1.75rem_minmax(0,1fr)_2rem] items-center gap-2 rounded-lg border border-border-default bg-background px-2 py-1 transition-colors",
         !isEnabled && "bg-muted/20 text-muted-foreground",
-        isDragging && "relative z-20 bg-background shadow-md",
+        isDragging && "relative z-20 shadow-lg",
       )}
     >
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7 cursor-grab text-muted-foreground active:cursor-grabbing"
-        title={t("codexConfig.dragModel")}
+      <span
+        className="inline-flex h-6 w-6 cursor-grab items-center justify-center rounded-md bg-primary/10 text-xs font-medium tabular-nums text-primary active:cursor-grabbing"
         {...attributes}
         {...listeners}
       >
-        <GripVertical className="h-4 w-4" />
-      </Button>
+        {position}
+      </span>
 
       <Checkbox
         checked={isEnabled}
@@ -108,7 +115,7 @@ function SortableMenuModelRow({
         aria-label={t("codexConfig.disableModel")}
       />
 
-      <div className="min-w-0">
+      <div className="min-w-0 space-y-0.5">
         {isEditing ? (
           <Input
             value={entry.model.displayName ?? ""}
@@ -129,13 +136,12 @@ function SortableMenuModelRow({
             {displayName}
           </div>
         )}
-      </div>
-
-      <div
-        className="truncate text-xs text-muted-foreground"
-        title={entry.model.model}
-      >
-        {entry.model.model}
+        <div
+          className="truncate px-1 text-xs text-muted-foreground"
+          title={entry.model.model}
+        >
+          {entry.model.model}
+        </div>
       </div>
 
       <Button
@@ -143,10 +149,8 @@ function SortableMenuModelRow({
         variant="ghost"
         size="icon"
         className={cn(
-          "h-7 w-7 text-muted-foreground transition-opacity",
-          isEditing
-            ? "opacity-100"
-            : "opacity-25 group-hover/model-row:opacity-100 group-focus-within/model-row:opacity-100",
+          "h-7 w-7 justify-self-end text-muted-foreground/45 opacity-30 transition-all group-hover/model-row:opacity-100 group-focus-within/model-row:opacity-100 hover:bg-muted hover:text-foreground",
+          isEditing && "bg-muted text-foreground opacity-100",
         )}
         onClick={() => setIsEditing((current) => !current)}
         title={
@@ -176,7 +180,7 @@ function SortableProviderGroup({
   collapsed: boolean;
   onToggleCollapsed: () => void;
   onMenuGroupNameChange: (name: string) => void;
-  onEntryChange: (entryKey: string, patch: Partial<CodexCatalogModel>) => void;
+  onEntryChange: (key: string, patch: Partial<CodexCatalogModel>) => void;
 }) {
   const { t } = useTranslation();
   const {
@@ -193,7 +197,7 @@ function SortableProviderGroup({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        "overflow-hidden rounded-md border border-border-default bg-background",
+        "overflow-hidden rounded-xl border border-border-default bg-background",
         isDragging && "relative z-10 shadow-lg",
       )}
     >
@@ -246,15 +250,18 @@ function SortableProviderGroup({
       {!collapsed && (
         <SortableContext
           items={group.entries.map((entry) => entry.key)}
-          strategy={verticalListSortingStrategy}
+          strategy={rectSortingStrategy}
         >
-          {group.entries.map((entry) => (
-            <SortableMenuModelRow
-              key={entry.key}
-              entry={entry}
-              onChange={(patch) => onEntryChange(entry.key, patch)}
-            />
-          ))}
+          <div className="grid grid-cols-1 gap-2 p-2 md:grid-cols-3">
+            {group.entries.map((entry, index) => (
+              <SortableMenuModelRow
+                key={entry.key}
+                entry={entry}
+                position={index + 1}
+                onChange={(patch) => onEntryChange(entry.key, patch)}
+              />
+            ))}
+          </div>
         </SortableContext>
       )}
     </section>
@@ -275,6 +282,9 @@ export function CodexModelMenuDialog({
   );
   const [initialSnapshot, setInitialSnapshot] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [renameFrom, setRenameFrom] = useState("");
+  const [renameTo, setRenameTo] = useState("");
+  const [isRenamePreviewOpen, setIsRenamePreviewOpen] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -285,6 +295,9 @@ export function CodexModelMenuDialog({
     setGroups(next);
     setCollapsedProviderIds(new Set());
     setInitialSnapshot(JSON.stringify(next));
+    setRenameFrom("");
+    setRenameTo("");
+    setIsRenamePreviewOpen(false);
   }, [open, providers]);
 
   const handleEntryChange = (
@@ -310,6 +323,34 @@ export function CodexModelMenuDialog({
           ? { ...group, menuGroupName: name }
           : group,
       ),
+    );
+  };
+
+  const renameMatches = useMemo(
+    () => findDraftModelRenameMatches(groups, renameFrom, renameTo),
+    [groups, renameFrom, renameTo],
+  );
+
+  const handleBatchRename = () => {
+    if (!renameFrom.trim() || !renameMatches.length) return;
+    const matchesByKey = new Map<string, DraftModelRenameMatch>(
+      renameMatches.map((match) => [match.entryKey, match]),
+    );
+
+    setGroups((current) =>
+      current.map((group) => ({
+        ...group,
+        entries: group.entries.map((entry) => {
+          const match = matchesByKey.get(entry.key);
+          return match
+            ? { ...entry, model: { ...entry.model, displayName: match.after } }
+            : entry;
+        }),
+      })),
+    );
+    setIsRenamePreviewOpen(false);
+    toast.success(
+      t("codexConfig.batchRenameApplied", { count: renameMatches.length }),
     );
   };
 
@@ -438,8 +479,110 @@ export function CodexModelMenuDialog({
         zIndex="top"
         className="max-h-[calc(100vh-2rem)] max-w-4xl overflow-hidden"
       >
-        <DialogHeader>
-          <DialogTitle>{t("codexConfig.modelMenuManager")}</DialogTitle>
+        <DialogHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <DialogTitle className="shrink-0">
+            {t("codexConfig.modelMenuManager")}
+          </DialogTitle>
+          <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-1.5">
+            <Input
+              value={renameFrom}
+              onChange={(event) => {
+                setRenameFrom(event.target.value);
+                setIsRenamePreviewOpen(event.target.value.trim().length > 0);
+              }}
+              placeholder={t("codexConfig.batchRenameFrom")}
+              aria-label={t("codexConfig.batchRenameFrom")}
+              className="h-8 w-28 text-xs sm:w-32"
+            />
+            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <Input
+              value={renameTo}
+              onChange={(event) => {
+                setRenameTo(event.target.value);
+                setIsRenamePreviewOpen(renameFrom.trim().length > 0);
+              }}
+              placeholder={t("codexConfig.batchRenameTo")}
+              aria-label={t("codexConfig.batchRenameTo")}
+              className="h-8 w-28 text-xs sm:w-32"
+            />
+            <Popover
+              open={isRenamePreviewOpen && renameMatches.length > 0}
+              onOpenChange={setIsRenamePreviewOpen}
+            >
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!renameFrom.trim()}
+                  className="h-8 gap-1 rounded-md px-2 text-xs"
+                >
+                  {renameFrom.trim()
+                    ? t("codexConfig.batchRenameMatchCount", {
+                        count: renameMatches.length,
+                      })
+                    : t("codexConfig.batchRenamePreview")}
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                className="w-[min(34rem,calc(100vw-3rem))] p-2"
+              >
+                <div className="mb-2 flex items-center justify-between gap-2 text-xs">
+                  <span className="font-medium text-foreground">
+                    {t("codexConfig.batchRenamePreview")}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {t("codexConfig.batchRenameMatchCount", {
+                      count: renameMatches.length,
+                    })}
+                  </span>
+                </div>
+                <ScrollArea className="max-h-64">
+                  <div className="space-y-1 pr-2">
+                    {renameMatches.map((match) => (
+                      <div
+                        key={match.entryKey}
+                        className="grid grid-cols-[minmax(0,1fr)_1rem_minmax(0,1fr)] items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-muted/60"
+                      >
+                        <div className="min-w-0">
+                          <div
+                            className="truncate text-foreground"
+                            title={match.before}
+                          >
+                            {match.before}
+                          </div>
+                          <div
+                            className="truncate text-[10px] text-muted-foreground"
+                            title={match.modelId}
+                          >
+                            {match.modelId}
+                          </div>
+                        </div>
+                        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                        <div
+                          className="truncate text-foreground"
+                          title={match.after || match.modelId}
+                        >
+                          {match.after || match.modelId}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleBatchRename}
+              disabled={!renameFrom.trim() || renameMatches.length === 0}
+              className="h-8 rounded-md px-2.5 text-xs"
+            >
+              {t("codexConfig.batchRenameAction")}
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="min-h-0 flex-1 px-6 py-4">

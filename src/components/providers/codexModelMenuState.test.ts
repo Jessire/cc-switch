@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CodexCatalogModel, Provider } from "@/types";
 import {
   buildDraftGroups,
+  findDraftModelRenameMatches,
   flattenDraftGroups,
   reorderDraftGroups,
   reorderDraftModels,
@@ -46,6 +47,28 @@ describe("codex model menu state", () => {
     expect(
       flattenDraftGroups(groups).map((entry) => entry.model.model),
     ).toEqual(["second", "first-a", "first-b"]);
+  });
+
+  it("previews case-insensitive batch renames across provider groups", () => {
+    const groups = buildDraftGroups({
+      first: provider(
+        "first",
+        [{ model: "gpt-sol", displayName: "GPT Sol" }],
+        0,
+      ),
+      second: provider(
+        "second",
+        [{ model: "gpt-terra", displayName: "gpt Terra" }],
+        1,
+      ),
+    });
+
+    const matches = findDraftModelRenameMatches(groups, "gPt", "5.6");
+
+    expect(matches.map((match) => [match.before, match.after])).toEqual([
+      ["GPT Sol", "5.6 Sol"],
+      ["gpt Terra", "5.6 Terra"],
+    ]);
   });
 
   it("uses the independent menu group name without changing the provider name", () => {

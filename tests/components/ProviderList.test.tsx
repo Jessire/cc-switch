@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ReactElement } from "react";
@@ -333,6 +333,46 @@ describe("ProviderList Component", () => {
     expect(
       screen.getByText("No providers match your search."),
     ).toBeInTheDocument();
+  });
+
+  it("updates a custom group count after assigning a provider", () => {
+    const provider = createProvider({ id: "grouped", name: "Grouped" });
+    localStorage.setItem(
+      "cc-switch-provider-groups-v1",
+      JSON.stringify({
+        codex: {
+          groups: [{ id: "gpt", name: "GPT", providerIds: [] }],
+          activeGroupId: "__all__",
+          tabOrder: ["__all__", "__ungrouped__", "gpt"],
+        },
+      }),
+    );
+    useDragSortMock.mockReturnValue({
+      sortedProviders: [provider],
+      sensors: [],
+      handleDragEnd: vi.fn(),
+    });
+
+    renderWithQueryClient(
+      <ProviderList
+        providers={{ grouped: provider }}
+        currentProviderId=""
+        appId="codex"
+        onSwitch={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onDuplicate={vi.fn()}
+        onOpenWebsite={vi.fn()}
+      />,
+    );
+
+    const groupChip = screen.getByTitle("GPT");
+    expect(groupChip).toHaveTextContent("0");
+    const cardProps = providerCardRenderSpy.mock.calls[0]?.[0];
+    act(() => {
+      cardProps.onAssignToGroup("gpt");
+    });
+    expect(groupChip).toHaveTextContent("1");
   });
 
   it("marks switches between providers that share a custom group", () => {
