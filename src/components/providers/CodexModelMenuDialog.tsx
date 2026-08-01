@@ -556,9 +556,9 @@ export function CodexModelMenuDialog({
                 side="bottom"
                 align="end"
                 sideOffset={6}
-                className="z-[130] w-[min(34rem,calc(100vw-3rem))] p-2"
+                className="z-[130] w-[min(520px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] p-2"
               >
-                <div className="mb-2 flex items-center justify-between gap-2 text-xs">
+                <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
                   <span className="font-medium text-foreground">
                     {t("codexConfig.batchRenamePreview")}
                   </span>
@@ -568,12 +568,12 @@ export function CodexModelMenuDialog({
                     })}
                   </span>
                 </div>
-                <ScrollArea className="max-h-64">
-                  <div className="space-y-1 pr-2">
+                <ScrollArea className="h-52 max-h-[calc(100vh-10rem)] pr-1">
+                  <div className="space-y-0.5 pr-2">
                     {renameMatches.map((match) => (
                       <div
                         key={match.entryKey}
-                        className="grid grid-cols-[minmax(0,1fr)_1rem_minmax(0,1fr)] items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-muted/60"
+                        className="grid grid-cols-[minmax(0,1fr)_1rem_minmax(0,1fr)] items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-muted/60"
                       >
                         <div className="min-w-0">
                           <div
