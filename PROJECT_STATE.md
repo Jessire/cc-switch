@@ -31,7 +31,7 @@
 - Codex Desktop 模型菜单仅生成已收藏且启用的第三方模型; 不保留 bundled 官方模型或官方目录回退. 空菜单仍保持 CC Switch 托管目录.
 - 同名模型按全局排序路由: 首个启用项使用裸模型 ID, 后续项使用 `provider-id/model-id`; 所有显示项仍带独立短分组.
 - 短分组与主界面供应商名称解耦; 支持供应商组排序与组内模型排序, 不允许模型跨供应商组拖动.
-- Codex 模型菜单支持标题栏内联批量重命名, 输入匹配词后可展开修改前后预览, 一次更新全部模型显示名; 模型卡片采用桌面三列紧凑布局, 模型名和模型 ID 左对齐, 编辑图标右侧淡化并在悬停或聚焦时增强.
+- Codex 模型菜单支持标题栏内联批量重命名, 点击“查看匹配”下拉菜单可预览匹配的修改前名称、模型 ID 和修改后名称; 分组勾选框与组内模型双向同步. 1 个或 2 个模型与分组同一行, 3 个及以上模型时分组单独一行且模型最多三列; 模型名和模型 ID 左对齐, 点击模型名直接编辑且不再显示独立编辑图标.
 - Codex 对话可独立选择供应商和模型; 代理在出站前恢复真实模型 ID, 不切换 CC Switch 全局供应商.
 
 ### 主界面、更新、托盘和导入
@@ -50,7 +50,7 @@
 ## 当前构建、发布和运行实例
 
 - v3.19.0 上游合并提交: `c1522aff3643752e90dd62425b4f6b3eedbb6ac9` (`Merge upstream v3.19.0`). 冲突文件 `src/App.tsx` 与 `src/components/AppSwitcher.tsx` 保留定制版自动紧凑行为, 其余上游有效改动已合并.
-- 最近一次本地 Windows x64 Release 构建产物: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.0`, 大小 `32,754,688` bytes, SHA256 `ABC5B66228FBCBCEBEECA85106925587BFB0A403271CCA353EEB53F9151A97A1`.
+- 最近一次本地 Windows x64 Release 构建产物: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\ui-final\release\cc-switch.exe`; 文件版本 `3.19.0`, 大小 `32,754,688` bytes, SHA256 `B313A2248A49D701EB785948D35C89DE8E6AD760885D1E4079A46B1258F6D2BA`.
 - 自定义 GitHub Release: `v3.19.0-custom.1`, 标签指向 `c1522aff3643752e90dd62425b4f6b3eedbb6ac9`; Release 资产为 `CC-Switch-Custom-v3.19.0-Windows-x64.exe`, 大小 `32,750,592` bytes, SHA256 `7CD44197EB135729409E0EE768051C038BAC96A880FD39016A0A7FDAB1CCDF4F`.
 - 当前运行实例: 无. 本轮 Release 窗口验证进程已退出, Codex Desktop 未受影响.
 - 仓库根目录 6 个旧 v3.18.0 EXE、可重建构建缓存及已确认无运行实例的 CC Switch 临时构建目录已清理; 数据库、配置、备份和客户端真实配置均未触碰.
@@ -59,7 +59,7 @@
 
 - v3.19.0 合并后已通过 `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm format:check`, `pnpm exec vitest run tests/components/ProviderCardLayout.test.ts`, `pnpm test:unit`, `pnpm build:renderer`, `cargo fmt --check`, `cargo test responses_tool_filter --lib`, `cargo test codex_model --lib`, `cargo test universal_provider --lib`, `cargo test --lib` 和 `pnpm tauri build --no-bundle`.
 - Windows Release 已使用独立应用标识和隔离数据库副本实际启动验证: 主窗口无白屏, 供应商卡片维持单排布局, 操作按钮默认悬停显示, 顶部应用切换器按可用宽度统一收缩. 隔离实例已退出并清理.
-- 本次模型菜单改动已通过 `pnpm typecheck`, `pnpm format:check`, 全量 `pnpm test:unit`, 相关回归测试, `pnpm build:renderer` 和 `pnpm tauri build --no-bundle`; 实际 Windows Release 窗口已确认标题栏批量重命名控件, 三列紧凑模型卡片, 左对齐名称和模型 ID, 右侧淡化编辑图标, 实时分组数量和收紧后的卡片高度.
+- 本次模型菜单改动已通过 `pnpm typecheck`, `pnpm format:check`, 全量 `pnpm test:unit`, `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts`, `pnpm build:renderer` 和 `pnpm tauri build --no-bundle`; 状态测试 6 项通过, Windows Release 隔离实例已正常启动. 由于 CUA 无法深入读取 WebView 且停在首次欢迎弹窗, 本轮未将模型菜单的真实点击视觉验收冒充为已完成.
 - GitHub Release 资产已下载回读, 大小与 SHA256 均和本机构建产物一致.
 
 ## 未完成边界与回归重点

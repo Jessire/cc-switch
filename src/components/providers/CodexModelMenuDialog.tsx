@@ -14,15 +14,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  ArrowRight,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  GripVertical,
-  Loader2,
-  Pencil,
-} from "lucide-react";
+import { ArrowRight, ChevronDown, GripVertical, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -96,7 +88,7 @@ function SortableMenuModelRow({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        "group/model-row grid min-h-12 grid-cols-[1.5rem_1.75rem_minmax(0,1fr)_2rem] items-center gap-2 rounded-lg border border-border-default bg-background px-2 py-1 transition-colors",
+        "group/model-row grid min-h-12 grid-cols-[1.5rem_1.75rem_minmax(0,1fr)] items-center gap-2 rounded-lg border border-border-default bg-background px-2 py-1 transition-colors",
         !isEnabled && "bg-muted/20 text-muted-foreground",
         isDragging && "relative z-20 shadow-lg",
       )}
@@ -124,17 +116,20 @@ function SortableMenuModelRow({
             aria-label={t("codexConfig.catalogColumnDisplay")}
             className="h-8"
             autoFocus
+            onBlur={() => setIsEditing(false)}
             onKeyDown={(event) => {
               if (event.key === "Enter") setIsEditing(false);
             }}
           />
         ) : (
-          <div
-            className="truncate px-1 text-sm font-medium text-foreground"
-            title={displayName}
+          <button
+            type="button"
+            className="block min-w-0 max-w-full truncate bg-transparent px-1 text-left text-sm font-medium text-foreground hover:text-primary hover:underline hover:underline-offset-2"
+            title={t("codexConfig.editModelName")}
+            onClick={() => setIsEditing(true)}
           >
             {displayName}
-          </div>
+          </button>
         )}
         <div
           className="truncate px-1 text-xs text-muted-foreground"
@@ -143,44 +138,20 @@ function SortableMenuModelRow({
           {entry.model.model}
         </div>
       </div>
-
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className={cn(
-          "h-7 w-7 justify-self-end text-muted-foreground/45 opacity-30 transition-all group-hover/model-row:opacity-100 group-focus-within/model-row:opacity-100 hover:bg-muted hover:text-foreground",
-          isEditing && "bg-muted text-foreground opacity-100",
-        )}
-        onClick={() => setIsEditing((current) => !current)}
-        title={
-          isEditing
-            ? t("codexConfig.finishModelNameEdit")
-            : t("codexConfig.editModelName")
-        }
-      >
-        {isEditing ? (
-          <Check className="h-4 w-4" />
-        ) : (
-          <Pencil className="h-4 w-4" />
-        )}
-      </Button>
     </div>
   );
 }
 
 function SortableProviderGroup({
   group,
-  collapsed,
-  onToggleCollapsed,
   onMenuGroupNameChange,
   onEntryChange,
+  onGroupEnabledChange,
 }: {
   group: DraftProviderGroup;
-  collapsed: boolean;
-  onToggleCollapsed: () => void;
   onMenuGroupNameChange: (name: string) => void;
   onEntryChange: (key: string, patch: Partial<CodexCatalogModel>) => void;
+  onGroupEnabledChange: (enabled: boolean) => void;
 }) {
   const { t } = useTranslation();
   const {
@@ -191,6 +162,80 @@ function SortableProviderGroup({
     transition,
     isDragging,
   } = useSortable({ id: group.key, data: { type: "group" } });
+  const enabledCount = group.entries.filter(
+    (entry) => entry.model.enabled !== false,
+  ).length;
+  const groupChecked: boolean | "indeterminate" =
+    enabledCount === group.entries.length
+      ? true
+      : enabledCount === 0
+        ? false
+        : "indeterminate";
+  const compactRow = group.entries.length <= 2;
+
+  const groupHeader = (
+    <div className="flex min-w-0 items-center gap-2">
+      <Checkbox
+        checked={groupChecked}
+        onCheckedChange={() =>
+          onGroupEnabledChange(enabledCount !== group.entries.length)
+        }
+        aria-label={t("codexConfig.enableProviderModels", {
+          defaultValue: "Show this group's models in the Codex menu",
+        })}
+        className="h-8 w-8 rounded-xl"
+      />
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-6 shrink-0 cursor-grab text-muted-foreground active:cursor-grabbing"
+        title={t("codexConfig.dragProviderGroup")}
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4" />
+      </Button>
+
+      <Input
+        value={group.menuGroupName}
+        onChange={(event) => onMenuGroupNameChange(event.target.value)}
+        aria-label={t("codexConfig.menuGroupName")}
+        className="h-8 min-w-0 flex-1 border-transparent bg-transparent px-1 text-base font-medium shadow-none hover:border-input focus:border-input focus:bg-background"
+      />
+
+      <span className="shrink-0 rounded-full bg-background/80 px-3 py-1.5 text-sm font-normal text-muted-foreground">
+        {t("codexConfig.providerModelCount", {
+          count: group.entries.length,
+        })}
+      </span>
+    </div>
+  );
+
+  const models = (layout: "inline" | "grid") => (
+    <SortableContext
+      items={group.entries.map((entry) => entry.key)}
+      strategy={rectSortingStrategy}
+    >
+      <div
+        className={cn(
+          layout === "inline"
+            ? "contents"
+            : "grid grid-cols-1 gap-2 p-2 md:grid-cols-3",
+        )}
+      >
+        {group.entries.map((entry, index) => (
+          <SortableMenuModelRow
+            key={entry.key}
+            entry={entry}
+            position={index + 1}
+            onChange={(patch) => onEntryChange(entry.key, patch)}
+          />
+        ))}
+      </div>
+    </SortableContext>
+  );
 
   return (
     <section
@@ -201,68 +246,16 @@ function SortableProviderGroup({
         isDragging && "relative z-10 shadow-lg",
       )}
     >
-      <div className="grid min-h-11 grid-cols-[2rem_2rem_minmax(10rem,1fr)_auto] items-center gap-1.5 bg-muted/35 px-2 py-1.5">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-muted-foreground"
-          onClick={onToggleCollapsed}
-          title={
-            collapsed
-              ? t("codexConfig.expandProviderModels")
-              : t("codexConfig.collapseProviderModels")
-          }
-        >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
-        </Button>
-
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 cursor-grab text-muted-foreground active:cursor-grabbing"
-          title={t("codexConfig.dragProviderGroup")}
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-4 w-4" />
-        </Button>
-
-        <Input
-          value={group.menuGroupName}
-          onChange={(event) => onMenuGroupNameChange(event.target.value)}
-          aria-label={t("codexConfig.menuGroupName")}
-          className="h-8 border-transparent bg-transparent px-2 text-sm font-semibold shadow-none hover:border-input focus:border-input focus:bg-background"
-        />
-
-        <span className="shrink-0 rounded-md bg-background/80 px-2 py-1 text-[11px] font-medium text-muted-foreground">
-          {t("codexConfig.providerModelCount", {
-            count: group.entries.length,
-          })}
-        </span>
-      </div>
-
-      {!collapsed && (
-        <SortableContext
-          items={group.entries.map((entry) => entry.key)}
-          strategy={rectSortingStrategy}
-        >
-          <div className="grid grid-cols-1 gap-2 p-2 md:grid-cols-3">
-            {group.entries.map((entry, index) => (
-              <SortableMenuModelRow
-                key={entry.key}
-                entry={entry}
-                position={index + 1}
-                onChange={(patch) => onEntryChange(entry.key, patch)}
-              />
-            ))}
-          </div>
-        </SortableContext>
+      {compactRow ? (
+        <div className="grid min-h-12 grid-cols-[minmax(10rem,0.9fr)_repeat(2,minmax(0,1fr))] items-center gap-2 bg-muted/35 px-3 py-2">
+          {groupHeader}
+          {models("inline")}
+        </div>
+      ) : (
+        <>
+          <div className="bg-muted/35 px-3 py-2">{groupHeader}</div>
+          {models("grid")}
+        </>
       )}
     </section>
   );
@@ -277,9 +270,6 @@ export function CodexModelMenuDialog({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [groups, setGroups] = useState<DraftProviderGroup[]>([]);
-  const [collapsedProviderIds, setCollapsedProviderIds] = useState<Set<string>>(
-    new Set(),
-  );
   const [initialSnapshot, setInitialSnapshot] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [renameFrom, setRenameFrom] = useState("");
@@ -293,7 +283,6 @@ export function CodexModelMenuDialog({
     if (!open) return;
     const next = buildDraftGroups(providers);
     setGroups(next);
-    setCollapsedProviderIds(new Set());
     setInitialSnapshot(JSON.stringify(next));
     setRenameFrom("");
     setRenameTo("");
@@ -326,10 +315,30 @@ export function CodexModelMenuDialog({
     );
   };
 
+  const handleGroupEnabledChange = (providerId: string, enabled: boolean) => {
+    setGroups((current) =>
+      current.map((group) =>
+        group.providerId === providerId
+          ? {
+              ...group,
+              entries: group.entries.map((entry) => ({
+                ...entry,
+                model: { ...entry.model, enabled },
+              })),
+            }
+          : group,
+      ),
+    );
+  };
+
   const renameMatches = useMemo(
     () => findDraftModelRenameMatches(groups, renameFrom, renameTo),
     [groups, renameFrom, renameTo],
   );
+
+  useEffect(() => {
+    if (renameMatches.length === 0) setIsRenamePreviewOpen(false);
+  }, [renameMatches.length]);
 
   const handleBatchRename = () => {
     if (!renameFrom.trim() || !renameMatches.length) return;
@@ -488,7 +497,6 @@ export function CodexModelMenuDialog({
               value={renameFrom}
               onChange={(event) => {
                 setRenameFrom(event.target.value);
-                setIsRenamePreviewOpen(event.target.value.trim().length > 0);
               }}
               placeholder={t("codexConfig.batchRenameFrom")}
               aria-label={t("codexConfig.batchRenameFrom")}
@@ -499,14 +507,13 @@ export function CodexModelMenuDialog({
               value={renameTo}
               onChange={(event) => {
                 setRenameTo(event.target.value);
-                setIsRenamePreviewOpen(renameFrom.trim().length > 0);
               }}
               placeholder={t("codexConfig.batchRenameTo")}
               aria-label={t("codexConfig.batchRenameTo")}
               className="h-8 w-28 text-xs sm:w-32"
             />
             <Popover
-              open={isRenamePreviewOpen && renameMatches.length > 0}
+              open={isRenamePreviewOpen}
               onOpenChange={setIsRenamePreviewOpen}
             >
               <PopoverTrigger asChild>
@@ -514,20 +521,18 @@ export function CodexModelMenuDialog({
                   type="button"
                   variant="outline"
                   size="sm"
-                  disabled={!renameFrom.trim()}
+                  disabled={renameMatches.length === 0}
                   className="h-8 gap-1 rounded-md px-2 text-xs"
                 >
-                  {renameFrom.trim()
-                    ? t("codexConfig.batchRenameMatchCount", {
-                        count: renameMatches.length,
-                      })
-                    : t("codexConfig.batchRenamePreview")}
+                  {t("codexConfig.batchRenamePreview")}
                   <ChevronDown className="h-3.5 w-3.5" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent
+                side="bottom"
                 align="end"
-                className="w-[min(34rem,calc(100vw-3rem))] p-2"
+                sideOffset={6}
+                className="z-[130] w-[min(34rem,calc(100vw-3rem))] p-2"
               >
                 <div className="mb-2 flex items-center justify-between gap-2 text-xs">
                   <span className="font-medium text-foreground">
@@ -602,22 +607,13 @@ export function CodexModelMenuDialog({
                       <SortableProviderGroup
                         key={group.key}
                         group={group}
-                        collapsed={collapsedProviderIds.has(group.providerId)}
-                        onToggleCollapsed={() =>
-                          setCollapsedProviderIds((current) => {
-                            const next = new Set(current);
-                            if (next.has(group.providerId)) {
-                              next.delete(group.providerId);
-                            } else {
-                              next.add(group.providerId);
-                            }
-                            return next;
-                          })
-                        }
                         onMenuGroupNameChange={(name) =>
                           handleMenuGroupNameChange(group.providerId, name)
                         }
                         onEntryChange={handleEntryChange}
+                        onGroupEnabledChange={(enabled) =>
+                          handleGroupEnabledChange(group.providerId, enabled)
+                        }
                       />
                     ))}
                   </div>
