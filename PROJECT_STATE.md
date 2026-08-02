@@ -4,7 +4,7 @@
 
 ## 状态快照
 
-- 更新时间: 2026-08-01, Asia/Shanghai.
+- 更新时间: 2026-08-02, Asia/Shanghai.
 - 工作目录: `D:\文件\Agenc Cli\cc-switch`.
 - 当前主线: `main`, 跟踪 `fork/main`.
 - 用户仓库: `fork`, `https://github.com/Jessire/cc-switch.git`.
@@ -51,16 +51,16 @@
 ## 当前构建、发布和运行实例
 
 - v3.19.0 上游合并提交: `c1522aff3643752e90dd62425b4f6b3eedbb6ac9` (`Merge upstream v3.19.0`). 冲突文件 `src/App.tsx` 与 `src/components/AppSwitcher.tsx` 保留定制版自动紧凑行为, 其余上游有效改动已合并.
-- 最近一次本地 Windows x64 Release 构建产物: `C:\Users\jery3\.codex\tmp\CC Switch.exe`; 文件版本 `3.19.0`, 大小 `32,754,688` bytes, SHA256 `6FAC7AC44395900AF03928EF6633B0C8EB80049BC8448FB0931526ACDB91D951`. 旧版 `CC Switch-Compact-20260801.exe` 和原旁路构建目录均保留.
+- 最近一次本地 Windows x64 Release 构建产物: `C:\Users\jery3\.codex\tmp\CC Switch.exe`; 文件版本 `3.19.0`, 大小 `32,754,688` bytes, SHA256 `06A603F7D4CA2090BF4725453DE372C88BD348D6CF03B4E6F7CF8F0BC4DEB16E`. 旧版 `CC Switch-Compact-20260801.exe` 和原旁路构建目录均保留.
 - 自定义 GitHub Release: `v3.19.0-custom.1`, 标签指向 `c1522aff3643752e90dd62425b4f6b3eedbb6ac9`; Release 资产为 `CC-Switch-Custom-v3.19.0-Windows-x64.exe`, 大小 `32,750,592` bytes, SHA256 `7CD44197EB135729409E0EE768051C038BAC96A880FD39016A0A7FDAB1CCDF4F`.
-- 当前运行实例: 无 `cc-switch.exe` 进程. 新版本已覆盖 `C:\Users\jery3\.codex\tmp\CC Switch.exe`, 未触碰数据库、配置和客户端真实配置.
+- 当前运行实例: PID `22412` 仍运行旧旁路构建 `C:\Users\jery3\.codex\tmp\cc-switch-release-target-model-menu-20260801\release\cc-switch.exe`; 未结束该进程. 新版本已覆盖 `C:\Users\jery3\.codex\tmp\CC Switch.exe`, 未触碰数据库、配置和客户端真实配置.
 - 仓库根目录 6 个旧 v3.18.0 EXE、可重建构建缓存及已确认无运行实例的 CC Switch 临时构建目录已清理; 数据库、配置、备份和客户端真实配置均未触碰.
 
 ## 已完成验证
 
 - v3.19.0 合并后已通过 `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm format:check`, `pnpm exec vitest run tests/components/ProviderCardLayout.test.ts`, `pnpm test:unit`, `pnpm build:renderer`, `cargo fmt --check`, `cargo test responses_tool_filter --lib`, `cargo test codex_model --lib`, `cargo test universal_provider --lib`, `cargo test --lib` 和 `pnpm tauri build --no-bundle`.
 - Windows Release 已使用独立应用标识和隔离数据库副本实际启动验证: 主窗口无白屏, 供应商卡片维持单排布局, 操作按钮默认悬停显示, 顶部应用切换器按可用宽度统一收缩. 隔离实例已退出并清理.
-- 本次模型菜单改动已通过 `pnpm typecheck`, `pnpm format:check`, 全量 `pnpm test:unit`, `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts`, `pnpm build:renderer` 和 `pnpm tauri build --no-bundle`; 状态测试 6 项通过, Windows Release 隔离实例已正常启动. 由于 CUA 无法深入读取 WebView 且停在首次欢迎弹窗, 本轮未将模型菜单的真实点击视觉验收冒充为已完成.
+- 本轮模型菜单改动已通过 `pnpm format:check`, `pnpm typecheck`, `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts` (6 项), `git diff --check` 和 `pnpm tauri build --no-bundle`; 多行模型组新增本地展开/折叠, 不改变排序、勾选或保存数据. Release 产物版本、大小和 SHA256 已核验.
 - 本轮模型菜单视觉调整已通过 `pnpm typecheck`, `pnpm format:check`, 全量 `pnpm test:unit`, `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts`, `pnpm build:renderer` 和 `pnpm tauri build --no-bundle`; Release 产物版本 `3.19.0`, SHA256 已核验. 因已有 PID `29324` 占用正式单实例锁, 新产物未能启动进行窗口级视觉复核, 未结束该已有实例.
 - 本轮批量重命名、上下文默认值和星标状态修复已通过 `pnpm typecheck`, `pnpm format:check`, `pnpm exec vitest run --pool forks --maxWorkers 1 --minWorkers 1` (91 个测试文件、612 个测试全部通过), `pnpm build:renderer` 和旁路 `pnpm tauri build --no-bundle`; Release 旁路产物已覆盖并核验 SHA256 `B0CDE001A17DC270A9CBD5AEF46D7E73B3C30AA6407F5E9E7049E295C22D09C1`.
 - GitHub Release 资产已下载回读, 大小与 SHA256 均和本机构建产物一致.
@@ -68,7 +68,7 @@
 ## 未完成边界与回归重点
 
 - 为保护正在进行的 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启, 未在真实 Desktop 会话中验证第三方模型菜单读取和对话级路由.
-- 本轮批量重命名布局已通过 `pnpm format:check`, `pnpm typecheck`, `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts`, `git diff --check` 和旁路 `pnpm tauri build --no-bundle`; 新版本已覆盖 `CC Switch.exe` 并完成版本、大小和 SHA256 校验. 未启动新 EXE 进行窗口级点击复核.
+- 本轮 Release GUI 的窗口级点击复核未完成: 新 EXE 启动时被仍在运行的旧旁路实例 PID `22412` 占用正式单实例锁, 新进程随即退出; 为保护现有实例未强制结束它. 代码检查、Release 构建和最终 EXE 哈希已完成.
 - 对话级供应商路由仍需在至少两个 Codex Desktop 对话中选择不同 `供应商 - 模型`, 发起真实请求并核对代理日志的供应商及剥离后的上游模型.
 - 影响托盘、deep link、分组、重启、模型菜单、代理路由或通用配置的后续改动, 必须按对应真实 Windows 行为重新验证, 不得只凭构建通过收口.
 
