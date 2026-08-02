@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -32,12 +32,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverAnchor,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { syncCodexModelToCatalogFirst } from "@/components/providers/forms/ProviderForm";
 import {
@@ -318,6 +312,7 @@ export function CodexModelMenuDialog({
   const [renameFrom, setRenameFrom] = useState("");
   const [renameTo, setRenameTo] = useState("");
   const [isRenamePreviewOpen, setIsRenamePreviewOpen] = useState(false);
+  const renamePreviewRef = useRef<HTMLDivElement>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -383,6 +378,19 @@ export function CodexModelMenuDialog({
   useEffect(() => {
     if (renameMatches.length === 0) setIsRenamePreviewOpen(false);
   }, [renameMatches.length]);
+
+  useEffect(() => {
+    if (!isRenamePreviewOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!renamePreviewRef.current?.contains(event.target as Node)) {
+        setIsRenamePreviewOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [isRenamePreviewOpen]);
 
   const handleBatchRename = () => {
     if (!renameFrom.trim() || !renameMatches.length) return;
@@ -547,107 +555,106 @@ export function CodexModelMenuDialog({
             {t("codexConfig.modelMenuManager")}
           </DialogTitle>
 
-          <Popover
-            open={isRenamePreviewOpen}
-            onOpenChange={setIsRenamePreviewOpen}
+          <div
+            ref={renamePreviewRef}
+            className="relative flex min-w-0 items-center gap-2"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setIsRenamePreviewOpen(false);
+            }}
           >
-            <div className="flex min-w-0 items-center gap-2">
-              <PopoverAnchor asChild>
-                <div className="grid w-[21.5rem] grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)] items-center gap-x-2">
-                  <Input
-                    value={renameFrom}
-                    onChange={(event) => {
-                      setRenameFrom(event.target.value);
-                    }}
-                    placeholder={t("codexConfig.batchRenameFrom")}
-                    aria-label={t("codexConfig.batchRenameFrom")}
-                    className="h-10 w-full text-sm"
-                  />
+            <div className="grid w-[21.5rem] grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)] items-center gap-x-2">
+              <Input
+                value={renameFrom}
+                onChange={(event) => {
+                  setRenameFrom(event.target.value);
+                }}
+                placeholder={t("codexConfig.batchRenameFrom")}
+                aria-label={t("codexConfig.batchRenameFrom")}
+                className="h-10 w-full text-sm"
+              />
 
-                  <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
+              <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
 
-                  <Input
-                    value={renameTo}
-                    onChange={(event) => {
-                      setRenameTo(event.target.value);
-                    }}
-                    placeholder={t("codexConfig.batchRenameTo")}
-                    aria-label={t("codexConfig.batchRenameTo")}
-                    className="h-10 w-full text-sm"
-                  />
-                </div>
-              </PopoverAnchor>
-
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={renameMatches.length === 0}
-                  aria-expanded={isRenamePreviewOpen}
-                  className="h-10 w-28 justify-between gap-1 rounded-md px-2 text-left text-sm"
-                >
-                  <span>{t("codexConfig.batchRenamePreview")}</span>
-                  <span className="flex items-center gap-1">
-                    {renameMatches.length > 0 && (
-                      <span className="tabular-nums">
-                        {renameMatches.length}
-                      </span>
-                    )}
-                    <ChevronDown
-                      className={cn(
-                        "h-3.5 w-3.5 transition-transform",
-                        isRenamePreviewOpen && "rotate-180",
-                      )}
-                    />
-                  </span>
-                </Button>
-              </PopoverTrigger>
+              <Input
+                value={renameTo}
+                onChange={(event) => {
+                  setRenameTo(event.target.value);
+                }}
+                placeholder={t("codexConfig.batchRenameTo")}
+                aria-label={t("codexConfig.batchRenameTo")}
+                className="h-10 w-full text-sm"
+              />
             </div>
 
-            <PopoverContent
-              side="bottom"
-              align="start"
-              sideOffset={6}
-              className="z-[130] max-h-[min(360px,calc(100vh-4rem))] w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain p-0 [scrollbar-gutter:stable]"
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={renameMatches.length === 0}
+              aria-expanded={isRenamePreviewOpen}
+              aria-controls="codex-batch-rename-preview"
+              onClick={() => setIsRenamePreviewOpen((open) => !open)}
+              className="h-10 w-28 justify-between gap-1 rounded-md px-2 text-left text-sm"
             >
-              <div className="space-y-0.5 py-1">
-                {renameMatches.map((match) => (
-                  <div
-                    key={match.entryKey}
-                    className="grid grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)] items-center gap-x-2 rounded-md px-0 py-2 text-base hover:bg-muted/60"
-                  >
-                    <div
-                      className="min-w-0 truncate text-left text-base text-foreground"
-                      title={match.before}
-                    >
-                      {match.before}
-                    </div>
-                    <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
-                    <div
-                      className="min-w-0 truncate text-left text-base text-foreground"
-                      title={match.after}
-                    >
-                      {match.after}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <span>{t("codexConfig.batchRenamePreview")}</span>
+              <span className="flex items-center gap-1">
+                {renameMatches.length > 0 && (
+                  <span className="tabular-nums">{renameMatches.length}</span>
+                )}
+                <ChevronDown
+                  className={cn(
+                    "h-3.5 w-3.5 transition-transform",
+                    isRenamePreviewOpen && "rotate-180",
+                  )}
+                />
+              </span>
+            </Button>
 
-              <div className="border-t border-border-default p-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBatchRename}
-                  disabled={!renameFrom.trim() || renameMatches.length === 0}
-                  className="h-8 w-full justify-center rounded-md px-2 text-sm"
-                >
-                  {t("codexConfig.batchRenameAction")}
-                </Button>
+            {isRenamePreviewOpen && (
+              <div
+                id="codex-batch-rename-preview"
+                role="dialog"
+                aria-label={t("codexConfig.batchRenamePreview")}
+                className="absolute left-0 top-[calc(100%+6px)] z-[130] max-h-[min(360px,calc(100vh-4rem))] w-[21.5rem] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-md border bg-popover p-0 text-popover-foreground shadow-md outline-none [scrollbar-gutter:stable]"
+              >
+                <div className="space-y-0.5 py-1">
+                  {renameMatches.map((match) => (
+                    <div
+                      key={match.entryKey}
+                      className="grid grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)] items-center gap-x-2 rounded-md px-2 py-2 text-base hover:bg-muted/60"
+                    >
+                      <div
+                        className="min-w-0 truncate text-center text-base text-foreground"
+                        title={match.before}
+                      >
+                        {match.before}
+                      </div>
+                      <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
+                      <div
+                        className="min-w-0 truncate text-center text-base text-foreground"
+                        title={match.after}
+                      >
+                        {match.after}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-border-default p-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBatchRename}
+                    disabled={!renameFrom.trim() || renameMatches.length === 0}
+                    className="h-8 w-full justify-center rounded-md px-2 text-sm"
+                  >
+                    {t("codexConfig.batchRenameAction")}
+                  </Button>
+                </div>
               </div>
-            </PopoverContent>
-          </Popover>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="min-h-0 flex-1 px-4 py-3 sm:px-6 sm:py-3">

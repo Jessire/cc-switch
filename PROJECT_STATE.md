@@ -51,9 +51,9 @@
 ## 当前构建、发布和运行实例
 
 - v3.19.0 上游合并提交: `c1522aff3643752e90dd62425b4f6b3eedbb6ac9` (`Merge upstream v3.19.0`). 冲突文件 `src/App.tsx` 与 `src/components/AppSwitcher.tsx` 保留定制版自动紧凑行为, 其余上游有效改动已合并.
-- 最近一次本地 Windows x64 Release 构建产物: `C:\Users\jery3\.codex\tmp\CC Switch.exe`; 文件版本 `3.19.0`, 大小 `32,754,688` bytes, SHA256 `06A603F7D4CA2090BF4725453DE372C88BD348D6CF03B4E6F7CF8F0BC4DEB16E`. 旧版 `CC Switch-Compact-20260801.exe` 和原旁路构建目录均保留.
+- 最近一次本地 Windows x64 Release 构建产物: `C:\Users\jery3\.codex\tmp\CC Switch.exe`; 文件版本 `3.19.0`, 大小 `32,754,688` bytes, SHA256 `49E3A221C607EE514185B387F219CF1AAA00F1DD5ED060302937534EEF6AAB08`. 旧版 `CC Switch-Compact-20260801.exe` 和原旁路构建目录均保留.
 - 自定义 GitHub Release: `v3.19.0-custom.1`, 标签指向 `c1522aff3643752e90dd62425b4f6b3eedbb6ac9`; Release 资产为 `CC-Switch-Custom-v3.19.0-Windows-x64.exe`, 大小 `32,750,592` bytes, SHA256 `7CD44197EB135729409E0EE768051C038BAC96A880FD39016A0A7FDAB1CCDF4F`.
-- 当前运行实例: PID `22412` 仍运行旧旁路构建 `C:\Users\jery3\.codex\tmp\cc-switch-release-target-model-menu-20260801\release\cc-switch.exe`; 未结束该进程. 新版本已覆盖 `C:\Users\jery3\.codex\tmp\CC Switch.exe`, 未触碰数据库、配置和客户端真实配置.
+- 当前运行实例: PID `17304` 仍运行 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 未结束该进程. 新标准应用标识版本已生成并覆盖 `C:\Users\jery3\.codex\tmp\CC Switch.exe`, 未触碰数据库、配置和客户端真实配置.
 - 仓库根目录 6 个旧 v3.18.0 EXE、可重建构建缓存及已确认无运行实例的 CC Switch 临时构建目录已清理; 数据库、配置、备份和客户端真实配置均未触碰.
 
 ## 已完成验证
@@ -64,11 +64,12 @@
 - 本轮模型菜单视觉调整已通过 `pnpm typecheck`, `pnpm format:check`, 全量 `pnpm test:unit`, `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts`, `pnpm build:renderer` 和 `pnpm tauri build --no-bundle`; Release 产物版本 `3.19.0`, SHA256 已核验. 因已有 PID `29324` 占用正式单实例锁, 新产物未能启动进行窗口级视觉复核, 未结束该已有实例.
 - 本轮批量重命名、上下文默认值和星标状态修复已通过 `pnpm typecheck`, `pnpm format:check`, `pnpm exec vitest run --pool forks --maxWorkers 1 --minWorkers 1` (91 个测试文件、612 个测试全部通过), `pnpm build:renderer` 和旁路 `pnpm tauri build --no-bundle`; Release 旁路产物已覆盖并核验 SHA256 `B0CDE001A17DC270A9CBD5AEF46D7E73B3C30AA6407F5E9E7049E295C22D09C1`.
 - GitHub Release 资产已下载回读, 大小与 SHA256 均和本机构建产物一致.
+- 本轮“查看匹配”定位修复已通过 `pnpm format:check`, `pnpm typecheck`, `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts` (6 项), `git diff --check` 和标准 Windows x64 Release 构建. 使用隔离应用标识和隔离数据库实际点击复核: 弹层位于匹配输入框下方, 不再跑到窗口最左侧, 左右文本分别在各自半区居中, 箭头保持在中线. 复核截图为 `C:\Users\jery3\.codex\tmp\cc-switch-gui-verify-20260802-popover\center-topmost-before.png`; 最终交付 EXE SHA256 为 `49E3A221C607EE514185B387F219CF1AAA00F1DD5ED060302937534EEF6AAB08`.
 
 ## 未完成边界与回归重点
 
 - 为保护正在进行的 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启, 未在真实 Desktop 会话中验证第三方模型菜单读取和对话级路由.
-- 本轮 Release GUI 的窗口级点击复核未完成: 新 EXE 启动时被仍在运行的旧旁路实例 PID `22412` 占用正式单实例锁, 新进程随即退出; 为保护现有实例未强制结束它. 代码检查、Release 构建和最终 EXE 哈希已完成.
+- 本轮正式实例未重启, 以保护正在使用的窗口; 新 EXE 已在隔离实例中完成窗口级点击复核.
 - 对话级供应商路由仍需在至少两个 Codex Desktop 对话中选择不同 `供应商 - 模型`, 发起真实请求并核对代理日志的供应商及剥离后的上游模型.
 - 影响托盘、deep link、分组、重启、模型菜单、代理路由或通用配置的后续改动, 必须按对应真实 Windows 行为重新验证, 不得只凭构建通过收口.
 
