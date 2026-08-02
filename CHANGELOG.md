@@ -5,6 +5,12 @@ All notable changes to CC Switch will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.19.5] - 2026-08-02
+
+### Fixed
+
+- Restored the standard Windows Release path and corrected the `ccswitch://` protocol registration to point to the verified Release EXE.
+- Added project rules to keep temporary Cargo targets and TMP executables from becoming long-term runtime artifacts.
 ## [3.19.0] - 2026-07-30
 
 Development since v3.18.0 is headlined by a security-hardening wave and a proxy correctness fix with immediate field impact. On the security side (#5811 and follow-ups): skill installs from GitHub repositories are hardened against zip-slip and repository-coordinate path traversal with hard archive limits; a Gemini common-config credential leak is closed and a one-time startup cleanup scrubs keys that already leaked into other providers' configs; imported SQL backups now run under a SQLite authorizer that denies `ATTACH` and every other statement that can reach outside the import database; common-config snippet handling no longer follows `__proto__` into the global prototype; terminal launch escapes project paths with POSIX single quotes so a directory name can no longer inject commands; and `ccswitch://` import confirmations show every argument, env var, URL, and the complete usage-script body — nothing hidden by truncation, nor by a Base64 variant the dialog could not decode, credential-shaped values masked — flag risky values, and import usage scripts disabled by default. On the proxy side, tool-result images are lifted out of stringified tool text and re-emitted as native media on every conversion bridge, ending the ~9,000× token inflation that pushed Codex sessions past their context window after a few screenshots (#4465, #5663). Usage statistics gain opt-in automatic price sync from models.dev with a persistent local override file (#5734), plus coverage of Grok CLI's official OAuth mode imported from session logs and SuperGrok subscription quota on provider cards. Rounding it out: in-app updates are served from a Cloudflare R2 mirror at `dl.ccswitch.io` with GitHub as fallback, Codex usage import reuses parsed parent rollouts across forked sessions (#5626), preset defaults advance to Claude Opus 5, GPT-5.6 Sol, and Gemini 3.6 Flash, the OpenClaw Kimi For Coding base URL is corrected, and the GPT-in-Claude-Code routing guide is now available in English and Japanese.
