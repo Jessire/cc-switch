@@ -51,10 +51,10 @@
 ## 当前构建、发布和运行实例
 
 - v3.19.0 上游合并提交: `c1522aff3643752e90dd62425b4f6b3eedbb6ac9` (`Merge upstream v3.19.0`). 冲突文件 `src/App.tsx` 与 `src/components/AppSwitcher.tsx` 保留定制版自动紧凑行为, 其余上游有效改动已合并.
-- 最近一次本地 Windows x64 Release 构建产物: `C:\Users\jery3\.codex\tmp\CC Switch.exe`; 文件版本 `3.19.0`, 大小 `32,754,688` bytes, SHA256 `49E3A221C607EE514185B387F219CF1AAA00F1DD5ED060302937534EEF6AAB08`. 旧版 `CC Switch-Compact-20260801.exe` 和原旁路构建目录均保留.
+- 最近一次本地 Windows x64 Release 构建产物: `C:\Users\jery3\.codex\tmp\CC Switch.exe`; 文件版本 `3.19.0`, 大小 `32,754,688` bytes, SHA256 `49E3A221C607EE514185B387F219CF1AAA00F1DD5ED060302937534EEF6AAB08`. 旧版 `CC Switch-Compact-20260801.exe` 保留, 原旁路构建目录已清理.
 - 自定义 GitHub Release: `v3.19.0-custom.1`, 标签指向 `c1522aff3643752e90dd62425b4f6b3eedbb6ac9`; Release 资产为 `CC-Switch-Custom-v3.19.0-Windows-x64.exe`, 大小 `32,750,592` bytes, SHA256 `7CD44197EB135729409E0EE768051C038BAC96A880FD39016A0A7FDAB1CCDF4F`.
-- 当前运行实例: PID `17304` 仍运行 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 未结束该进程. 新标准应用标识版本已生成并覆盖 `C:\Users\jery3\.codex\tmp\CC Switch.exe`, 未触碰数据库、配置和客户端真实配置.
-- 仓库根目录 6 个旧 v3.18.0 EXE、可重建构建缓存及已确认无运行实例的 CC Switch 临时构建目录已清理; 数据库、配置、备份和客户端真实配置均未触碰.
+- 当前运行实例: PID `2512` 运行 `C:\Users\jery3\.codex\tmp\CC Switch.exe`; 文件版本 `3.19.0`, SHA256 `49E3A221C607EE514185B387F219CF1AAA00F1DD5ED060302937534EEF6AAB08`. 已从旧旁路构建切换到最新交付 EXE, 未触碰数据库、配置和客户端真实配置.
+- 2026-08-02 已清理仓库内 `src-tauri\target`, `dist`, `src-tauri\gen` 及无运行实例占用的旧 CC Switch 旁路构建和隔离验证目录; 保留 `node_modules`, 最新交付 EXE、旧版回滚 EXE 和当前状态引用的 GUI 验证证据. 清理后 C: 可用空间 `101.13 GB`, D: 可用空间 `562.05 GB`.
 
 ## 已完成验证
 
@@ -69,7 +69,7 @@
 ## 未完成边界与回归重点
 
 - 为保护正在进行的 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启, 未在真实 Desktop 会话中验证第三方模型菜单读取和对话级路由.
-- 本轮正式实例未重启, 以保护正在使用的窗口; 新 EXE 已在隔离实例中完成窗口级点击复核.
+- 正式实例已切换为最新交付 EXE 并保持运行; 本轮清理后再次核验了运行进程路径、文件版本和 SHA256, 未重复执行功能或 UI 回归.
 - 对话级供应商路由仍需在至少两个 Codex Desktop 对话中选择不同 `供应商 - 模型`, 发起真实请求并核对代理日志的供应商及剥离后的上游模型.
 - 影响托盘、deep link、分组、重启、模型菜单、代理路由或通用配置的后续改动, 必须按对应真实 Windows 行为重新验证, 不得只凭构建通过收口.
 
