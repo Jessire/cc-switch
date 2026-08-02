@@ -121,6 +121,7 @@
 - 托盘左键双击打开主界面; 取消左键单击打开行为; 右键单击保留菜单.
 - 网页通过官方 deep link 导出到 CC Switch 的能力不得被定制版破坏. 官方版本能导入的链接, 定制版也应能导入.
 - 验证托盘或 deep link 时必须运行实际 Release EXE, 检查窗口, 单实例和真实导入结果.
+- Windows 最终切换 Release 路径后必须复核 `HKCU\Software\Classes\ccswitch\shell\open\command` 等协议注册实际指向存在的标准 Release EXE; 不得保留指向 debug、已删除 target 或 `.codex\tmp` 的处理器路径.
 
 ## 调研规则
 
@@ -140,6 +141,10 @@ pnpm tauri build --no-bundle
 ```
 
 - 原始产物位于 `src-tauri/target/release/cc-switch.exe`.
+- `src-tauri/target/release/cc-switch.exe` 是本地最终 Release 和正式运行实例的标准路径. `C:\Users\jery3\.codex\tmp`、仓库外 `cc-switch-build*` 目录和临时 `CARGO_TARGET_DIR` 只允许用于中间构建、隔离验证或发布资产暂存, 不得作为任务结束后的正式运行位置.
+- 同一任务需要旁路构建时只允许复用一个已明确命名的临时 target. 不得为每次 UI 微调创建新的完整 Cargo target; 中间迭代优先使用 renderer build 和直接相关测试, 最终方案确定后只做一次完整 Release.
+- 标准 Release 被正在运行的实例占用时, 可在唯一临时 target 中生成并验证候选 EXE; 最终必须关闭旧 CC Switch、将已验证 EXE 归位到 `src-tauri/target/release/cc-switch.exe`、从标准路径重新启动并核验版本和 SHA256. 不得让最终实例长期运行于 `.codex\tmp`.
+- 任务结束前必须删除本轮旁路 Cargo target、隔离数据库、临时脚本、日志和多余截图. 如需控制磁盘占用, 可在保留标准 `release/cc-switch.exe` 后清理 `release/deps`, `release/build`, `.fingerprint` 等可重建中间物; 不得删除当前正式运行所依赖的标准 EXE.
 - 桌面交付文件默认命名为 `CC Switch.exe`; 目标正在运行时使用 `CC Switch-New.exe`, `CC Switch-New2.exe` 等旁路名称, 不结束旧实例.
 - GitHub 构建使用 `Build Windows EXE` 手动工作流, 产物固定为 Windows x64 Artifact `CC-Switch-Custom-Windows-x64`.
 - 长时间 Rust Release 构建必须持续跟踪到明确成功或失败. 不得因为工具超时提前结束任务, 也不得重复启动多个 Cargo 构建争用同一 target 目录.
