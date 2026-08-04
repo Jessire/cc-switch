@@ -725,7 +725,10 @@ export function ProviderList({
                   <Download className="h-3.5 w-3.5" />从 Codex 导入
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-72">
+              <DropdownMenuContent
+                align="end"
+                className="w-72 overflow-hidden p-1"
+              >
                 <DropdownMenuLabel>选择要导入的 Codex 中转站</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {codexRelayProviders.length === 0 ? (
@@ -733,23 +736,30 @@ export function ProviderList({
                     {t("provider.noProviders")}
                   </DropdownMenuLabel>
                 ) : (
-                  codexRelayProviders.map((provider) => (
-                    <DropdownMenuCheckboxItem
-                      key={provider.id}
-                      checked={selectedCodexProviderIds.includes(provider.id)}
-                      onCheckedChange={(checked) =>
-                        setSelectedCodexProviderIds((current) =>
-                          checked
-                            ? [...new Set([...current, provider.id])]
-                            : current.filter((id) => id !== provider.id),
-                        )
-                      }
-                    >
-                      <span className="min-w-0 truncate" title={provider.name}>
-                        {provider.name}
-                      </span>
-                    </DropdownMenuCheckboxItem>
-                  ))
+                  <div className="max-h-[min(60vh,26rem)] overflow-y-auto overscroll-contain pr-0.5 [scrollbar-gutter:stable]">
+                    {codexRelayProviders.map((provider) => (
+                      <DropdownMenuCheckboxItem
+                        key={provider.id}
+                        checked={selectedCodexProviderIds.includes(provider.id)}
+                        className="min-h-9 pl-8 pr-2"
+                        onSelect={(event) => event.preventDefault()}
+                        onCheckedChange={(checked) =>
+                          setSelectedCodexProviderIds((current) =>
+                            checked
+                              ? [...new Set([...current, provider.id])]
+                              : current.filter((id) => id !== provider.id),
+                          )
+                        }
+                      >
+                        <span
+                          className="min-w-0 flex-1 truncate"
+                          title={provider.name}
+                        >
+                          {provider.name}
+                        </span>
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </div>
                 )}
                 <DropdownMenuSeparator />
                 <Button

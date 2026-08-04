@@ -664,17 +664,17 @@ export function CodexModelMenuDialog({
                   {renameMatches.map((match) => (
                     <div
                       key={match.entryKey}
-                      className="grid grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)] items-center gap-x-2 rounded-md px-2 py-2 text-base hover:bg-muted/60"
+                      className="grid min-h-12 grid-cols-[minmax(0,1fr)_2rem_minmax(0,1fr)] items-center gap-x-2 rounded-md px-3 py-2 text-base leading-6 hover:bg-muted/60"
                     >
                       <div
-                        className="min-w-0 truncate text-center text-base text-foreground"
+                        className="min-w-0 truncate text-center text-base leading-6 text-foreground"
                         title={match.before}
                       >
                         {match.before}
                       </div>
-                      <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
+                      <ArrowRight className="mx-auto h-4 w-4 shrink-0 text-muted-foreground" />
                       <div
-                        className="min-w-0 truncate text-center text-base text-foreground"
+                        className="min-w-0 truncate text-center text-base leading-6 text-foreground"
                         title={match.after}
                       >
                         {match.after}
