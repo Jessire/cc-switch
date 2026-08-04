@@ -58,6 +58,14 @@ import { GroupTabs } from "@/components/providers/GroupTabs";
 import { BulkAssignBar } from "@/components/providers/BulkAssignBar";
 import { CodexModelMenuDialog } from "@/components/providers/CodexModelMenuDialog";
 import { buildGrokBuildProviderFromCodex } from "@/utils/grokBuildProviderImport";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ProviderListProps {
   providers: Record<string, Provider>;
@@ -140,7 +148,29 @@ export function ProviderList({
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isCodexModelMenuOpen, setIsCodexModelMenuOpen] = useState(false);
+  const [selectedCodexProviderIds, setSelectedCodexProviderIds] = useState<
+    string[]
+  >([]);
   const appIdRef = useRef(appId);
+  const codexRelayProviders = useMemo(
+    () =>
+      Object.values(codexProviders).filter(
+        (provider) => provider.category !== "official",
+      ),
+    [codexProviders],
+  );
+  useEffect(() => {
+    if (appId !== "grokbuild") return;
+    setSelectedCodexProviderIds((current) => {
+      const available = new Set(
+        codexRelayProviders.map((provider) => provider.id),
+      );
+      const retained = current.filter((id) => available.has(id));
+      const selected = new Set(retained);
+      codexRelayProviders.forEach((provider) => selected.add(provider.id));
+      return Array.from(selected);
+    });
+  }, [appId, codexRelayProviders]);
   // Only reset bulk selection when the app tab changes, not on first mount.
   useEffect(() => {
     if (appIdRef.current === appId) return;
@@ -684,30 +714,66 @@ export function ProviderList({
         onCreateProvider={onCreate}
         extraAction={
           appId === "grokbuild" && onImportCodexProvider ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1 rounded-lg px-2.5 text-xs"
-              onClick={() => {
-                const sources = Object.values(codexProviders).filter(
-                  (provider) => provider.category !== "official",
-                );
-                if (sources.length === 0) {
-                  toast.info(t("provider.noProviders"));
-                  return;
-                }
-                void Promise.all(
-                  sources.map((source) =>
-                    onImportCodexProvider(
-                      buildGrokBuildProviderFromCodex(source),
-                    ),
-                  ),
-                );
-              }}
-            >
-              <Download className="h-3.5 w-3.5" />从 Codex 导入
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1 rounded-lg px-2.5 text-xs"
+                >
+                  <Download className="h-3.5 w-3.5" />从 Codex 导入
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72">
+                <DropdownMenuLabel>选择要导入的 Codex 中转站</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {codexRelayProviders.length === 0 ? (
+                  <DropdownMenuLabel className="font-normal text-muted-foreground">
+                    {t("provider.noProviders")}
+                  </DropdownMenuLabel>
+                ) : (
+                  codexRelayProviders.map((provider) => (
+                    <DropdownMenuCheckboxItem
+                      key={provider.id}
+                      checked={selectedCodexProviderIds.includes(provider.id)}
+                      onCheckedChange={(checked) =>
+                        setSelectedCodexProviderIds((current) =>
+                          checked
+                            ? [...new Set([...current, provider.id])]
+                            : current.filter((id) => id !== provider.id),
+                        )
+                      }
+                    >
+                      <span className="min-w-0 truncate" title={provider.name}>
+                        {provider.name}
+                      </span>
+                    </DropdownMenuCheckboxItem>
+                  ))
+                )}
+                <DropdownMenuSeparator />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="m-1 h-8 w-[calc(100%-0.5rem)]"
+                  disabled={selectedCodexProviderIds.length === 0}
+                  onClick={() => {
+                    const selected = new Set(selectedCodexProviderIds);
+                    void Promise.all(
+                      codexRelayProviders
+                        .filter((provider) => selected.has(provider.id))
+                        .map((provider) =>
+                          onImportCodexProvider(
+                            buildGrokBuildProviderFromCodex(provider),
+                          ),
+                        ),
+                    );
+                  }}
+                >
+                  导入已选择的中转站
+                </Button>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : appId === "codex" ? (
             <Button
               type="button"

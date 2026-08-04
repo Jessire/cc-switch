@@ -658,18 +658,13 @@ export function CodexModelMenuDialog({
                 id="codex-batch-rename-preview"
                 role="dialog"
                 aria-label={t("codexConfig.batchRenamePreview")}
-                className="absolute left-0 top-[calc(100%+6px)] z-[130] max-h-[min(360px,calc(100vh-4rem))] w-[21.5rem] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-lg border border-border/80 bg-popover/95 p-0 text-popover-foreground shadow-2xl shadow-slate-900/15 ring-1 ring-black/10 backdrop-blur-md outline-none [scrollbar-gutter:stable] dark:shadow-black/40"
+                className="absolute right-0 top-[calc(100%+6px)] z-[130] max-h-[min(360px,calc(100vh-4rem))] w-[21.5rem] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-md border bg-popover p-0 text-popover-foreground shadow-md outline-none [scrollbar-gutter:stable]"
               >
-                <div className="border-b border-border/70 bg-muted/35 px-3 py-2 text-xs font-medium text-muted-foreground">
-                  {t("codexConfig.batchRenamePreview", {
-                    defaultValue: "查看匹配",
-                  })}
-                </div>
-                <div className="space-y-0.5 p-1.5">
+                <div className="space-y-0.5 py-1">
                   {renameMatches.map((match) => (
                     <div
                       key={match.entryKey}
-                      className="grid grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)] items-center gap-x-2 rounded-md px-2 py-2 text-base transition-colors odd:bg-muted/20 hover:bg-muted/70"
+                      className="grid grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)] items-center gap-x-2 rounded-md px-2 py-2 text-base hover:bg-muted/60"
                     >
                       <div
                         className="min-w-0 truncate text-center text-base text-foreground"
