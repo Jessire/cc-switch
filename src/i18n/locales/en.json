@@ -257,6 +257,9 @@
     "options": {
       "aria": "Automatic restart options"
     },
+    "codexModelMenu": {
+      "menu": "Restart Codex after saving the model menu"
+    },
     "manual": {
       "aria": "Restart {{app}} now",
       "tooltip": "Restart {{app}} now",

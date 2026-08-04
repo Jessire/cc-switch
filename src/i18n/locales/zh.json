@@ -257,6 +257,9 @@
     "options": {
       "aria": "自动重启选项"
     },
+    "codexModelMenu": {
+      "menu": "保存模型菜单后自动重启 Codex"
+    },
     "manual": {
       "aria": "立即重启 {{app}}",
       "tooltip": "立即重启 {{app}}",

@@ -67,13 +67,14 @@
 - 版本 `3.19.5` 已通过 `pnpm format:check`, `cargo metadata --manifest-path src-tauri/Cargo.toml --no-deps`, `cargo fmt --check` 和唯一临时 target 的 `pnpm tauri build --no-bundle`; 标准 Release 归位后版本、大小、x64 架构和 SHA256 已核验, GitHub `v3.19.5` 资产下载回读一致.
 - 本轮“查看匹配”定位修复已通过 `pnpm format:check`, `pnpm typecheck`, `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts` (6 项), `git diff --check` 和标准 Windows x64 Release 构建. 使用隔离应用标识和隔离数据库实际点击复核: 弹层位于匹配输入框下方, 不再跑到窗口最左侧, 左右文本分别在各自半区居中, 箭头保持在中线. 最终标准 Release EXE SHA256 为 `CDC70363F83FF99C4105256C3ED1A85DB0949613CFA9C2413453D07E7DEE70E0`.
 - 2026-08-04 本轮模型菜单与分组栏改动已通过 `pnpm format:check`, `pnpm typecheck`, 直接相关 Vitest 10/10, `pnpm build:renderer`, `cargo fmt --check`, `git diff --check` 和唯一旁路 target 的 `pnpm tauri build --no-bundle`. 全量 Vitest 有 3 个与本轮无关的既有失败: `modelsDevAutoSync` 时间状态断言, `App.test.tsx` 两项 Tauri/MSW 集成超时. Rust `client_restart` 定向测试运行超过 184 秒未收敛,无编译错误输出; Release 构建已证明 Rust 编译通过.
+- 2026-08-04 本轮后续改动已通过 `pnpm typecheck`, `pnpm format:check`, `git diff --check`, Grok Build 导入单测 1/1 和自动重启开关单测 2/2. 标准 Windows x64 Release 已成功覆盖 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`, 版本 `3.19.5`, 大小 `32,754,688` bytes, SHA256 `5D93BBFBEB729B58AA97DCEEF66DE750863DFFA6062526CFC7763A1B978E1FE8`. 当前运行的是新版旁路 PID `24036`, 路径 `C:\Users\jery3\.codex\tmp\CC-Switch-New-20260804.exe`, 未停止.
 
 ## 未完成边界与回归重点
 
 - 为保护正在进行的 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启, 未在真实 Desktop 会话中验证第三方模型菜单读取和对话级路由.
 - 正式实例已切换到标准 Release `3.19.5` 并保持运行; `ccswitch` 协议注册已指向该 EXE. 使用测试 provider deep link 实际打开导入确认页并取消, 数据库中未产生 `DeepLink Path Probe` 记录; 未重复执行其他功能或 UI 回归.
 - 对话级供应商路由仍需在至少两个 Codex Desktop 对话中选择不同 `供应商 - 模型`, 发起真实请求并核对代理日志的供应商及剥离后的上游模型.
-- 本轮因必须保留 PID `15348` 和当前 Codex/WorkBuddy Desktop 会话, 未执行旁路 EXE 窗口级 GUI 验证; 新旧 EXE 共用单实例标识,直接启动旁路文件会转发到当前实例. 影响托盘、deep link、分组、重启、模型菜单、代理路由或通用配置的后续改动, 必须按对应真实 Windows 行为重新验证, 不得只凭构建通过收口.
+- 本轮因必须保留 PID `24036` 和当前 Codex/WorkBuddy Desktop 会话, 未停止正在运行的新版旁路实例; 标准 Release 已覆盖原版路径但未切换运行实例. 旧 `useProviderActions` 测试中的“同组不重启”断言与本轮明确删除的功能冲突,未按旧语义回退. 影响托盘、deep link、分组、重启、模型菜单、代理路由或通用配置的后续改动, 必须按对应真实 Windows 行为重新验证, 不得只凭构建通过收口.
 
 ## 维护检查清单
 

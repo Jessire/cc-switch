@@ -276,6 +276,9 @@ function App() {
     isProxyRunning,
   });
   const providers = useMemo(() => data?.providers ?? {}, [data]);
+  const { data: codexProviderData } = useProvidersQuery("codex", {
+    isProxyRunning: false,
+  });
   const currentProviderId = data?.currentProviderId ?? "";
   const isOpenClawView =
     activeApp === "openclaw" &&
@@ -978,6 +981,18 @@ function App() {
                   >
                     <ProviderList
                       providers={providers}
+                      codexProviders={codexProviderData?.providers ?? {}}
+                      onImportCodexProvider={
+                        activeApp === "grokbuild"
+                          ? async (provider) => {
+                              await addProvider(provider);
+                              await refetch();
+                              toast.success(
+                                "已从 Codex 导入供应商到 Grok Build",
+                              );
+                            }
+                          : undefined
+                      }
                       currentProviderId={currentProviderId}
                       appId={activeApp}
                       isLoading={isLoading}

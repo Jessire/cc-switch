@@ -13,7 +13,7 @@ import {
   type CSSProperties,
 } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ListTree, Search, X } from "lucide-react";
+import { AlertTriangle, Download, ListTree, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -57,6 +57,7 @@ import {
 import { GroupTabs } from "@/components/providers/GroupTabs";
 import { BulkAssignBar } from "@/components/providers/BulkAssignBar";
 import { CodexModelMenuDialog } from "@/components/providers/CodexModelMenuDialog";
+import { buildGrokBuildProviderFromCodex } from "@/utils/grokBuildProviderImport";
 
 interface ProviderListProps {
   providers: Record<string, Provider>;
@@ -76,6 +77,8 @@ interface ProviderListProps {
   onOpenWebsite: (url: string) => void;
   onOpenTerminal?: (provider: Provider) => void;
   onCreate?: () => void;
+  codexProviders?: Record<string, Provider>;
+  onImportCodexProvider?: (provider: Provider) => Promise<void>;
   isLoading?: boolean;
   isProxyRunning?: boolean; // 代理服务运行状态
   isProxyTakeover?: boolean; // 代理接管模式（Live配置已被接管）
@@ -98,6 +101,8 @@ export function ProviderList({
   onOpenWebsite,
   onOpenTerminal,
   onCreate,
+  codexProviders = {},
+  onImportCodexProvider,
   isLoading = false,
   isProxyRunning = false,
   isProxyTakeover = false,
@@ -678,7 +683,32 @@ export function ProviderList({
         onToggleSelectionMode={toggleSelectionMode}
         onCreateProvider={onCreate}
         extraAction={
-          appId === "codex" ? (
+          appId === "grokbuild" && onImportCodexProvider ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1 rounded-lg px-2.5 text-xs"
+              onClick={() => {
+                const sources = Object.values(codexProviders).filter(
+                  (provider) => provider.category !== "official",
+                );
+                if (sources.length === 0) {
+                  toast.info(t("provider.noProviders"));
+                  return;
+                }
+                void Promise.all(
+                  sources.map((source) =>
+                    onImportCodexProvider(
+                      buildGrokBuildProviderFromCodex(source),
+                    ),
+                  ),
+                );
+              }}
+            >
+              <Download className="h-3.5 w-3.5" />从 Codex 导入
+            </Button>
+          ) : appId === "codex" ? (
             <Button
               type="button"
               variant="outline"

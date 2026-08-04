@@ -1,12 +1,10 @@
 /**
- * 切换供应商后自动重启对应客户端
- *
- * 放置在主界面头部，与代理接管 / 故障转移开关并列。
- * 状态存 localStorage，按设备记忆。
+ * Client restart controls shown in the providers toolbar.
+ * State is stored in localStorage so it survives application restarts.
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, FolderX, Loader2, RefreshCw } from "lucide-react";
+import { ChevronDown, Loader2, RefreshCw, Save } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
@@ -24,7 +22,8 @@ import {
 } from "@/lib/api/clientRestart";
 
 const STORAGE_KEY = "cc-switch-auto-restart-client-v1";
-const GROUP_SKIP_STORAGE_KEY = "cc-switch-skip-restart-in-group-v1";
+const CODEX_MODEL_MENU_RESTART_STORAGE_KEY =
+  "cc-switch-codex-model-menu-auto-restart-v1";
 
 function readEnabled(): boolean {
   try {
@@ -38,33 +37,42 @@ function writeEnabled(value: boolean) {
   try {
     localStorage.setItem(STORAGE_KEY, value ? "1" : "0");
   } catch {
-    // ignore quota / private mode
+    // Ignore quota / private mode failures.
   }
 }
 
-/** Read current toggle without React (for switchProvider). */
-export function isAutoRestartClientEnabled(): boolean {
-  return readEnabled();
-}
-
-function readGroupSkipEnabled(): boolean {
+function readCodexModelMenuRestartEnabled(): boolean {
   try {
-    return localStorage.getItem(GROUP_SKIP_STORAGE_KEY) !== "0";
+    return localStorage.getItem(CODEX_MODEL_MENU_RESTART_STORAGE_KEY) !== "0";
   } catch {
     return true;
   }
 }
 
-function writeGroupSkipEnabled(value: boolean) {
+function writeCodexModelMenuRestartEnabled(value: boolean) {
   try {
-    localStorage.setItem(GROUP_SKIP_STORAGE_KEY, value ? "1" : "0");
+    localStorage.setItem(
+      CODEX_MODEL_MENU_RESTART_STORAGE_KEY,
+      value ? "1" : "0",
+    );
   } catch {
-    // ignore quota / private mode
+    // Ignore quota / private mode failures.
   }
 }
 
+/** Read the provider-switch restart toggle without React. */
+export function isAutoRestartClientEnabled(): boolean {
+  return readEnabled();
+}
+
+/** Read the Codex model-menu save restart toggle without React. */
+export function isCodexModelMenuAutoRestartEnabled(): boolean {
+  return readCodexModelMenuRestartEnabled();
+}
+
+/** @deprecated Group-scoped restart suppression was removed. */
 export function isGroupRestartSuppressed(): boolean {
-  return readGroupSkipEnabled();
+  return false;
 }
 
 interface AutoRestartToggleProps {
@@ -103,26 +111,26 @@ export function AutoRestartToggle({
   const [enabled, setEnabled] = useState(false);
   const [pending, setPending] = useState(false);
   const [restarting, setRestarting] = useState(false);
-  const [groupSkipEnabled, setGroupSkipEnabled] = useState(true);
+  const [codexModelMenuRestartEnabled, setCodexModelMenuRestartEnabled] =
+    useState(true);
   const supported = appSupportsClientRestart(activeApp);
   const label = appLabel(activeApp);
 
   useEffect(() => {
     setEnabled(readEnabled());
-    setGroupSkipEnabled(readGroupSkipEnabled());
+    setCodexModelMenuRestartEnabled(readCodexModelMenuRestartEnabled());
   }, []);
 
   const handleToggle = useCallback((checked: boolean) => {
     setPending(true);
     setEnabled(checked);
     writeEnabled(checked);
-    // tiny delay so switch animation feels intentional
     window.setTimeout(() => setPending(false), 120);
   }, []);
 
-  const handleGroupToggle = useCallback((checked: boolean) => {
-    setGroupSkipEnabled(checked);
-    writeGroupSkipEnabled(checked);
+  const handleCodexModelMenuRestartToggle = useCallback((checked: boolean) => {
+    setCodexModelMenuRestartEnabled(checked);
+    writeCodexModelMenuRestartEnabled(checked);
   }, []);
 
   const handleManualRestart = useCallback(async () => {
@@ -130,15 +138,10 @@ export function AutoRestartToggle({
     setRestarting(true);
     try {
       const result = await clientRestartApi.restart(activeApp);
-      if (!result.supported) {
-        toast.error(result.message);
-      } else if (result.launched) {
-        toast.success(result.message);
-      } else if (result.killed) {
-        toast.error(result.message);
-      } else {
-        toast.info(result.message);
-      }
+      if (!result.supported) toast.error(result.message);
+      else if (result.launched) toast.success(result.message);
+      else if (result.killed) toast.error(result.message);
+      else toast.info(result.message);
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       toast.error(
@@ -155,31 +158,12 @@ export function AutoRestartToggle({
   const tooltipText = !supported
     ? t("autoRestart.tooltip.unsupported", {
         app: label,
-        defaultValue: `${label} 为 CLI / 配置即时生效，无需自动重启客户端`,
+        defaultValue: `${label} 为 CLI / 配置即时生效,无需自动重启客户端`,
       })
     : !enabled
-      ? t("autoRestart.mode.disabled", {
-          defaultValue: "自动重启已关闭",
-        })
-      : groupSkipEnabled
-        ? t("autoRestart.mode.crossGroup", {
-            defaultValue: "跨分组切换时自动重启",
-          })
-        : t("autoRestart.mode.always", {
-            defaultValue: "每次切换供应商都自动重启",
-          });
-
-  const groupTooltipText = !supported
-    ? t("autoRestart.groupSkip.unsupported", {
-        app: label,
-        defaultValue: `${label} 无需自动重启客户端`,
-      })
-    : groupSkipEnabled
-      ? t("autoRestart.groupSkip.enabled", {
-          defaultValue: "已开启：在自建分组内切换中转时不自动重启客户端",
-        })
-      : t("autoRestart.groupSkip.disabled", {
-          defaultValue: "已关闭：在自建分组内切换中转时仍自动重启客户端",
+      ? t("autoRestart.mode.disabled", { defaultValue: "自动重启已关闭" })
+      : t("autoRestart.mode.enabled", {
+          defaultValue: "切换供应商后自动重启客户端",
         });
 
   return (
@@ -229,7 +213,9 @@ export function AutoRestartToggle({
               type="button"
               className="grid h-6 w-5 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-background/80 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-45"
               disabled={!supported}
-              title={groupTooltipText}
+              title={t("autoRestart.options.aria", {
+                defaultValue: "自动重启选项",
+              })}
               aria-label={t("autoRestart.options.aria", {
                 defaultValue: "自动重启选项",
               })}
@@ -237,16 +223,16 @@ export function AutoRestartToggle({
               <ChevronDown className="h-3.5 w-3.5" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuContent align="end" className="w-64">
             <DropdownMenuCheckboxItem
-              checked={groupSkipEnabled}
-              onCheckedChange={handleGroupToggle}
-              disabled={!enabled || !supported}
+              checked={codexModelMenuRestartEnabled}
+              onCheckedChange={handleCodexModelMenuRestartToggle}
+              disabled={!supported}
               className="pl-8 pr-2"
             >
-              <FolderX className="h-4 w-4 text-muted-foreground" />
-              {t("autoRestart.groupSkip.menu", {
-                defaultValue: "同分组切换时不重启",
+              <Save className="h-4 w-4 text-muted-foreground" />
+              {t("autoRestart.codexModelMenu.menu", {
+                defaultValue: "保存模型菜单后自动重启 Codex",
               })}
             </DropdownMenuCheckboxItem>
           </DropdownMenuContent>

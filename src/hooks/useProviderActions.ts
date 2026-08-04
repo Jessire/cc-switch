@@ -7,10 +7,7 @@ import {
   clientRestartApi,
   appSupportsClientRestart,
 } from "@/lib/api/clientRestart";
-import {
-  isAutoRestartClientEnabled,
-  isGroupRestartSuppressed,
-} from "@/components/providers/AutoRestartToggle";
+import { isAutoRestartClientEnabled } from "@/components/providers/AutoRestartToggle";
 import type {
   Provider,
   UsageScript,
@@ -167,7 +164,10 @@ export function useProviderActions(
 
   // 切换供应商
   const switchProvider = useCallback(
-    async (provider: Provider, context?: { isWithinCustomGroup?: boolean }) => {
+    async (
+      provider: Provider,
+      _context?: { isWithinCustomGroup?: boolean },
+    ) => {
       const isCopilotProvider =
         activeApp === "claude" &&
         provider.meta?.providerType === "github_copilot";
@@ -312,11 +312,8 @@ export function useProviderActions(
         // Optional: auto-restart the matching desktop client after switch
         let autoRestarted = false;
         let autoRestartMessage = "";
-        const restartSuppressedForGroup =
-          context?.isWithinCustomGroup === true && isGroupRestartSuppressed();
         if (
           isAutoRestartClientEnabled() &&
-          !restartSuppressedForGroup &&
           appSupportsClientRestart(activeApp)
         ) {
           try {
@@ -344,9 +341,6 @@ export function useProviderActions(
             // Toggle on but nothing to kill / launch failed — still report switch ok
             messageKey = "notifications.switchSuccessAutoRestartNote";
             defaultMessage = "切换成功（{{detail}}）";
-          } else if (restartSuppressedForGroup) {
-            messageKey = "notifications.switchSuccess";
-            defaultMessage = "切换成功！";
           } else if (activeApp === "codex") {
             messageKey = "notifications.codexRestartRequired";
             defaultMessage = "切换成功，请重启客户端以生效";
