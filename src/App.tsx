@@ -67,7 +67,6 @@ import { SettingsPage } from "@/components/settings/SettingsPage";
 import { EnvWarningBanner } from "@/components/env/EnvWarningBanner";
 import { ProxyToggle } from "@/components/proxy/ProxyToggle";
 import { ClaudeDesktopRouteToggle } from "@/components/proxy/ClaudeDesktopRouteToggle";
-import { FailoverToggle } from "@/components/proxy/FailoverToggle";
 import { AutoRestartToggle } from "@/components/providers/AutoRestartToggle";
 import UsageScriptModal from "@/components/UsageScriptModal";
 import UnifiedMcpPanel from "@/components/mcp/UnifiedMcpPanel";
@@ -1369,10 +1368,6 @@ function App() {
                                 <ProxyToggle activeApp={activeApp} />
                               )
                             )}
-                            {activeApp !== "claude-desktop" &&
-                              settingsData?.enableFailoverToggle && (
-                                <FailoverToggle activeApp={activeApp} />
-                              )}
                           </>
                         )}
                     </div>

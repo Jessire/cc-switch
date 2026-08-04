@@ -205,11 +205,12 @@ export function ProviderCard({
     ? provider.settingsConfig.modelCatalog.models
     : undefined;
   const isCodexModelMenuFavorite =
-    provider.meta?.codexModelMenuFavorite === true &&
-    (codexCatalogModels === undefined ||
-      codexCatalogModels.some(
-        (model: { enabled?: boolean }) => model.enabled !== false,
-      ));
+    provider.meta?.codexModelMenuFavorite === true;
+  const hasEnabledCodexModel =
+    codexCatalogModels === undefined ||
+    codexCatalogModels.some(
+      (model: { enabled?: boolean }) => model.enabled !== false,
+    );
 
   const { data: health } = useProviderHealth(provider.id, appId);
 
@@ -399,7 +400,10 @@ export function ProviderCard({
                   type="button"
                   className={cn(
                     "inline-flex h-6 w-6 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-amber-500",
-                    isCodexModelMenuFavorite && "text-amber-500",
+                    isCodexModelMenuFavorite &&
+                      (hasEnabledCodexModel
+                        ? "text-amber-500"
+                        : "text-amber-500/45"),
                   )}
                   onClick={() =>
                     onToggleCodexFavorite(provider, !isCodexModelMenuFavorite)
@@ -414,7 +418,11 @@ export function ProviderCard({
                 >
                   <Star
                     className="h-4 w-4"
-                    fill={isCodexModelMenuFavorite ? "currentColor" : "none"}
+                    fill={
+                      isCodexModelMenuFavorite && hasEnabledCodexModel
+                        ? "currentColor"
+                        : "none"
+                    }
                   />
                 </button>
               )}

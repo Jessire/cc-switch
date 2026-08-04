@@ -18,6 +18,7 @@ import { ArrowRight, ChevronDown, GripVertical, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { clientRestartApi } from "@/lib/api/clientRestart";
 import type { CodexCatalogModel, Provider } from "@/types";
 import { providersApi } from "@/lib/api/providers";
 import { extractErrorMessage } from "@/utils/errorUtils";
@@ -317,11 +318,31 @@ export function CodexModelMenuDialog({
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
 
+  const collapsedStorageKey = "cc-switch-codex-model-menu-collapsed-v1";
+
+  const readCollapsedGroups = (): Record<string, boolean> => {
+    try {
+      const raw = localStorage.getItem(collapsedStorageKey);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const writeCollapsedGroups = (value: Record<string, boolean>) => {
+    try {
+      localStorage.setItem(collapsedStorageKey, JSON.stringify(value));
+    } catch {
+      // Ignore storage failures; the dialog still works for this session.
+    }
+  };
+
   useEffect(() => {
     if (!open) return;
     const next = buildDraftGroups(providers);
     setGroups(next);
-    setCollapsedGroups({});
+    setCollapsedGroups(readCollapsedGroups());
     setInitialSnapshot(JSON.stringify(next));
     setRenameFrom("");
     setRenameTo("");
@@ -531,7 +552,13 @@ export function CodexModelMenuDialog({
         await providersApi.update(provider, "codex");
       }
       await queryClient.invalidateQueries({ queryKey: ["providers", "codex"] });
-      toast.success(t("codexConfig.modelMenuSaved"));
+      const restartResult = await clientRestartApi.restart("codex");
+      if (restartResult.launched) {
+        toast.success("模型菜单已保存,已重启 Codex");
+      } else {
+        toast.success(t("codexConfig.modelMenuSaved"));
+        toast.info(restartResult.message);
+      }
       onOpenChange(false);
     } catch (error) {
       toast.error(
@@ -610,12 +637,23 @@ export function CodexModelMenuDialog({
               </span>
             </Button>
 
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleBatchRename}
+              disabled={!renameFrom.trim() || renameMatches.length === 0}
+              className="h-10 shrink-0 rounded-md px-3 text-sm"
+            >
+              {t("codexConfig.batchRenameAction")}
+            </Button>
+
             {isRenamePreviewOpen && (
               <div
                 id="codex-batch-rename-preview"
                 role="dialog"
                 aria-label={t("codexConfig.batchRenamePreview")}
-                className="absolute left-0 top-[calc(100%+6px)] z-[130] max-h-[min(360px,calc(100vh-4rem))] w-[21.5rem] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-md border bg-popover p-0 text-popover-foreground shadow-md outline-none [scrollbar-gutter:stable]"
+                className="absolute right-0 top-[calc(100%+6px)] z-[130] max-h-[min(360px,calc(100vh-4rem))] w-[21.5rem] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-md border bg-popover p-0 text-popover-foreground shadow-xl ring-1 ring-black/10 outline-none [scrollbar-gutter:stable]"
               >
                 <div className="space-y-0.5 py-1">
                   {renameMatches.map((match) => (
@@ -638,19 +676,6 @@ export function CodexModelMenuDialog({
                       </div>
                     </div>
                   ))}
-                </div>
-
-                <div className="border-t border-border-default p-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleBatchRename}
-                    disabled={!renameFrom.trim() || renameMatches.length === 0}
-                    className="h-8 w-full justify-center rounded-md px-2 text-sm"
-                  >
-                    {t("codexConfig.batchRenameAction")}
-                  </Button>
                 </div>
               </div>
             )}
@@ -683,10 +708,14 @@ export function CodexModelMenuDialog({
                           handleGroupEnabledChange(group.providerId, enabled)
                         }
                         onToggleCollapsed={() =>
-                          setCollapsedGroups((current) => ({
-                            ...current,
-                            [group.key]: !current[group.key],
-                          }))
+                          setCollapsedGroups((current) => {
+                            const next = {
+                              ...current,
+                              [group.key]: !current[group.key],
+                            };
+                            writeCollapsedGroups(next);
+                            return next;
+                          })
                         }
                       />
                     ))}

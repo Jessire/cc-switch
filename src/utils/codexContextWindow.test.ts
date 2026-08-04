@@ -9,8 +9,8 @@ describe("codex context window defaults", () => {
     expect(inferCodexContextWindow("gpt-5.6-sol")).toBe("372000");
   });
 
-  it("uses 50K for Grok models", () => {
-    expect(inferCodexContextWindow("grok-4.5", "xAI")).toBe("50000");
+  it("uses 500K for Grok models", () => {
+    expect(inferCodexContextWindow("grok-4.5", "xAI")).toBe("500000");
   });
 
   it("uses 1M for Claude and Chinese model families", () => {

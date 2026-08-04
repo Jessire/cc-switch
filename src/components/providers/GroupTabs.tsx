@@ -15,13 +15,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  GripVertical,
-  MoreVertical,
-  Plus,
-  CheckSquare,
-  Square,
-} from "lucide-react";
+import { MoreVertical, Plus, CheckSquare, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -139,7 +133,6 @@ function SortableTabChip({
       tabIndex={0}
     >
       <span className="inline-flex min-w-0 items-center gap-1">
-        <GripVertical className="h-3 w-3 shrink-0 opacity-50" />
         <span className="max-w-[10rem] truncate">{label}</span>
         {typeof count === "number" ? (
           <span
@@ -348,11 +341,12 @@ export function GroupTabs({
             <Button
               variant="outline"
               size="sm"
-              className="h-8 shrink-0 gap-1 rounded-full px-3 text-xs"
+              className="h-8 w-8 shrink-0 rounded-full p-0"
+              title={t("group.new")}
+              aria-label={t("group.new")}
               onClick={() => setEditing({ mode: "create" })}
             >
-              <Plus className="h-3.5 w-3.5" />
-              {t("group.new")}
+              <Plus className="h-4 w-4" />
             </Button>
           </div>
         </div>

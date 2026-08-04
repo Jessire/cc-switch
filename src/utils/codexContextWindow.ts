@@ -1,6 +1,6 @@
 export const CODEX_CONTEXT_WINDOW_PRESETS = [
   { label: "372K", value: "372000" },
-  { label: "50K", value: "50000" },
+  { label: "500K", value: "500000" },
   { label: "1M", value: "1000000" },
 ] as const;
 
@@ -15,7 +15,7 @@ export function inferCodexContextWindow(
 ): string | undefined {
   const source = `${providerName} ${modelId}`;
 
-  if (GROK_MODEL_PATTERN.test(source)) return "50000";
+  if (GROK_MODEL_PATTERN.test(source)) return "500000";
   if (GPT_56_MODEL_PATTERN.test(source)) return "372000";
   if (LARGE_CONTEXT_MODEL_PATTERN.test(source)) return "1000000";
   return undefined;

@@ -4,7 +4,7 @@
 
 ## 状态快照
 
-- 更新时间: 2026-08-02, Asia/Shanghai.
+- 更新时间: 2026-08-04, Asia/Shanghai.
 - 工作目录: `D:\文件\Agenc Cli\cc-switch`.
 - 当前主线: `main`, 跟踪 `fork/main`.
 - 用户仓库: `fork`, `https://github.com/Jessire/cc-switch.git`.
@@ -28,11 +28,11 @@
 
 ### Codex Desktop 模型与路由
 
-- Codex Desktop 模型菜单仅生成已收藏且启用的第三方模型; 不保留 bundled 官方模型或官方目录回退. 空菜单仍保持 CC Switch 托管目录.
+- Codex Desktop 模型菜单仅生成已收藏的第三方模型; 供应商收藏与模型启用状态分离,已收藏但全部禁用时主页使用淡色星标表示. 不保留 bundled 官方模型或官方目录回退. 空菜单仍保持 CC Switch 托管目录.
 - 同名模型按全局排序路由: 首个启用项使用裸模型 ID, 后续项使用 `provider-id/model-id`; 所有显示项仍带独立短分组.
 - 短分组与主界面供应商名称解耦; 支持供应商组排序与组内模型排序, 不允许模型跨供应商组拖动.
 - Codex 模型菜单支持标题栏内联批量重命名, 点击“查看匹配”下拉菜单可预览匹配的修改前名称、模型 ID 和修改后名称; 分组勾选框与组内模型双向同步. 1 个或 2 个模型与分组同一行, 3 个及以上模型时分组单独一行且模型最多三列; 模型名和模型 ID 左对齐, 点击模型名直接编辑且不再显示独立编辑图标.
-- Codex 模型编辑支持 `372K`、`50K`、`1M` 上下文快捷值; GPT-5.6 默认 `372000`, Claude 和国产模型默认 `1000000`, Grok 默认 `50000`, 仅在上下文窗口为空时自动填充. 所有模型禁用后自动清除供应商卡片上的 Codex 星标.
+- Codex 模型编辑支持 `372K`、`500K`、`1M` 上下文快捷值; GPT-5.6 默认 `372000`, Claude 和国产模型默认 `1000000`, Grok 默认 `500000`, 仅在上下文窗口为空时自动填充. 所有模型禁用后保留供应商收藏,主页以淡色星标表示未启用.
 - Codex 对话可独立选择供应商和模型; 代理在出站前恢复真实模型 ID, 不切换 CC Switch 全局供应商.
 
 ### 主界面、更新、托盘和导入
@@ -51,9 +51,9 @@
 ## 当前构建、发布和运行实例
 
 - v3.19.0 上游合并提交: `c1522aff3643752e90dd62425b4f6b3eedbb6ac9` (`Merge upstream v3.19.0`). 冲突文件 `src/App.tsx` 与 `src/components/AppSwitcher.tsx` 保留定制版自动紧凑行为, 其余上游有效改动已合并.
-- 最近一次本地 Windows x64 Release 构建产物: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.5`, x64, 大小 `32,754,688` bytes, SHA256 `CDC70363F83FF99C4105256C3ED1A85DB0949613CFA9C2413453D07E7DEE70E0`. 标准 Release 目录仅保留正式 EXE.
+- 最近一次正式本地 Windows x64 Release 构建产物: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.5`, x64, 大小 `32,754,688` bytes, SHA256 `CDC70363F83FF99C4105256C3ED1A85DB0949613CFA9C2413453D07E7DEE70E0`. 本轮旁路交付 EXE: `C:\Users\jery3\.codex\tmp\CC-Switch-New-20260804.exe`, SHA256 `9F224D5D9DFD17CF854AE7D3224D13522A79995500DC1A760510F7008C63CDB3`; 标准 Release 未被替换.
 - 最新 GitHub Release: `v3.19.5`, 标签指向 `aac15a48b3e33309732c00dba3e69611ebf1ccd8`; Release 资产为 `CC-Switch-v3.19.5-Windows-x64.exe`, 大小 `32,754,688` bytes, SHA256 `CDC70363F83FF99C4105256C3ED1A85DB0949613CFA9C2413453D07E7DEE70E0`.
-- 当前运行实例: PID `17236` 运行 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.5`, SHA256 `CDC70363F83FF99C4105256C3ED1A85DB0949613CFA9C2413453D07E7DEE70E0`. TMP 构建实例已退出, 未触碰数据库、配置和客户端真实配置.
+- 当前运行实例: PID `15348` 运行 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.5`, SHA256 `CDC70363F83FF99C4105256C3ED1A85DB0949613CFA9C2413453D07E7DEE70E0`. 本轮旁路实例未启动, 未停止当前 CC Switch/WorkBuddy Desktop, 未触碰数据库、配置和客户端真实配置.
 - 2026-08-02 已删除仓库外 `cc-switch-build`, `.codex\tmp` 中的 CC Switch EXE/回滚副本/临时脚本/日志/截图/隔离数据, 以及标准构建的 `deps`, `build`, `.fingerprint` 等可重建中间物; 保留 `node_modules` 和正在运行的标准 Release EXE. 清理后 C: 可用空间 `101.24 GB`, D: 可用空间 `564.40 GB`.
 
 ## 已完成验证
@@ -66,13 +66,14 @@
 - GitHub Release 资产已下载回读, 大小与 SHA256 均和本机构建产物一致.
 - 版本 `3.19.5` 已通过 `pnpm format:check`, `cargo metadata --manifest-path src-tauri/Cargo.toml --no-deps`, `cargo fmt --check` 和唯一临时 target 的 `pnpm tauri build --no-bundle`; 标准 Release 归位后版本、大小、x64 架构和 SHA256 已核验, GitHub `v3.19.5` 资产下载回读一致.
 - 本轮“查看匹配”定位修复已通过 `pnpm format:check`, `pnpm typecheck`, `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts` (6 项), `git diff --check` 和标准 Windows x64 Release 构建. 使用隔离应用标识和隔离数据库实际点击复核: 弹层位于匹配输入框下方, 不再跑到窗口最左侧, 左右文本分别在各自半区居中, 箭头保持在中线. 最终标准 Release EXE SHA256 为 `CDC70363F83FF99C4105256C3ED1A85DB0949613CFA9C2413453D07E7DEE70E0`.
+- 2026-08-04 本轮模型菜单与分组栏改动已通过 `pnpm format:check`, `pnpm typecheck`, 直接相关 Vitest 10/10, `pnpm build:renderer`, `cargo fmt --check`, `git diff --check` 和唯一旁路 target 的 `pnpm tauri build --no-bundle`. 全量 Vitest 有 3 个与本轮无关的既有失败: `modelsDevAutoSync` 时间状态断言, `App.test.tsx` 两项 Tauri/MSW 集成超时. Rust `client_restart` 定向测试运行超过 184 秒未收敛,无编译错误输出; Release 构建已证明 Rust 编译通过.
 
 ## 未完成边界与回归重点
 
 - 为保护正在进行的 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启, 未在真实 Desktop 会话中验证第三方模型菜单读取和对话级路由.
 - 正式实例已切换到标准 Release `3.19.5` 并保持运行; `ccswitch` 协议注册已指向该 EXE. 使用测试 provider deep link 实际打开导入确认页并取消, 数据库中未产生 `DeepLink Path Probe` 记录; 未重复执行其他功能或 UI 回归.
 - 对话级供应商路由仍需在至少两个 Codex Desktop 对话中选择不同 `供应商 - 模型`, 发起真实请求并核对代理日志的供应商及剥离后的上游模型.
-- 影响托盘、deep link、分组、重启、模型菜单、代理路由或通用配置的后续改动, 必须按对应真实 Windows 行为重新验证, 不得只凭构建通过收口.
+- 本轮因必须保留 PID `15348` 和当前 Codex/WorkBuddy Desktop 会话, 未执行旁路 EXE 窗口级 GUI 验证; 新旧 EXE 共用单实例标识,直接启动旁路文件会转发到当前实例. 影响托盘、deep link、分组、重启、模型菜单、代理路由或通用配置的后续改动, 必须按对应真实 Windows 行为重新验证, 不得只凭构建通过收口.
 
 ## 维护检查清单
 

@@ -315,7 +315,7 @@ fn restart_success(app: &str, target: &ClientTarget, kill_attempts: u32) -> Clie
         kill_attempts,
         launched: true,
         supported: true,
-        message: format!("已确认重启 {}", target.label),
+        message: format!("已重启 {}", target.label),
     }
 }
 
