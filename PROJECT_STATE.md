@@ -51,7 +51,7 @@
 ## 当前构建、发布和运行实例
 
 - v3.19.0 上游合并提交: `c1522aff3643752e90dd62425b4f6b3eedbb6ac9` (`Merge upstream v3.19.0`). 冲突文件 `src/App.tsx` 与 `src/components/AppSwitcher.tsx` 保留定制版自动紧凑行为, 其余上游有效改动已合并.
-- 最近一次正式本地 Windows x64 Release 构建产物: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.5`, x64, 大小 `32,754,688` bytes, SHA256 `B9A2D25B495BA67793C1D602BE762B941E731FCA26B7AFCFA3CA028FD16ECB14`. 当前运行的旁路新版仍为 `C:\Users\jery3\.codex\tmp\CC-Switch-New-20260804.exe`, PID `4372`, 未停止.
+- 最近一次正式本地 Windows x64 Release 构建产物: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.5`, x64, 大小 `32,754,688` bytes, SHA256 `18DA89AA7B6D62E16E9FE5030DC667A66EE206BF29BD07290E72DC0F77C59B0D`. 本次构建未检测到正在运行的 `cc-switch` 进程,未中断用户会话.
 - 最新 GitHub Release: `v3.19.5`, 标签指向 `aac15a48b3e33309732c00dba3e69611ebf1ccd8`; Release 资产为 `CC-Switch-v3.19.5-Windows-x64.exe`, 大小 `32,754,688` bytes, SHA256 `CDC70363F83FF99C4105256C3ED1A85DB0949613CFA9C2413453D07E7DEE70E0`.
 - 当前运行实例: PID `15348` 运行 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.5`, SHA256 `CDC70363F83FF99C4105256C3ED1A85DB0949613CFA9C2413453D07E7DEE70E0`. 本轮旁路实例未启动, 未停止当前 CC Switch/WorkBuddy Desktop, 未触碰数据库、配置和客户端真实配置.
 - 2026-08-02 已删除仓库外 `cc-switch-build`, `.codex\tmp` 中的 CC Switch EXE/回滚副本/临时脚本/日志/截图/隔离数据, 以及标准构建的 `deps`, `build`, `.fingerprint` 等可重建中间物; 保留 `node_modules` 和正在运行的标准 Release EXE. 清理后 C: 可用空间 `101.24 GB`, D: 可用空间 `564.40 GB`.
@@ -72,6 +72,7 @@
 - 2026-08-04 本轮导入菜单与查看匹配布局修复已通过 `pnpm typecheck`, `pnpm format:check`, `git diff --check`, 相关 Vitest 16/16 和标准 Windows x64 Release 构建. 导入列表加入独立滚动区域、固定行高、可点击复选行和固定底部导入按钮;查看匹配恢复原始样式并固定三列行高.
 - 2026-08-04 本轮匹配列精确对齐与导入真实写入反馈已通过 `pnpm typecheck`, `pnpm format:check`, `git diff --check`, 相关 Vitest 16/16 和标准 Windows x64 Release 构建. 查看匹配弹层左列锚定搜索输入框、箭头使用中间列、右列锚定替换输入框;导入改为单次批量写入并在刷新后按实际数量提示,移除蓝色焦点样式.
 - 2026-08-04 本轮居中对齐与 Codex auth 导入修复已通过 `pnpm typecheck`, `pnpm format:check`, `git diff --check`, 相关 Vitest 17/17 和标准 Windows x64 Release 构建. 查看匹配左右列恢复居中;导入转换从 `settingsConfig.auth.OPENAI_API_KEY`/`CODEX_API_KEY` 读取凭据,新增 auth 结构单测,避免生成缺少 `api_key` 的 Grok Build 配置.
+- 2026-08-04 本轮批量供应商管理与 Grok 分组导入已通过 `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, `pnpm typecheck`, `pnpm format:check`, `git diff --check`, 相关 Vitest 13/13, `pnpm build:renderer` 和 `pnpm tauri build --no-bundle`. 批量选择支持全选、取消全选、Shift 范围选择和永久删除;Grok 导入按 Codex 自定义分组同步,目标分组成员按导入结果覆盖并清理过时成员. 标准 Release SHA256 为 `18DA89AA7B6D62E16E9FE5030DC667A66EE206BF29BD07290E72DC0F77C59B0D`. 本轮可重建 Release 中间目录清理被环境策略拦截,未执行删除.
 
 ## 未完成边界与回归重点
 

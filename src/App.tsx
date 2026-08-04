@@ -1008,6 +1008,11 @@ function App() {
                       onDelete={(provider) =>
                         setConfirmAction({ provider, action: "delete" })
                       }
+                      onDeleteSelected={async (providerIds) => {
+                        await Promise.all(
+                          providerIds.map((id) => deleteProvider(id)),
+                        );
+                      }}
                       onRemoveFromConfig={
                         activeApp === "opencode" ||
                         activeApp === "openclaw" ||

@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FolderPlus, MinusCircle, Plus, X } from "lucide-react";
+import {
+  CheckSquare,
+  FolderPlus,
+  MinusCircle,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,6 +40,9 @@ interface BulkAssignBarProps {
   onRemoveFromCurrent: () => void;
   onCreateGroup: (name: string) => void;
   onCancel: () => void;
+  allSelected: boolean;
+  onToggleSelectAll: () => void;
+  onDeleteSelected: () => void;
 }
 
 export function BulkAssignBar({
@@ -43,6 +53,9 @@ export function BulkAssignBar({
   onRemoveFromCurrent,
   onCreateGroup,
   onCancel,
+  allSelected,
+  onToggleSelectAll,
+  onDeleteSelected,
 }: BulkAssignBarProps) {
   const { t } = useTranslation();
   const [createOpen, setCreateOpen] = useState(false);
@@ -77,6 +90,15 @@ export function BulkAssignBar({
         </span>
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1 rounded-full px-3 text-xs"
+            onClick={onToggleSelectAll}
+          >
+            <CheckSquare className="h-3.5 w-3.5" />
+            {allSelected ? t("group.clearAll") : t("group.selectAll")}
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" className="h-8 gap-1 rounded-full px-3 text-xs">
@@ -121,6 +143,16 @@ export function BulkAssignBar({
               {t("group.removeFromGroup")}
             </Button>
           )}
+
+          <Button
+            variant="destructive"
+            size="sm"
+            className="h-8 gap-1 rounded-full px-3 text-xs"
+            onClick={onDeleteSelected}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {t("group.deleteSelected")}
+          </Button>
 
           <Button
             variant="ghost"

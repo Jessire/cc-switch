@@ -75,7 +75,7 @@ interface ProviderCardProps {
   onSetAsDefault?: () => void;
   selectionMode?: boolean;
   isSelected?: boolean;
-  onToggleSelect?: (id: string) => void;
+  onToggleSelect?: (id: string, shiftKey?: boolean) => void;
   membershipGroups?: ProviderGroup[];
   allGroups?: ProviderGroup[];
   onAssignToGroup?: (groupId: string) => void;
@@ -369,7 +369,8 @@ export function ProviderCard({
           {selectionMode && (
             <Checkbox
               checked={!!isSelected}
-              onCheckedChange={() => onToggleSelect?.(provider.id)}
+              onClick={(event) => onToggleSelect?.(provider.id, event.shiftKey)}
+              onCheckedChange={() => undefined}
               aria-label={t("group.selectProvider", {
                 defaultValue: "Select provider",
               })}

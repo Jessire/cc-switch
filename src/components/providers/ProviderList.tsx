@@ -57,6 +57,7 @@ import {
 import { GroupTabs } from "@/components/providers/GroupTabs";
 import { BulkAssignBar } from "@/components/providers/BulkAssignBar";
 import { CodexModelMenuDialog } from "@/components/providers/CodexModelMenuDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { buildGrokBuildProviderFromCodex } from "@/utils/grokBuildProviderImport";
 import {
   DropdownMenu,
@@ -77,6 +78,7 @@ interface ProviderListProps {
   ) => void;
   onEdit: (provider: Provider) => void;
   onDelete: (provider: Provider) => void;
+  onDeleteSelected?: (providerIds: string[]) => Promise<void>;
   onRemoveFromConfig?: (provider: Provider) => void;
   onDisableOmo?: () => void;
   onDisableOmoSlim?: () => void;
@@ -101,6 +103,7 @@ export function ProviderList({
   onSwitch,
   onEdit,
   onDelete,
+  onDeleteSelected = async () => undefined,
   onRemoveFromConfig,
   onDisableOmo,
   onDisableOmoSlim,
@@ -130,9 +133,11 @@ export function ProviderList({
     assignProviders: assignProvidersToGroup,
     removeFromGroup: removeProvidersFromGroup,
     removeFromAllGroups: removeProvidersFromAllGroups,
+    replaceGroupsProvidersByName,
     getGroupsOf,
     filterByActiveGroup,
   } = useProviderGroups(appId);
+  const codexGroupsState = useProviderGroups("codex");
   const providerCounts = useMemo(
     () =>
       new Map(
@@ -147,30 +152,24 @@ export function ProviderList({
   );
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deleteSelectedOpen, setDeleteSelectedOpen] = useState(false);
   const [isCodexModelMenuOpen, setIsCodexModelMenuOpen] = useState(false);
   const [selectedCodexProviderIds, setSelectedCodexProviderIds] = useState<
     string[]
   >([]);
   const appIdRef = useRef(appId);
-  const codexRelayProviders = useMemo(
-    () =>
-      Object.values(codexProviders).filter(
-        (provider) => provider.category !== "official",
-      ),
-    [codexProviders],
-  );
   useEffect(() => {
     if (appId !== "grokbuild") return;
     setSelectedCodexProviderIds((current) => {
       const available = new Set(
-        codexRelayProviders.map((provider) => provider.id),
+        codexGroupsState.groups.map((group) => group.id),
       );
       const retained = current.filter((id) => available.has(id));
       const selected = new Set(retained);
-      codexRelayProviders.forEach((provider) => selected.add(provider.id));
+      codexGroupsState.groups.forEach((group) => selected.add(group.id));
       return Array.from(selected);
     });
-  }, [appId, codexRelayProviders]);
+  }, [appId, codexGroupsState.groups]);
   // Only reset bulk selection when the app tab changes, not on first mount.
   useEffect(() => {
     if (appIdRef.current === appId) return;
@@ -183,6 +182,7 @@ export function ProviderList({
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   }, []);
+  const lastSelectedIdRef = useRef<string | null>(null);
   const toggleSelectionMode = useCallback(() => {
     setSelectionMode((prev) => {
       if (prev) setSelectedIds([]);
@@ -192,6 +192,7 @@ export function ProviderList({
   const clearSelection = useCallback(() => {
     setSelectionMode(false);
     setSelectedIds([]);
+    lastSelectedIdRef.current = null;
   }, []);
   const handleActiveGroupChange = useCallback(
     (id: ActiveGroupId) => {
@@ -495,6 +496,29 @@ export function ProviderList({
     () => filterByActiveGroup(filteredProviders),
     [filterByActiveGroup, filteredProviders],
   );
+  const toggleProviderSelection = useCallback(
+    (id: string, shiftKey = false) => {
+      const visibleIds = groupFilteredProviders.map((provider) => provider.id);
+      const lastId = lastSelectedIdRef.current;
+      if (shiftKey && lastId) {
+        const start = visibleIds.indexOf(lastId);
+        const end = visibleIds.indexOf(id);
+        if (start >= 0 && end >= 0) {
+          const [from, to] = start <= end ? [start, end] : [end, start];
+          setSelectedIds((current) =>
+            Array.from(
+              new Set([...current, ...visibleIds.slice(from, to + 1)]),
+            ),
+          );
+          lastSelectedIdRef.current = id;
+          return;
+        }
+      }
+      toggleSelect(id);
+      lastSelectedIdRef.current = id;
+    },
+    [groupFilteredProviders, toggleSelect],
+  );
 
   const groupFilteredIdSet = useMemo(
     () => new Set(groupFilteredProviders.map((p) => p.id)),
@@ -505,6 +529,23 @@ export function ProviderList({
     () => selectedIds.filter((id) => groupFilteredIdSet.has(id)),
     [selectedIds, groupFilteredIdSet],
   );
+  const allVisibleSelected =
+    groupFilteredProviders.length > 0 &&
+    groupFilteredProviders.every((provider) =>
+      selectedIds.includes(provider.id),
+    );
+  const toggleSelectAllVisible = useCallback(() => {
+    const visibleIds = groupFilteredProviders.map((provider) => provider.id);
+    setSelectedIds((current) => {
+      const currentSet = new Set(current);
+      if (visibleIds.every((id) => currentSet.has(id))) {
+        visibleIds.forEach((id) => currentSet.delete(id));
+      } else {
+        visibleIds.forEach((id) => currentSet.add(id));
+      }
+      return Array.from(currentSet);
+    });
+  }, [groupFilteredProviders]);
 
   const claudeDesktopStatusMessages = useMemo(() => {
     if (appId !== "claude-desktop" || !claudeDesktopStatus) return [];
@@ -654,7 +695,7 @@ export function ProviderList({
                 }
                 selectionMode={selectionMode}
                 isSelected={selectedIds.includes(provider.id)}
-                onToggleSelect={toggleSelect}
+                onToggleSelect={toggleProviderSelection}
                 membershipGroups={getGroupsOf(provider.id)}
                 allGroups={providerGroups}
                 onAssignToGroup={(groupId) =>
@@ -729,33 +770,33 @@ export function ProviderList({
                 align="end"
                 className="w-72 overflow-hidden p-1"
               >
-                <DropdownMenuLabel>选择要导入的 Codex 中转站</DropdownMenuLabel>
+                <DropdownMenuLabel>选择要导入的 Codex 分组</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {codexRelayProviders.length === 0 ? (
+                {codexGroupsState.groups.length === 0 ? (
                   <DropdownMenuLabel className="font-normal text-muted-foreground">
                     {t("provider.noProviders")}
                   </DropdownMenuLabel>
                 ) : (
                   <div className="max-h-[min(60vh,26rem)] overflow-y-auto overscroll-contain pr-0.5 [scrollbar-gutter:stable]">
-                    {codexRelayProviders.map((provider) => (
+                    {codexGroupsState.groups.map((group) => (
                       <DropdownMenuCheckboxItem
-                        key={provider.id}
-                        checked={selectedCodexProviderIds.includes(provider.id)}
+                        key={group.id}
+                        checked={selectedCodexProviderIds.includes(group.id)}
                         className="min-h-9 pl-8 pr-2 focus:outline-none focus:ring-0 data-[highlighted]:bg-muted/60 data-[highlighted]:text-foreground"
                         onSelect={(event) => event.preventDefault()}
                         onCheckedChange={(checked) =>
                           setSelectedCodexProviderIds((current) =>
                             checked
-                              ? [...new Set([...current, provider.id])]
-                              : current.filter((id) => id !== provider.id),
+                              ? [...new Set([...current, group.id])]
+                              : current.filter((id) => id !== group.id),
                           )
                         }
                       >
                         <span
                           className="min-w-0 flex-1 truncate"
-                          title={provider.name}
+                          title={group.name}
                         >
-                          {provider.name}
+                          {group.name} ({group.providerIds.length})
                         </span>
                       </DropdownMenuCheckboxItem>
                     ))}
@@ -769,12 +810,36 @@ export function ProviderList({
                   disabled={selectedCodexProviderIds.length === 0}
                   onClick={() => {
                     const selected = new Set(selectedCodexProviderIds);
-                    const selectedProviders = codexRelayProviders
-                      .filter((provider) => selected.has(provider.id))
-                      .map(buildGrokBuildProviderFromCodex);
+                    const selectedGroups = codexGroupsState.groups.filter(
+                      (group) => selected.has(group.id),
+                    );
+                    const selectedProviders = selectedGroups.flatMap((group) =>
+                      group.providerIds
+                        .map((id) => codexProviders[id])
+                        .filter(
+                          (provider): provider is Provider =>
+                            Boolean(provider) &&
+                            provider.category !== "official",
+                        )
+                        .map(buildGrokBuildProviderFromCodex),
+                    );
                     void onImportCodexProviders(selectedProviders).then(
-                      (count) =>
-                        toast.success(`已从 Codex 导入 ${count} 个中转站`),
+                      (count) => {
+                        replaceGroupsProvidersByName(
+                          selectedGroups.map((sourceGroup) => ({
+                            name: sourceGroup.name,
+                            providerIds: sourceGroup.providerIds
+                              .filter(
+                                (id) =>
+                                  codexProviders[id]?.category !== "official",
+                              )
+                              .map((id) => `${id}-grokbuild`),
+                          })),
+                        );
+                        toast.success(
+                          `已按分组从 Codex 导入 ${count} 个中转站`,
+                        );
+                      },
                       (error) => toast.error(extractErrorMessage(error)),
                     );
                   }}
@@ -893,8 +958,24 @@ export function ProviderList({
           onRemoveFromCurrent={handleRemoveSelectedFromCurrent}
           onCreateGroup={handleCreateGroupFromBar}
           onCancel={clearSelection}
+          allSelected={allVisibleSelected}
+          onToggleSelectAll={toggleSelectAllVisible}
+          onDeleteSelected={() => setDeleteSelectedOpen(true)}
         />
       )}
+      <ConfirmDialog
+        isOpen={deleteSelectedOpen}
+        title={t("group.deleteSelectedTitle")}
+        message={t("group.deleteSelectedMessage", {
+          count: effectiveSelectedIds.length,
+        })}
+        variant="destructive"
+        onConfirm={() => {
+          setDeleteSelectedOpen(false);
+          void onDeleteSelected(effectiveSelectedIds).then(clearSelection);
+        }}
+        onCancel={() => setDeleteSelectedOpen(false)}
+      />
     </div>
   );
 }
@@ -930,7 +1011,7 @@ interface SortableProviderCardProps {
   onSetAsDefault?: () => void;
   selectionMode?: boolean;
   isSelected?: boolean;
-  onToggleSelect?: (id: string) => void;
+  onToggleSelect?: (id: string, shiftKey?: boolean) => void;
   membershipGroups?: ProviderGroup[];
   allGroups?: ProviderGroup[];
   onAssignToGroup?: (groupId: string) => void;

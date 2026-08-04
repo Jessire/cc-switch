@@ -296,6 +296,69 @@ export function useProviderGroups(appId: AppId) {
     [persist, state],
   );
 
+  const replaceGroupProvidersByName = useCallback(
+    (name: string, providerIds: string[]): string | null => {
+      const clean = sanitizeName(name);
+      if (!clean) return null;
+      const existing = state.groups.find((group) => group.name === clean);
+      const groupId = existing?.id ?? generateGroupId();
+      const nextGroups = existing
+        ? state.groups.map((group) =>
+            group.id === groupId ? { ...group, providerIds } : group,
+          )
+        : [...state.groups, { id: groupId, name: clean, providerIds }];
+      persist({
+        groups: nextGroups,
+        activeGroupId: existing ? state.activeGroupId : groupId,
+        tabOrder: existing
+          ? state.tabOrder
+          : [...normalizeTabOrder(state.groups, state.tabOrder), groupId],
+      });
+      return groupId;
+    },
+    [persist, state],
+  );
+
+  const replaceGroupsProvidersByName = useCallback(
+    (replacements: Array<{ name: string; providerIds: string[] }>) => {
+      const normalized = replacements
+        .map((item) => ({
+          name: sanitizeName(item.name),
+          providerIds: item.providerIds,
+        }))
+        .filter((item) => item.name);
+      if (!normalized.length) return;
+      const groupsByName = new Map(
+        state.groups.map((group) => [group.name, group]),
+      );
+      const addedIds: string[] = [];
+      const nextGroups = [...state.groups];
+      normalized.forEach(({ name, providerIds }) => {
+        const existing = groupsByName.get(name);
+        if (existing) {
+          const index = nextGroups.findIndex(
+            (group) => group.id === existing.id,
+          );
+          if (index >= 0) nextGroups[index] = { ...existing, providerIds };
+          return;
+        }
+        const id = generateGroupId();
+        addedIds.push(id);
+        nextGroups.push({ id, name, providerIds });
+        groupsByName.set(name, { id, name, providerIds });
+      });
+      persist({
+        groups: nextGroups,
+        activeGroupId: state.activeGroupId,
+        tabOrder: [
+          ...normalizeTabOrder(state.groups, state.tabOrder),
+          ...addedIds,
+        ],
+      });
+    },
+    [persist, state],
+  );
+
   // providerId -> groupIds (multi-group)
   const providerToGroups = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -351,6 +414,8 @@ export function useProviderGroups(appId: AppId) {
     assignProviders,
     removeFromGroup,
     removeFromAllGroups,
+    replaceGroupProvidersByName,
+    replaceGroupsProvidersByName,
     getGroupOf,
     getGroupsOf,
     filterByActiveGroup,
