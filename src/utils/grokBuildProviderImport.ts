@@ -8,10 +8,12 @@ import {
 import { buildGrokBuildConfig } from "@/utils/grokBuildConfig";
 
 export function buildGrokBuildProviderFromCodex(provider: Provider): Provider {
-  const config =
-    typeof provider.settingsConfig?.config === "string"
-      ? provider.settingsConfig.config
-      : "";
+  const settings = provider.settingsConfig ?? {};
+  const auth =
+    settings && typeof settings.auth === "object" && settings.auth !== null
+      ? (settings.auth as Record<string, unknown>)
+      : {};
+  const config = typeof settings.config === "string" ? settings.config : "";
   const baseUrl =
     (extractCodexBaseUrl(config) ||
       config.match(/base_url\s*=\s*["']([^"']+)["']/i)?.[1]) ??
@@ -20,7 +22,8 @@ export function buildGrokBuildProviderFromCodex(provider: Provider): Provider {
   const apiKey =
     config.match(/CODEX_API_KEY\s*=\s*["']([^"']+)["']/i)?.[1] ??
     config.match(/api_key\s*=\s*["']([^"']+)["']/i)?.[1] ??
-    "";
+    ((typeof auth.OPENAI_API_KEY === "string" ? auth.OPENAI_API_KEY : "") ||
+      (typeof auth.CODEX_API_KEY === "string" ? auth.CODEX_API_KEY : ""));
   const wireApi = extractCodexWireApi(config);
   const apiBackend =
     codexApiFormatFromWireApi(wireApi) === "openai_chat"

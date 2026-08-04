@@ -17,4 +17,17 @@ describe("Grok Build provider import", () => {
     );
     expect(provider.settingsConfig.config).toContain('api_key = "secret"');
   });
+
+  it("reads the API key from Codex settingsConfig.auth", () => {
+    const provider = buildGrokBuildProviderFromCodex({
+      id: "relay-auth",
+      name: "Relay Auth",
+      settingsConfig: {
+        auth: { OPENAI_API_KEY: "auth-secret" },
+        config:
+          'model = "gpt-5.6"\n[model_providers.custom]\nbase_url = "https://api.example.com/v1"',
+      },
+    });
+    expect(provider.settingsConfig.config).toContain('api_key = "auth-secret"');
+  });
 });
