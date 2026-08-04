@@ -658,23 +658,23 @@ export function CodexModelMenuDialog({
                 id="codex-batch-rename-preview"
                 role="dialog"
                 aria-label={t("codexConfig.batchRenamePreview")}
-                className="absolute right-0 top-[calc(100%+6px)] z-[130] max-h-[min(360px,calc(100vh-4rem))] w-[21.5rem] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-md border bg-popover p-0 text-popover-foreground shadow-md outline-none [scrollbar-gutter:stable]"
+                className="absolute left-0 top-[calc(100%+6px)] z-[130] max-h-[min(360px,calc(100vh-4rem))] w-[21.5rem] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-md border bg-popover p-0 text-popover-foreground shadow-md outline-none [scrollbar-gutter:stable]"
               >
                 <div className="space-y-0.5 py-1">
                   {renameMatches.map((match) => (
                     <div
                       key={match.entryKey}
-                      className="grid min-h-12 grid-cols-[minmax(0,1fr)_2rem_minmax(0,1fr)] items-center gap-x-2 rounded-md px-3 py-2 text-base leading-6 hover:bg-muted/60"
+                      className="grid min-h-12 grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)] items-center gap-x-2 rounded-md px-0 py-2 text-base leading-6 hover:bg-muted/60"
                     >
                       <div
-                        className="min-w-0 truncate text-center text-base leading-6 text-foreground"
+                        className="min-w-0 truncate text-left text-base leading-6 text-foreground"
                         title={match.before}
                       >
                         {match.before}
                       </div>
                       <ArrowRight className="mx-auto h-4 w-4 shrink-0 text-muted-foreground" />
                       <div
-                        className="min-w-0 truncate text-center text-base leading-6 text-foreground"
+                        className="min-w-0 truncate text-left text-base leading-6 text-foreground"
                         title={match.after}
                       >
                         {match.after}

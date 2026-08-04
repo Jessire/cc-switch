@@ -51,7 +51,7 @@
 ## 当前构建、发布和运行实例
 
 - v3.19.0 上游合并提交: `c1522aff3643752e90dd62425b4f6b3eedbb6ac9` (`Merge upstream v3.19.0`). 冲突文件 `src/App.tsx` 与 `src/components/AppSwitcher.tsx` 保留定制版自动紧凑行为, 其余上游有效改动已合并.
-- 最近一次正式本地 Windows x64 Release 构建产物: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.5`, x64, 大小 `32,754,688` bytes, SHA256 `4B21D275815C1707215CE5F6D58A959C6393CB68554F4BBE33C6F1A35E5E8ABC`. 当前运行的旁路新版仍为 `C:\Users\jery3\.codex\tmp\CC-Switch-New-20260804.exe`, PID `21856`, 未停止.
+- 最近一次正式本地 Windows x64 Release 构建产物: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.5`, x64, 大小 `32,754,688` bytes, SHA256 `880E821B22766AF50B9148479E4A79C4623DB0AE0F89C6F7A6D4BA517FA3398C`. 当前运行的旁路新版仍为 `C:\Users\jery3\.codex\tmp\CC-Switch-New-20260804.exe`, PID `10804`, 未停止.
 - 最新 GitHub Release: `v3.19.5`, 标签指向 `aac15a48b3e33309732c00dba3e69611ebf1ccd8`; Release 资产为 `CC-Switch-v3.19.5-Windows-x64.exe`, 大小 `32,754,688` bytes, SHA256 `CDC70363F83FF99C4105256C3ED1A85DB0949613CFA9C2413453D07E7DEE70E0`.
 - 当前运行实例: PID `15348` 运行 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.5`, SHA256 `CDC70363F83FF99C4105256C3ED1A85DB0949613CFA9C2413453D07E7DEE70E0`. 本轮旁路实例未启动, 未停止当前 CC Switch/WorkBuddy Desktop, 未触碰数据库、配置和客户端真实配置.
 - 2026-08-02 已删除仓库外 `cc-switch-build`, `.codex\tmp` 中的 CC Switch EXE/回滚副本/临时脚本/日志/截图/隔离数据, 以及标准构建的 `deps`, `build`, `.fingerprint` 等可重建中间物; 保留 `node_modules` 和正在运行的标准 Release EXE. 清理后 C: 可用空间 `101.24 GB`, D: 可用空间 `564.40 GB`.
@@ -70,13 +70,14 @@
 - 2026-08-04 本轮后续改动已通过 `pnpm typecheck`, `pnpm format:check`, `git diff --check`, Grok Build 导入单测 1/1 和自动重启开关单测 2/2. 标准 Windows x64 Release 已成功覆盖 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`, 版本 `3.19.5`, 大小 `32,754,688` bytes, SHA256 `5D93BBFBEB729B58AA97DCEEF66DE750863DFFA6062526CFC7763A1B978E1FE8`. 当前运行的是新版旁路 PID `24036`, 路径 `C:\Users\jery3\.codex\tmp\CC-Switch-New-20260804.exe`, 未停止.
 - 2026-08-04 本轮查看匹配回退与 Codex 全量选择导入已通过 `pnpm typecheck`, `pnpm format:check`, `git diff --check`, 相关 Vitest 9/9 和标准 Windows x64 Release 构建. Grok Build 导入菜单列出 Codex 中全部非官方供应商,默认全选,允许取消后批量导入.
 - 2026-08-04 本轮导入菜单与查看匹配布局修复已通过 `pnpm typecheck`, `pnpm format:check`, `git diff --check`, 相关 Vitest 16/16 和标准 Windows x64 Release 构建. 导入列表加入独立滚动区域、固定行高、可点击复选行和固定底部导入按钮;查看匹配恢复原始样式并固定三列行高.
+- 2026-08-04 本轮匹配列精确对齐与导入真实写入反馈已通过 `pnpm typecheck`, `pnpm format:check`, `git diff --check`, 相关 Vitest 16/16 和标准 Windows x64 Release 构建. 查看匹配弹层左列锚定搜索输入框、箭头使用中间列、右列锚定替换输入框;导入改为单次批量写入并在刷新后按实际数量提示,移除蓝色焦点样式.
 
 ## 未完成边界与回归重点
 
 - 为保护正在进行的 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启, 未在真实 Desktop 会话中验证第三方模型菜单读取和对话级路由.
 - 正式实例已切换到标准 Release `3.19.5` 并保持运行; `ccswitch` 协议注册已指向该 EXE. 使用测试 provider deep link 实际打开导入确认页并取消, 数据库中未产生 `DeepLink Path Probe` 记录; 未重复执行其他功能或 UI 回归.
 - 对话级供应商路由仍需在至少两个 Codex Desktop 对话中选择不同 `供应商 - 模型`, 发起真实请求并核对代理日志的供应商及剥离后的上游模型.
-- 本轮因必须保留 PID `21856` 和当前 Codex/WorkBuddy Desktop 会话, 未停止正在运行的新版旁路实例; 标准 Release 已覆盖原版路径但未切换运行实例. 旧 `useProviderActions` 测试中的“同组不重启”断言与本轮明确删除的功能冲突,未按旧语义回退. 影响托盘、deep link、分组、重启、模型菜单、代理路由或通用配置的后续改动, 必须按对应真实 Windows 行为重新验证, 不得只凭构建通过收口.
+- 本轮因必须保留 PID `10804` 和当前 Codex/WorkBuddy Desktop 会话, 未停止正在运行的新版旁路实例; 标准 Release 已覆盖原版路径但未切换运行实例. 旧 `useProviderActions` 测试中的“同组不重启”断言与本轮明确删除的功能冲突,未按旧语义回退. 影响托盘、deep link、分组、重启、模型菜单、代理路由或通用配置的后续改动, 必须按对应真实 Windows 行为重新验证, 不得只凭构建通过收口.
 
 ## 维护检查清单
 

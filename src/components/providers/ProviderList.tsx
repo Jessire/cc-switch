@@ -86,7 +86,7 @@ interface ProviderListProps {
   onOpenTerminal?: (provider: Provider) => void;
   onCreate?: () => void;
   codexProviders?: Record<string, Provider>;
-  onImportCodexProvider?: (provider: Provider) => Promise<void>;
+  onImportCodexProviders?: (providers: Provider[]) => Promise<number>;
   isLoading?: boolean;
   isProxyRunning?: boolean; // 代理服务运行状态
   isProxyTakeover?: boolean; // 代理接管模式（Live配置已被接管）
@@ -110,7 +110,7 @@ export function ProviderList({
   onOpenTerminal,
   onCreate,
   codexProviders = {},
-  onImportCodexProvider,
+  onImportCodexProviders,
   isLoading = false,
   isProxyRunning = false,
   isProxyTakeover = false,
@@ -713,7 +713,7 @@ export function ProviderList({
         onToggleSelectionMode={toggleSelectionMode}
         onCreateProvider={onCreate}
         extraAction={
-          appId === "grokbuild" && onImportCodexProvider ? (
+          appId === "grokbuild" && onImportCodexProviders ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -741,7 +741,7 @@ export function ProviderList({
                       <DropdownMenuCheckboxItem
                         key={provider.id}
                         checked={selectedCodexProviderIds.includes(provider.id)}
-                        className="min-h-9 pl-8 pr-2"
+                        className="min-h-9 pl-8 pr-2 focus:outline-none focus:ring-0 data-[highlighted]:bg-muted/60 data-[highlighted]:text-foreground"
                         onSelect={(event) => event.preventDefault()}
                         onCheckedChange={(checked) =>
                           setSelectedCodexProviderIds((current) =>
@@ -769,14 +769,13 @@ export function ProviderList({
                   disabled={selectedCodexProviderIds.length === 0}
                   onClick={() => {
                     const selected = new Set(selectedCodexProviderIds);
-                    void Promise.all(
-                      codexRelayProviders
-                        .filter((provider) => selected.has(provider.id))
-                        .map((provider) =>
-                          onImportCodexProvider(
-                            buildGrokBuildProviderFromCodex(provider),
-                          ),
-                        ),
+                    const selectedProviders = codexRelayProviders
+                      .filter((provider) => selected.has(provider.id))
+                      .map(buildGrokBuildProviderFromCodex);
+                    void onImportCodexProviders(selectedProviders).then(
+                      (count) =>
+                        toast.success(`已从 Codex 导入 ${count} 个中转站`),
+                      (error) => toast.error(extractErrorMessage(error)),
                     );
                   }}
                 >

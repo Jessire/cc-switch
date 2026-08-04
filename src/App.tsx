@@ -982,14 +982,14 @@ function App() {
                     <ProviderList
                       providers={providers}
                       codexProviders={codexProviderData?.providers ?? {}}
-                      onImportCodexProvider={
+                      onImportCodexProviders={
                         activeApp === "grokbuild"
-                          ? async (provider) => {
-                              await addProvider(provider);
+                          ? async (providersToImport) => {
+                              for (const provider of providersToImport) {
+                                await addProvider(provider);
+                              }
                               await refetch();
-                              toast.success(
-                                "已从 Codex 导入供应商到 Grok Build",
-                              );
+                              return providersToImport.length;
                             }
                           : undefined
                       }
