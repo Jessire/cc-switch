@@ -46,6 +46,7 @@ import { syncCodexModelToCatalogFirst } from "@/components/providers/forms/Provi
 import {
   buildDraftGroups,
   applySmartSort,
+  buildSmartSortPreview,
   findDraftModelRenameMatches,
   flattenDraftGroups,
   providerCatalogModels,
@@ -147,6 +148,57 @@ function SortableMenuModelRow({
           {entry.model.model}
         </div>
       </div>
+    </div>
+  );
+}
+
+function SmartSortedModelRow({
+  entry,
+  position,
+  groupName,
+  onChange,
+}: {
+  entry: DraftModelEntry;
+  position: number;
+  groupName: string;
+  onChange: (patch: Partial<CodexCatalogModel>) => void;
+}) {
+  const { t } = useTranslation();
+  const isEnabled = entry.model.enabled !== false;
+  const displayName = entry.model.displayName?.trim() || entry.model.model;
+
+  return (
+    <div
+      className={cn(
+        "grid min-h-14 grid-cols-[2rem_1.75rem_minmax(0,1fr)_minmax(6rem,auto)] items-center gap-3 rounded-md border border-transparent px-3 py-1.5 hover:border-border-default hover:bg-muted/50",
+        !isEnabled && "bg-muted/20 text-muted-foreground",
+      )}
+    >
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-default bg-muted text-xs font-medium tabular-nums">
+        {position}
+      </span>
+      <Checkbox
+        checked={isEnabled}
+        onCheckedChange={(checked) => onChange({ enabled: checked === true })}
+        aria-label={t("codexConfig.disableModel")}
+      />
+      <div className="min-w-0">
+        <div className="truncate text-base font-medium" title={displayName}>
+          {displayName}
+        </div>
+        <div
+          className="truncate font-mono text-sm text-muted-foreground"
+          title={entry.model.model}
+        >
+          {entry.model.model}
+        </div>
+      </div>
+      <span
+        className="max-w-32 truncate text-right text-sm text-muted-foreground"
+        title={groupName}
+      >
+        {groupName}
+      </span>
     </div>
   );
 }
@@ -498,6 +550,26 @@ export function CodexModelMenuDialog({
     });
   };
 
+  const smartSortedEntries = useMemo(() => {
+    const groupNames = new Map(
+      groups.map((group) => [group.providerId, group.menuGroupName]),
+    );
+    const entriesByKey = new Map(
+      flattenDraftGroups(groups).map((entry) => [entry.key, entry]),
+    );
+    return buildSmartSortPreview(groups).flatMap((item) => {
+      const entry = entriesByKey.get(item.entryKey);
+      return entry
+        ? [
+            {
+              entry,
+              groupName: groupNames.get(entry.providerId) || entry.providerId,
+            },
+          ]
+        : [];
+    });
+  }, [groups]);
+
   const hasChanges = JSON.stringify(groups) !== initialSnapshot;
   const totalModelCount = groups.reduce(
     (total, group) => total + group.entries.length,
@@ -736,43 +808,57 @@ export function CodexModelMenuDialog({
         <div className="min-h-0 flex-1 px-4 py-3 sm:px-6 sm:py-3">
           {groups.length > 0 ? (
             <ScrollArea className="h-[min(62vh,36rem)] pr-2">
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={groups.map((group) => group.key)}
-                  strategy={verticalListSortingStrategy}
+              {isSmartSortView ? (
+                <div className="space-y-1.5 rounded-xl border border-border-default bg-background p-2">
+                  {smartSortedEntries.map(({ entry, groupName }, index) => (
+                    <SmartSortedModelRow
+                      key={entry.key}
+                      entry={entry}
+                      position={index + 1}
+                      groupName={groupName}
+                      onChange={(patch) => handleEntryChange(entry.key, patch)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
                 >
-                  <div className="space-y-1.5">
-                    {groups.map((group) => (
-                      <SortableProviderGroup
-                        key={group.key}
-                        group={group}
-                        collapsed={collapsedGroups[group.key] === true}
-                        onMenuGroupNameChange={(name) =>
-                          handleMenuGroupNameChange(group.providerId, name)
-                        }
-                        onEntryChange={handleEntryChange}
-                        onGroupEnabledChange={(enabled) =>
-                          handleGroupEnabledChange(group.providerId, enabled)
-                        }
-                        onToggleCollapsed={() =>
-                          setCollapsedGroups((current) => {
-                            const next = {
-                              ...current,
-                              [group.key]: !current[group.key],
-                            };
-                            writeCollapsedGroups(next);
-                            return next;
-                          })
-                        }
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
+                  <SortableContext
+                    items={groups.map((group) => group.key)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-1.5">
+                      {groups.map((group) => (
+                        <SortableProviderGroup
+                          key={group.key}
+                          group={group}
+                          collapsed={collapsedGroups[group.key] === true}
+                          onMenuGroupNameChange={(name) =>
+                            handleMenuGroupNameChange(group.providerId, name)
+                          }
+                          onEntryChange={handleEntryChange}
+                          onGroupEnabledChange={(enabled) =>
+                            handleGroupEnabledChange(group.providerId, enabled)
+                          }
+                          onToggleCollapsed={() =>
+                            setCollapsedGroups((current) => {
+                              const next = {
+                                ...current,
+                                [group.key]: !current[group.key],
+                              };
+                              writeCollapsedGroups(next);
+                              return next;
+                            })
+                          }
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              )}
             </ScrollArea>
           ) : (
             <div className="px-4 py-10 text-center text-sm text-muted-foreground">
