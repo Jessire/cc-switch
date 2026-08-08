@@ -44,6 +44,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { syncCodexModelToCatalogFirst } from "@/components/providers/forms/ProviderForm";
 import {
   buildDraftGroups,
+  buildSmartSortPreview,
   applySmartSort,
   findDraftModelRenameMatches,
   flattenDraftGroups,
@@ -53,6 +54,7 @@ import {
   type DraftModelEntry,
   type DraftModelRenameMatch,
   type DraftProviderGroup,
+  type SmartSortPreviewItem,
 } from "@/components/providers/codexModelMenuState";
 
 interface CodexModelMenuDialogProps {
@@ -321,6 +323,10 @@ export function CodexModelMenuDialog({
   const [renameFrom, setRenameFrom] = useState("");
   const [renameTo, setRenameTo] = useState("");
   const [isRenamePreviewOpen, setIsRenamePreviewOpen] = useState(false);
+  const [isSmartSortPreviewOpen, setIsSmartSortPreviewOpen] = useState(false);
+  const [orderingMode, setOrderingMode] = useState<"manual" | "smart">(
+    "manual",
+  );
   const renamePreviewRef = useRef<HTMLDivElement>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -355,6 +361,8 @@ export function CodexModelMenuDialog({
     setRenameFrom("");
     setRenameTo("");
     setIsRenamePreviewOpen(false);
+    setIsSmartSortPreviewOpen(false);
+    setOrderingMode("manual");
   }, [open, providers]);
 
   const handleEntryChange = (
@@ -453,6 +461,7 @@ export function CodexModelMenuDialog({
       setGroups((current) =>
         reorderDraftGroups(current, String(active.id), String(over.id)),
       );
+      setOrderingMode("manual");
       return;
     }
 
@@ -473,10 +482,18 @@ export function CodexModelMenuDialog({
         String(over.id),
       ),
     );
+    setOrderingMode("manual");
   };
+
+  const smartSortPreview = useMemo(
+    () => buildSmartSortPreview(groups),
+    [groups],
+  );
 
   const handleApplySmartSort = () => {
     setGroups((current) => applySmartSort(current));
+    setOrderingMode("smart");
+    setIsSmartSortPreviewOpen(true);
   };
 
   const hasChanges = JSON.stringify(groups) !== initialSnapshot;
@@ -495,7 +512,15 @@ export function CodexModelMenuDialog({
     setIsSaving(true);
     try {
       const nextByProvider = new Map<string, Provider>();
-      flattenDraftGroups(groups).forEach((entry, menuOrder) => {
+      const orderedEntries =
+        orderingMode === "smart"
+          ? [...flattenDraftGroups(groups)].sort(
+              (left, right) =>
+                (left.model.menuOrder ?? Number.MAX_SAFE_INTEGER) -
+                (right.model.menuOrder ?? Number.MAX_SAFE_INTEGER),
+            )
+          : flattenDraftGroups(groups);
+      orderedEntries.forEach((entry, menuOrder) => {
         const original = providers[entry.providerId];
         if (!original) return;
         const group = groups.find(
@@ -591,25 +616,93 @@ export function CodexModelMenuDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         zIndex="top"
-        className="max-h-[calc(100vh-2rem)] max-w-4xl overflow-hidden"
+        className="relative max-h-[calc(100vh-2rem)] max-w-4xl overflow-hidden"
       >
         <DialogHeader className="gap-2 px-6 py-2 sm:flex-row sm:items-center sm:justify-between">
           <DialogTitle className="shrink-0 text-base">
             {t("codexConfig.modelMenuManager")}
           </DialogTitle>
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleApplySmartSort}
-            className="ml-auto h-10 shrink-0 gap-1.5 rounded-md px-3 text-sm"
-          >
-            <WandSparkles className="h-4 w-4" />
-            <span>
-              {t("codexConfig.smartSort", { defaultValue: "智能排序" })}
-            </span>
-          </Button>
+          <div className="ml-auto shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-expanded={isSmartSortPreviewOpen}
+              aria-controls="codex-smart-sort-preview"
+              onClick={() => setIsSmartSortPreviewOpen((open) => !open)}
+              className="h-10 gap-1.5 rounded-md px-3 text-sm"
+            >
+              <WandSparkles className="h-4 w-4" />
+              <span>
+                {t("codexConfig.smartSort", { defaultValue: "智能排序" })}
+              </span>
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 transition-transform",
+                  isSmartSortPreviewOpen && "rotate-180",
+                )}
+              />
+            </Button>
+
+            {isSmartSortPreviewOpen && (
+              <div
+                id="codex-smart-sort-preview"
+                className="absolute right-6 top-16 z-[150] w-[min(36rem,calc(100vw-3rem))] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-lg"
+              >
+                <div className="flex items-center justify-between border-b px-3 py-2">
+                  <span className="text-sm font-medium">
+                    {t("codexConfig.smartSortResult", {
+                      defaultValue: "智能排序结果",
+                    })}
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleApplySmartSort}
+                    disabled={smartSortPreview.length < 2}
+                    className="h-8 px-2.5 text-xs"
+                  >
+                    {t("codexConfig.applySmartSort", {
+                      defaultValue: "应用排序",
+                    })}
+                  </Button>
+                </div>
+                <div className="max-h-[min(360px,calc(100vh-8rem))] overflow-y-auto py-1">
+                  {smartSortPreview.map((item: SmartSortPreviewItem, index) => (
+                    <div
+                      key={item.entryKey}
+                      className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(5rem,auto)] items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted/60"
+                    >
+                      <span className="text-xs tabular-nums text-muted-foreground">
+                        {index + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <div
+                          className="truncate font-medium text-foreground"
+                          title={item.displayName}
+                        >
+                          {item.displayName}
+                        </div>
+                        <div
+                          className="truncate font-mono text-xs text-muted-foreground"
+                          title={item.modelId}
+                        >
+                          {item.modelId}
+                        </div>
+                      </div>
+                      <span
+                        className="max-w-32 truncate text-right text-xs text-muted-foreground"
+                        title={item.groupName}
+                      >
+                        {item.groupName}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           <div
             ref={renamePreviewRef}

@@ -34,7 +34,7 @@
 - Codex 模型菜单支持标题栏内联批量重命名, 点击“查看匹配”下拉菜单可预览匹配的修改前名称、模型 ID 和修改后名称; 分组勾选框与组内模型双向同步. 1 个或 2 个模型与分组同一行, 3 个及以上模型时分组单独一行且模型最多三列; 模型名和模型 ID 左对齐, 点击模型名直接编辑且不再显示独立编辑图标.
 - Codex 模型编辑支持 `372K`、`500K`、`1M` 上下文快捷值; GPT-5.6 默认 `372000`, Claude 和国产模型默认 `1000000`, Grok 默认 `500000`, 仅在上下文窗口为空时自动填充. 所有模型禁用后保留供应商收藏,主页以淡色星标表示未启用.
 - Codex 模型菜单支持智能排序下拉预览和应用; 排序按模型系列归并, 再按模型显示名自然排序, 同序保持当前顺序, 不改变模型供应商归属.
-- 智能排序入口已改为直接按钮; 点击后立即覆盖当前模型菜单排序, 不再打开预览下拉或要求二次点击“应用排序”.
+- 智能排序入口保留预览下拉; 预览框相对整个模型菜单对话框定位,显示序号、模型名称/ID和所属分组,避免被标题栏布局裁切. 点击“应用排序”后覆盖当前模型菜单排序.
 - Codex 对话可独立选择供应商和模型; 代理在出站前恢复真实模型 ID, 不切换 CC Switch 全局供应商.
 
 ### 主界面、更新、托盘和导入
@@ -77,6 +77,7 @@
 - 2026-08-04 本轮批量供应商管理与 Grok 分组导入已通过 `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, `pnpm typecheck`, `pnpm format:check`, `git diff --check`, 相关 Vitest 13/13, `pnpm build:renderer` 和 `pnpm tauri build --no-bundle`. 批量选择支持全选、取消全选、Shift 范围选择和永久删除;Grok 导入按 Codex 自定义分组同步,目标分组成员按导入结果覆盖并清理过时成员. 标准 Release SHA256 为 `18DA89AA7B6D62E16E9FE5030DC667A66EE206BF29BD07290E72DC0F77C59B0D`. 2026-08-05 已清理本轮确认的 Release 中间目录、仓库 `dist`、旧旁路 EXE 和临时构建目录,正式 EXE 保留且哈希复核一致.
 - 2026-08-08 本轮智能排序改动已通过 `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts` (7 项), `pnpm typecheck`, `pnpm format:check`, `git diff --check` 和旁路 Windows x64 Release 构建. 旁路产物版本 `3.19.5`, 大小 `32,758,784` bytes, SHA256 `6EA27A2A8686A7193D7C99422BC3CDB49E0DBE32C58B29617EE3146682FD0903`; 未替换或停止正式运行实例.
 - 2026-08-08 后续修复已通过同一组 7 项模型菜单单测, `pnpm typecheck`, `pnpm format:check` 和 `git diff --check`; 智能排序现在直接重排分组及组内模型, 保存时按当前界面顺序写入.
+- 2026-08-08 预览定位修复已通过同一组 7 项模型菜单单测, `pnpm typecheck`, `pnpm format:check` 和 `git diff --check`; 标准 Windows x64 Release 已覆盖 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`, 版本 `3.19.5`, 大小 `32,758,784` bytes, SHA256 `E31B02B8E8625CC59863261CB564A1D64A28C6264A4FF47D6BBE2B02E7FC660E`. 构建期间未停止运行中的临时实例; 新标准 EXE 未启动进行 GUI 复核.
 
 ## 未完成边界与回归重点
 
