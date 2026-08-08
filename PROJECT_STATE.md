@@ -33,6 +33,7 @@
 - 短分组与主界面供应商名称解耦; 支持供应商组排序与组内模型排序, 不允许模型跨供应商组拖动.
 - Codex 模型菜单支持标题栏内联批量重命名, 点击“查看匹配”下拉菜单可预览匹配的修改前名称、模型 ID 和修改后名称; 分组勾选框与组内模型双向同步. 1 个或 2 个模型与分组同一行, 3 个及以上模型时分组单独一行且模型最多三列; 模型名和模型 ID 左对齐, 点击模型名直接编辑且不再显示独立编辑图标.
 - Codex 模型编辑支持 `372K`、`500K`、`1M` 上下文快捷值; GPT-5.6 默认 `372000`, Claude 和国产模型默认 `1000000`, Grok 默认 `500000`, 仅在上下文窗口为空时自动填充. 所有模型禁用后保留供应商收藏,主页以淡色星标表示未启用.
+- Codex 模型菜单支持原始排序与智能排序结果切换查看; 智能排序按钮直接切换视图,保留原始顺序,保存时按当前视图写入.
 - Codex 对话可独立选择供应商和模型; 代理在出站前恢复真实模型 ID, 不切换 CC Switch 全局供应商.
 
 ### 主界面、更新、托盘和导入
@@ -73,6 +74,7 @@
 - 2026-08-04 本轮匹配列精确对齐与导入真实写入反馈已通过 `pnpm typecheck`, `pnpm format:check`, `git diff --check`, 相关 Vitest 16/16 和标准 Windows x64 Release 构建. 查看匹配弹层左列锚定搜索输入框、箭头使用中间列、右列锚定替换输入框;导入改为单次批量写入并在刷新后按实际数量提示,移除蓝色焦点样式.
 - 2026-08-04 本轮居中对齐与 Codex auth 导入修复已通过 `pnpm typecheck`, `pnpm format:check`, `git diff --check`, 相关 Vitest 17/17 和标准 Windows x64 Release 构建. 查看匹配左右列恢复居中;导入转换从 `settingsConfig.auth.OPENAI_API_KEY`/`CODEX_API_KEY` 读取凭据,新增 auth 结构单测,避免生成缺少 `api_key` 的 Grok Build 配置.
 - 2026-08-04 本轮批量供应商管理与 Grok 分组导入已通过 `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, `pnpm typecheck`, `pnpm format:check`, `git diff --check`, 相关 Vitest 13/13, `pnpm build:renderer` 和 `pnpm tauri build --no-bundle`. 批量选择支持全选、取消全选、Shift 范围选择和永久删除;Grok 导入按 Codex 自定义分组同步,目标分组成员按导入结果覆盖并清理过时成员. 标准 Release SHA256 为 `18DA89AA7B6D62E16E9FE5030DC667A66EE206BF29BD07290E72DC0F77C59B0D`. 2026-08-05 已清理本轮确认的 Release 中间目录、仓库 `dist`、旧旁路 EXE 和临时构建目录,正式 EXE 保留且哈希复核一致.
+- 2026-08-08 原始/智能排序切换已通过模型菜单单测 7/7, `pnpm typecheck`, `pnpm format:check` 和 `git diff --check`; 标准 Windows x64 Release 已覆盖,版本 `3.19.5`,大小 `32,754,688` bytes,SHA256 `4634746FB507FA3E4203FD702CFB3155D6D4419E6DD8B6ACD49792C6A3AA217E`.
 
 ## 未完成边界与回归重点
 

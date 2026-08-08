@@ -21,6 +21,14 @@ export interface DraftModelRenameMatch {
   after: string;
 }
 
+export interface SmartSortPreviewItem {
+  entryKey: string;
+  family: string;
+  displayName: string;
+  modelId: string;
+  groupName: string;
+}
+
 export function providerCatalogModels(provider: Provider): CodexCatalogModel[] {
   const catalog = provider.settingsConfig?.modelCatalog;
   return Array.isArray(catalog?.models)
@@ -113,6 +121,85 @@ export function flattenDraftGroups(
   groups: DraftProviderGroup[],
 ): DraftModelEntry[] {
   return groups.flatMap((group) => group.entries);
+}
+
+function normalizeModelText(value: string): string {
+  return value
+    .toLocaleLowerCase()
+    .replace(/[:：].*$/, "")
+    .replace(/(?:[- _]?(?:\d+(?:\.\d+)?\s*)?(?:k|m))$/i, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function modelFamily(entry: DraftModelEntry): string {
+  const normalized = normalizeModelText(
+    entry.model.model || entry.model.displayName || "",
+  );
+  const knownFamily = normalized.match(
+    /^(gpt|claude\s+(?:opus|sonnet|haiku)|grok|glm|kimi|qwen|deepseek)(?:\s|$)/,
+  );
+  return knownFamily?.[1] || normalized;
+}
+
+function naturalCompare(left: string, right: string): number {
+  return left.localeCompare(right, undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
+export function buildSmartSortPreview(
+  groups: DraftProviderGroup[],
+): SmartSortPreviewItem[] {
+  const groupNames = new Map(
+    groups.map((group) => [group.providerId, group.menuGroupName]),
+  );
+  return flattenDraftGroups(groups)
+    .map((entry, index) => ({
+      entry,
+      index,
+      family: modelFamily(entry),
+    }))
+    .sort(
+      (left, right) =>
+        naturalCompare(left.family, right.family) ||
+        naturalCompare(
+          normalizeModelText(
+            left.entry.model.displayName || left.entry.model.model,
+          ),
+          normalizeModelText(
+            right.entry.model.displayName || right.entry.model.model,
+          ),
+        ) ||
+        left.index - right.index,
+    )
+    .map(({ entry, family }) => ({
+      entryKey: entry.key,
+      family,
+      displayName: entry.model.displayName?.trim() || entry.model.model,
+      modelId: entry.model.model,
+      groupName: groupNames.get(entry.providerId) || entry.providerId,
+    }));
+}
+
+export function applySmartSort(
+  groups: DraftProviderGroup[],
+): DraftProviderGroup[] {
+  const preview = buildSmartSortPreview(groups);
+  const orderByKey = new Map(
+    preview.map((item, index) => [item.entryKey, index]),
+  );
+  return groups.map((group) => ({
+    ...group,
+    entries: group.entries.map((entry) => ({
+      ...entry,
+      model: {
+        ...entry.model,
+        menuOrder: orderByKey.get(entry.key) ?? entry.model.menuOrder,
+      },
+    })),
+  }));
 }
 
 function escapeRegExp(value: string): string {

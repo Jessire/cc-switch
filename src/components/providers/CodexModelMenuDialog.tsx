@@ -14,7 +14,14 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowRight, ChevronDown, GripVertical, Loader2 } from "lucide-react";
+import {
+  ArrowLeftRight,
+  ArrowRight,
+  ChevronDown,
+  GripVertical,
+  Loader2,
+  WandSparkles,
+} from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -38,6 +45,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { syncCodexModelToCatalogFirst } from "@/components/providers/forms/ProviderForm";
 import {
   buildDraftGroups,
+  applySmartSort,
   findDraftModelRenameMatches,
   flattenDraftGroups,
   providerCatalogModels,
@@ -306,6 +314,10 @@ export function CodexModelMenuDialog({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [groups, setGroups] = useState<DraftProviderGroup[]>([]);
+  const [originalGroups, setOriginalGroups] = useState<DraftProviderGroup[]>(
+    [],
+  );
+  const [isSmartSortView, setIsSmartSortView] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<
     Record<string, boolean>
   >({});
@@ -343,6 +355,8 @@ export function CodexModelMenuDialog({
     if (!open) return;
     const next = buildDraftGroups(providers);
     setGroups(next);
+    setOriginalGroups(next);
+    setIsSmartSortView(false);
     setCollapsedGroups(readCollapsedGroups());
     setInitialSnapshot(JSON.stringify(next));
     setRenameFrom("");
@@ -443,9 +457,15 @@ export function CodexModelMenuDialog({
 
     if (active.data.current?.type === "group") {
       if (over.data.current?.type !== "group") return;
-      setGroups((current) =>
-        reorderDraftGroups(current, String(active.id), String(over.id)),
-      );
+      setGroups((current) => {
+        const next = reorderDraftGroups(
+          current,
+          String(active.id),
+          String(over.id),
+        );
+        if (!isSmartSortView) setOriginalGroups(next);
+        return next;
+      });
       return;
     }
 
@@ -458,14 +478,24 @@ export function CodexModelMenuDialog({
     const providerId = active.data.current.providerId as string;
     if (providerId !== over.data.current.providerId) return;
 
-    setGroups((current) =>
-      reorderDraftModels(
+    setGroups((current) => {
+      const next = reorderDraftModels(
         current,
         providerId,
         String(active.id),
         String(over.id),
-      ),
-    );
+      );
+      if (!isSmartSortView) setOriginalGroups(next);
+      return next;
+    });
+  };
+
+  const handleToggleSortView = () => {
+    setIsSmartSortView((current) => {
+      const next = !current;
+      setGroups(next ? applySmartSort(originalGroups) : originalGroups);
+      return next;
+    });
   };
 
   const hasChanges = JSON.stringify(groups) !== initialSnapshot;
@@ -586,6 +616,22 @@ export function CodexModelMenuDialog({
           <DialogTitle className="shrink-0 text-base">
             {t("codexConfig.modelMenuManager")}
           </DialogTitle>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleToggleSortView}
+            className="ml-auto h-10 shrink-0 gap-1.5 rounded-md px-3 text-sm"
+            title={isSmartSortView ? "切换回原始排序" : "查看智能排序结果"}
+          >
+            {isSmartSortView ? (
+              <ArrowLeftRight className="h-4 w-4" />
+            ) : (
+              <WandSparkles className="h-4 w-4" />
+            )}
+            <span>{isSmartSortView ? "原始排序" : "智能排序"}</span>
+          </Button>
 
           <div
             ref={renamePreviewRef}
