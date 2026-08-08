@@ -190,16 +190,28 @@ export function applySmartSort(
   const orderByKey = new Map(
     preview.map((item, index) => [item.entryKey, index]),
   );
-  return groups.map((group) => ({
-    ...group,
-    entries: group.entries.map((entry) => ({
-      ...entry,
-      model: {
-        ...entry.model,
-        menuOrder: orderByKey.get(entry.key) ?? entry.model.menuOrder,
-      },
-    })),
-  }));
+  return groups
+    .map((group) => ({
+      ...group,
+      entries: group.entries
+        .map((entry) => ({
+          ...entry,
+          model: {
+            ...entry.model,
+            menuOrder: orderByKey.get(entry.key) ?? entry.model.menuOrder,
+          },
+        }))
+        .sort(
+          (left, right) =>
+            (left.model.menuOrder ?? Number.MAX_SAFE_INTEGER) -
+            (right.model.menuOrder ?? Number.MAX_SAFE_INTEGER),
+        ),
+    }))
+    .sort(
+      (left, right) =>
+        (left.entries[0]?.model.menuOrder ?? Number.MAX_SAFE_INTEGER) -
+        (right.entries[0]?.model.menuOrder ?? Number.MAX_SAFE_INTEGER),
+    );
 }
 
 function escapeRegExp(value: string): string {
