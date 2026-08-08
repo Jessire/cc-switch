@@ -622,7 +622,7 @@ export function CodexModelMenuDialog({
             variant="outline"
             size="sm"
             onClick={handleToggleSortView}
-            className="ml-auto h-10 shrink-0 gap-1.5 rounded-md px-3 text-sm"
+            className="h-10 shrink-0 gap-1.5 rounded-md px-3 text-sm"
             title={isSmartSortView ? "切换回原始排序" : "查看智能排序结果"}
           >
             {isSmartSortView ? (

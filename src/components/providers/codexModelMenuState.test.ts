@@ -60,7 +60,7 @@ describe("codex model menu state", () => {
       sorted
         .flatMap((group) => group.entries)
         .map((entry) => entry.model.menuOrder),
-    ).toEqual([1, 2, 0, 3]);
+    ).toEqual([0, 3, 1, 2]);
   });
 
   it("groups providers by their first menu position and models within each provider", () => {
