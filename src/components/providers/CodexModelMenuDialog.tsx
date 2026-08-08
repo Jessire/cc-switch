@@ -47,6 +47,7 @@ import {
   buildDraftGroups,
   applySmartSort,
   buildSmartSortPreview,
+  entriesForMenuSave,
   findDraftModelRenameMatches,
   flattenDraftGroups,
   providerCatalogModels,
@@ -586,7 +587,8 @@ export function CodexModelMenuDialog({
     setIsSaving(true);
     try {
       const nextByProvider = new Map<string, Provider>();
-      flattenDraftGroups(groups).forEach((entry, menuOrder) => {
+      const entriesToSave = entriesForMenuSave(groups, isSmartSortView);
+      entriesToSave.forEach((entry, menuOrder) => {
         const original = providers[entry.providerId];
         if (!original) return;
         const group = groups.find(

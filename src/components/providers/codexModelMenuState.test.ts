@@ -3,6 +3,7 @@ import type { CodexCatalogModel, Provider } from "@/types";
 import {
   applySmartSort,
   buildDraftGroups,
+  entriesForMenuSave,
   buildSmartSortPreview,
   findDraftModelRenameMatches,
   flattenDraftGroups,
@@ -61,6 +62,28 @@ describe("codex model menu state", () => {
         .flatMap((group) => group.entries)
         .map((entry) => entry.model.menuOrder),
     ).toEqual([0, 3, 1, 2]);
+  });
+
+  it("uses the smart global order when saving the Codex menu", () => {
+    const groups = buildDraftGroups({
+      first: provider(
+        "first",
+        [
+          { model: "claude-opus-5", displayName: "Opus 5" },
+          { model: "claude-opus-4-7", displayName: "Opus 4.7" },
+        ],
+        0,
+      ),
+      second: provider(
+        "second",
+        [{ model: "claude-opus-4-8", displayName: "Opus 4.8" }],
+        1,
+      ),
+    });
+
+    expect(
+      entriesForMenuSave(groups, true).map((entry) => entry.model.model),
+    ).toEqual(["claude-opus-4-7", "claude-opus-4-8", "claude-opus-5"]);
   });
 
   it("groups providers by their first menu position and models within each provider", () => {

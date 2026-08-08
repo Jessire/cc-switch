@@ -214,6 +214,20 @@ export function applySmartSort(
     );
 }
 
+export function entriesForMenuSave(
+  groups: DraftProviderGroup[],
+  smartSorted: boolean,
+): DraftModelEntry[] {
+  if (!smartSorted) return flattenDraftGroups(groups);
+  const entriesByKey = new Map(
+    flattenDraftGroups(groups).map((entry) => [entry.key, entry]),
+  );
+  return buildSmartSortPreview(groups).flatMap((item) => {
+    const entry = entriesByKey.get(item.entryKey);
+    return entry ? [entry] : [];
+  });
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
