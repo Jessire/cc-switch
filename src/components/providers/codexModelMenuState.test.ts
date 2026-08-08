@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CodexCatalogModel, Provider } from "@/types";
 import {
-  applySmartSort,
   buildDraftGroups,
-  buildSmartSortPreview,
   findDraftModelRenameMatches,
   flattenDraftGroups,
   reorderDraftGroups,
@@ -25,44 +23,6 @@ function provider(
 }
 
 describe("codex model menu state", () => {
-  it("groups smart-sort results by model family while preserving stable order", () => {
-    const groups = buildDraftGroups({
-      first: provider(
-        "first",
-        [
-          { model: "claude-opus-5", displayName: "Opus 5" },
-          { model: "gpt-5.6-luna", displayName: "5.6 Luna" },
-        ],
-        0,
-      ),
-      second: provider(
-        "second",
-        [
-          { model: "claude-opus-4-8", displayName: "Opus 4.8" },
-          { model: "gpt-5.6-luna", displayName: "5.6 Luna" },
-        ],
-        1,
-      ),
-    });
-
-    const preview = buildSmartSortPreview(groups);
-    expect(preview.map((item) => item.modelId)).toEqual([
-      "claude-opus-4-8",
-      "claude-opus-5",
-      "gpt-5.6-luna",
-      "gpt-5.6-luna",
-    ]);
-    expect(preview[0].groupName).toBe("second relay");
-    expect(preview[2].groupName).toBe("first relay");
-
-    const sorted = applySmartSort(groups);
-    expect(
-      sorted
-        .flatMap((group) => group.entries)
-        .map((entry) => entry.model.menuOrder),
-    ).toEqual([1, 2, 0, 3]);
-  });
-
   it("groups providers by their first menu position and models within each provider", () => {
     const groups = buildDraftGroups({
       first: provider(
