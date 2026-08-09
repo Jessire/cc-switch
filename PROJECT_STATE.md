@@ -53,9 +53,9 @@
 ## 当前构建、发布和运行实例
 
 - v3.19.7 上游合并提交: `9de4561a31330ce1eb2b5fcc7aac253c44439d49` (`Merge upstream and release v3.19.7`). 合并基于 `origin/main` `413c09e0790c304506888ae24b9be72820aca126`,冲突块按 Jessire 要求保留定制实现,同文件非冲突上游改动保留.
-- 本轮 Windows x64 Release 构建产物: `C:\Users\jery3\.codex\tmp\cc-switch-release-3197\release\cc-switch.exe`; 文件版本 `3.19.7`, PE32+ x64 Windows GUI, 大小 `33,013,248` bytes, SHA256 `11B008897E9082AF13D9E94B96D621B1BE7F04A43BDF93EF6F76A96B57313B2B`.
+- 当前标准 Windows x64 Release 产物: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.7`, PE32+ x64 Windows GUI, 大小 `33,013,248` bytes, SHA256 `11B008897E9082AF13D9E94B96D621B1BE7F04A43BDF93EF6F76A96B57313B2B`.
 - 最新 GitHub Release: `v3.19.7`,标签指向提交 `9de4561a31330ce1eb2b5fcc7aac253c44439d49`; Release 资产为 `CC-Switch-v3.19.7-Windows-x64.exe`,大小 `33,013,248` bytes,SHA256 `11B008897E9082AF13D9E94B96D621B1BE7F04A43BDF93EF6F76A96B57313B2B`. GitHub 下载回读已匹配.
-- 当前运行实例: PID `9280` 运行 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.5`. 本轮未停止当前 CC Switch/WorkBuddy Desktop,未触碰数据库、配置和客户端真实配置.
+- 当前运行实例: PID `11104` 运行 `D:\Download\CC-Switch-v3.19.7-Windows-x64.exe`; 文件版本 `3.19.7`, SHA256 `11B008897E9082AF13D9E94B96D621B1BE7F04A43BDF93EF6F76A96B57313B2B`. 标准路径 EXE 已覆盖为同一构建;未触碰数据库、配置和客户端真实配置.
 - 2026-08-02 已删除仓库外 `cc-switch-build`, `.codex\tmp` 中的 CC Switch EXE/回滚副本/临时脚本/日志/截图/隔离数据, 以及标准构建的 `deps`, `build`, `.fingerprint` 等可重建中间物; 保留 `node_modules` 和正在运行的标准 Release EXE. 清理后 C: 可用空间 `101.24 GB`, D: 可用空间 `564.40 GB`.
 
 ## 已完成验证
@@ -63,7 +63,7 @@
 - v3.19.0 合并后已通过 `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm format:check`, `pnpm exec vitest run tests/components/ProviderCardLayout.test.ts`, `pnpm test:unit`, `pnpm build:renderer`, `cargo fmt --check`, `cargo test responses_tool_filter --lib`, `cargo test codex_model --lib`, `cargo test universal_provider --lib`, `cargo test --lib` 和 `pnpm tauri build --no-bundle`.
 - 2026-08-09 上游合并与 3.19.7 版本已通过 `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm format:check`, 全量 Vitest, `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, Rust `cargo test --manifest-path src-tauri/Cargo.toml --lib` (2372 passed, 5 ignored) 和 `pnpm tauri build --no-bundle`.
 - 2026-08-09 旁路 Release 已核验版本 `3.19.7`, PE32+ `machine (x64)`, Windows GUI subsystem,大小 `33,013,248` bytes,SHA256 `11B008897E9082AF13D9E94B96D621B1BE7F04A43BDF93EF6F76A96B57313B2B`.
-- 2026-08-09 GitHub `v3.19.7` Release 资产已下载回读,大小与 SHA256 均和本地构建产物一致.
+- 2026-08-09 GitHub `v3.19.7` Release 资产已下载回读,大小与 SHA256 均和本地构建产物一致;本轮已删除 `C:\Users\jery3\.codex\tmp\cc-switch-release-3197` 旁路构建目录及其下载副本.
 - Windows Release 已使用独立应用标识和隔离数据库副本实际启动验证: 主窗口无白屏, 供应商卡片维持单排布局, 操作按钮默认悬停显示, 顶部应用切换器按可用宽度统一收缩. 隔离实例已退出并清理.
 - 本轮模型菜单改动已通过 `pnpm format:check`, `pnpm typecheck`, `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts` (6 项), `git diff --check` 和 `pnpm tauri build --no-bundle`; 多行模型组新增本地展开/折叠, 不改变排序、勾选或保存数据. Release 产物版本、大小和 SHA256 已核验.
 - 本轮模型菜单视觉调整已通过 `pnpm typecheck`, `pnpm format:check`, 全量 `pnpm test:unit`, `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts`, `pnpm build:renderer` 和 `pnpm tauri build --no-bundle`; Release 产物版本 `3.19.0`, SHA256 已核验. 因已有 PID `29324` 占用正式单实例锁, 新产物未能启动进行窗口级视觉复核, 未结束该已有实例.
