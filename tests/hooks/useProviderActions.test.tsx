@@ -10,12 +10,10 @@ const toastErrorMock = vi.fn();
 const toastInfoMock = vi.fn();
 const toastWarningMock = vi.fn();
 const autoRestartEnabledMock = vi.fn(() => false);
-const groupRestartSuppressedMock = vi.fn(() => true);
 const clientRestartMock = vi.fn();
 
 vi.mock("@/components/providers/AutoRestartToggle", () => ({
   isAutoRestartClientEnabled: () => autoRestartEnabledMock(),
-  isGroupRestartSuppressed: () => groupRestartSuppressedMock(),
 }));
 
 vi.mock("@/lib/api/clientRestart", () => ({
@@ -139,8 +137,6 @@ beforeEach(() => {
   toastWarningMock.mockReset();
   autoRestartEnabledMock.mockReset();
   autoRestartEnabledMock.mockReturnValue(false);
-  groupRestartSuppressedMock.mockReset();
-  groupRestartSuppressedMock.mockReturnValue(true);
   clientRestartMock.mockReset();
 
   addProviderMutation.isPending = false;
@@ -218,10 +214,17 @@ describe("useProviderActions", () => {
     );
   });
 
-  it("does not restart the client when switching inside a custom group", async () => {
+  it("restarts when switching inside a custom group after legacy suppression was removed", async () => {
     autoRestartEnabledMock.mockReturnValue(true);
-    groupRestartSuppressedMock.mockReturnValue(true);
     switchProviderMutateAsync.mockResolvedValueOnce(undefined);
+    clientRestartMock.mockResolvedValueOnce({
+      app: "codex",
+      killed: true,
+      killAttempts: 1,
+      launched: true,
+      supported: true,
+      message: "restarted",
+    });
     const { wrapper } = createWrapper();
     const provider = createProvider({ category: "custom" });
 
@@ -236,10 +239,13 @@ describe("useProviderActions", () => {
     });
 
     expect(switchProviderMutateAsync).toHaveBeenCalledWith(provider.id);
-    expect(clientRestartMock).not.toHaveBeenCalled();
-    expect(toastSuccessMock).toHaveBeenCalledWith("切换成功！", {
-      closeButton: true,
-    });
+    expect(clientRestartMock).toHaveBeenCalledWith("codex");
+    expect(toastSuccessMock).toHaveBeenCalledWith(
+      "切换成功，已自动重启客户端：restarted",
+      {
+        closeButton: true,
+      },
+    );
   });
 
   it("restarts the client after a provider switch when enabled", async () => {

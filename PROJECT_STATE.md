@@ -4,13 +4,13 @@
 
 ## 状态快照
 
-- 更新时间: 2026-08-04, Asia/Shanghai.
+- 更新时间: 2026-08-09, Asia/Shanghai.
 - 工作目录: `D:\文件\Agenc Cli\cc-switch`.
 - 当前主线: `main`, 跟踪 `fork/main`.
 - 用户仓库: `fork`, `https://github.com/Jessire/cc-switch.git`.
 - 上游仓库: `origin`, `https://github.com/farion1231/cc-switch.git`.
-- 最近一次已核验的上游基线: `origin/main` 的 v3.19.0 提交 `3c1154bed95a9e7cc8fe8664f046cde5560141a0`.
-- 最近一次已核验的远端 `fork/main`: `5d79b6bf02291037f4de39bdbc198dcbb46d1b0f`. 后续本地文档提交是否已推送必须以当次 Git 复核为准.
+- 最近一次已核验的上游基线: `origin/main` 提交 `413c09e0790c304506888ae24b9be72820aca126`,包含 v3.19.2 及其后续 Codex catalog 修复.
+- 最近一次已核验的远端 `fork/main`: `55f96bffd9208eaa9542e654b031b0fd869c4824`. 后续本地文档提交是否已推送必须以当次 Git 复核为准.
 
 ## 已实现的个人定制
 
@@ -52,15 +52,16 @@
 
 ## 当前构建、发布和运行实例
 
-- v3.19.0 上游合并提交: `c1522aff3643752e90dd62425b4f6b3eedbb6ac9` (`Merge upstream v3.19.0`). 冲突文件 `src/App.tsx` 与 `src/components/AppSwitcher.tsx` 保留定制版自动紧凑行为, 其余上游有效改动已合并.
-- 最近一次正式本地 Windows x64 Release 构建产物: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.5`, x64, 大小 `32,754,688` bytes, SHA256 `18DA89AA7B6D62E16E9FE5030DC667A66EE206BF29BD07290E72DC0F77C59B0D`. 本次构建未检测到正在运行的 `cc-switch` 进程,未中断用户会话.
-- 最新 GitHub Release: `v3.19.5`, 标签指向 `aac15a48b3e33309732c00dba3e69611ebf1ccd8`; Release 资产为 `CC-Switch-v3.19.5-Windows-x64.exe`, 大小 `32,754,688` bytes, SHA256 `CDC70363F83FF99C4105256C3ED1A85DB0949613CFA9C2413453D07E7DEE70E0`.
-- 当前运行实例: PID `20456` 运行 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.5`, SHA256 `18DA89AA7B6D62E16E9FE5030DC667A66EE206BF29BD07290E72DC0F77C59B0D`. 本轮未停止当前 CC Switch/WorkBuddy Desktop, 未触碰数据库、配置和客户端真实配置.
+- v3.19.7 上游合并提交将在本轮本地提交后生成;合并基于 `origin/main` `413c09e0790c304506888ae24b9be72820aca126`,冲突块按 Jessire 要求保留定制实现,同文件非冲突上游改动保留.
+- 本轮 Windows x64 Release 构建产物: `C:\Users\jery3\.codex\tmp\cc-switch-release-3197\release\cc-switch.exe`; 文件版本 `3.19.7`, PE32+ x64 Windows GUI, 大小 `33,013,248` bytes, SHA256 `11B008897E9082AF13D9E94B96D621B1BE7F04A43BDF93EF6F76A96B57313B2B`.
+- 当前运行实例: PID `9280` 运行 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.5`. 本轮未停止当前 CC Switch/WorkBuddy Desktop,未触碰数据库、配置和客户端真实配置.
 - 2026-08-02 已删除仓库外 `cc-switch-build`, `.codex\tmp` 中的 CC Switch EXE/回滚副本/临时脚本/日志/截图/隔离数据, 以及标准构建的 `deps`, `build`, `.fingerprint` 等可重建中间物; 保留 `node_modules` 和正在运行的标准 Release EXE. 清理后 C: 可用空间 `101.24 GB`, D: 可用空间 `564.40 GB`.
 
 ## 已完成验证
 
 - v3.19.0 合并后已通过 `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm format:check`, `pnpm exec vitest run tests/components/ProviderCardLayout.test.ts`, `pnpm test:unit`, `pnpm build:renderer`, `cargo fmt --check`, `cargo test responses_tool_filter --lib`, `cargo test codex_model --lib`, `cargo test universal_provider --lib`, `cargo test --lib` 和 `pnpm tauri build --no-bundle`.
+- 2026-08-09 上游合并与 3.19.7 版本已通过 `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm format:check`, 全量 Vitest, `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, Rust `cargo test --manifest-path src-tauri/Cargo.toml --lib` (2372 passed, 5 ignored) 和 `pnpm tauri build --no-bundle`.
+- 2026-08-09 旁路 Release 已核验版本 `3.19.7`, PE32+ `machine (x64)`, Windows GUI subsystem,大小 `33,013,248` bytes,SHA256 `11B008897E9082AF13D9E94B96D621B1BE7F04A43BDF93EF6F76A96B57313B2B`.
 - Windows Release 已使用独立应用标识和隔离数据库副本实际启动验证: 主窗口无白屏, 供应商卡片维持单排布局, 操作按钮默认悬停显示, 顶部应用切换器按可用宽度统一收缩. 隔离实例已退出并清理.
 - 本轮模型菜单改动已通过 `pnpm format:check`, `pnpm typecheck`, `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts` (6 项), `git diff --check` 和 `pnpm tauri build --no-bundle`; 多行模型组新增本地展开/折叠, 不改变排序、勾选或保存数据. Release 产物版本、大小和 SHA256 已核验.
 - 本轮模型菜单视觉调整已通过 `pnpm typecheck`, `pnpm format:check`, 全量 `pnpm test:unit`, `pnpm exec vitest run src/components/providers/codexModelMenuState.test.ts`, `pnpm build:renderer` 和 `pnpm tauri build --no-bundle`; Release 产物版本 `3.19.0`, SHA256 已核验. 因已有 PID `29324` 占用正式单实例锁, 新产物未能启动进行窗口级视觉复核, 未结束该已有实例.
@@ -83,7 +84,7 @@
 ## 未完成边界与回归重点
 
 - 为保护正在进行的 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启, 未在真实 Desktop 会话中验证第三方模型菜单读取和对话级路由.
-- 正式实例已切换到标准 Release `3.19.5` 并保持运行; `ccswitch` 协议注册已指向该 EXE. 使用测试 provider deep link 实际打开导入确认页并取消, 数据库中未产生 `DeepLink Path Probe` 记录; 未重复执行其他功能或 UI 回归.
+- 正式实例仍为标准 Release `3.19.5` 并保持运行;本轮只构建了旁路 `3.19.7`,未停止或替换正式实例,也未做新版本窗口级 GUI 验证. `ccswitch` 协议注册未在本轮改动.
 - 对话级供应商路由仍需在至少两个 Codex Desktop 对话中选择不同 `供应商 - 模型`, 发起真实请求并核对代理日志的供应商及剥离后的上游模型.
 - 本轮清理未停止当前 CC Switch/WorkBuddy Desktop. 旧 `useProviderActions` 测试中的“同组不重启”断言与本轮明确删除的功能冲突,未按旧语义回退. 影响托盘、deep link、分组、重启、模型菜单、代理路由或通用配置的后续改动, 必须按对应真实 Windows 行为重新验证, 不得只凭构建通过收口.
 
