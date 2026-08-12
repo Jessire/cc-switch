@@ -4,13 +4,13 @@
 
 ## 状态快照
 
-- 更新时间: 2026-08-09, Asia/Shanghai.
+- 更新时间: 2026-08-12, Asia/Shanghai.
 - 工作目录: `D:\文件\Agenc Cli\cc-switch`.
 - 当前主线: `main`, 跟踪 `fork/main`.
 - 用户仓库: `fork`, `https://github.com/Jessire/cc-switch.git`.
 - 上游仓库: `origin`, `https://github.com/farion1231/cc-switch.git`.
 - 最近一次已核验的上游基线: `origin/main` 提交 `413c09e0790c304506888ae24b9be72820aca126`,包含 v3.19.2 及其后续 Codex catalog 修复.
-- 最近一次已核验的远端 `fork/main`: `55f96bffd9208eaa9542e654b031b0fd869c4824`. 后续本地文档提交是否已推送必须以当次 Git 复核为准.
+- 最近一次已核验的远端 `fork/main`: `92ad034df18d0b74462b42165464914e2882185f`. 当前本地 `main` 含尚未推送提交; 后续是否已推送必须以当次 Git 复核为准.
 
 ## 已实现的个人定制
 
@@ -23,6 +23,7 @@
 ### 切换与客户端重启
 
 - 保存编辑不启用供应商也不重启客户端; 顶部循环箭头用于手动重启当前客户端.
+- 普通 Codex 模型菜单保存只写入配置且不重启; 智能排序视图保存时才按“保存智能菜单后自动重启 Codex”开关决定是否重启.
 - 自动重启仅在成功切换后生效; 同组供应商共享任一自定义分组时可跳过重启.
 - Windows 重启仅处理对应客户端的 UI 主进程, 静默执行, 不使用 `taskkill /T`; 仅检测到新进程才返回启动成功.
 
@@ -35,11 +36,12 @@
 - Codex 模型编辑支持 `372K`、`500K`、`1M` 上下文快捷值; GPT-5.6 默认 `372000`, Claude 和国产模型默认 `1000000`, Grok 默认 `500000`, 仅在上下文窗口为空时自动填充. 所有模型禁用后保留供应商收藏,主页以淡色星标表示未启用.
 - Codex 模型菜单支持原始排序与智能排序结果切换查看; 原始视图保留供应商卡片,智能视图改为跨供应商全局模型列表,同型号节点连续排列并显示所属短分组,保存时按当前视图写入.
 - 智能视图保存时按全局列表顺序写入 `menuOrder`,不再按原供应商卡片顺序写入;Codex 菜单实际顺序与智能排序视图一致.
+- 获取最新模型列表后会提示已添加但本次缺失的模型 ID; 当前配置保持不变, 不自动停用、取消勾选、删除或替换这些模型.
 - Codex 对话可独立选择供应商和模型; 代理在出站前恢复真实模型 ID, 不切换 CC Switch 全局供应商.
 
 ### 主界面、更新、托盘和导入
 
-- 顶部宽度足够时 Codex 和 Grok Build 仅显示图标, 其他应用保留图标和名称; 宽度不足时应用切换器统一折叠为图标.
+- 顶部宽度足够时 Codex 和 Grok Build 仅显示图标, 其他应用保留图标和名称; 宽度不足时应用切换器统一折叠为图标. 顶部工具栏整体靠右对齐; 隔离测试中全应用开启会超宽, 用户实际配置不会触发, 保留现有紧凑模式处理.
 - 供应商卡片保持单排自然流布局: 头像、名称、收藏、分组、状态和蓝色官网链接紧凑衔接, 卡片操作仅悬停显示.
 - 分组头像映射: `GPT/OpenAI -> openai`, `Grok/xAI -> grok`, `Claude/Anthropic -> claude`, `国模/国产 -> kimi`; 未识别时回退供应商图标或首字头像.
 - 正常运行不检查官方应用更新; 设置页移除应用检查、下载、安装和 Release Notes 入口, 但保留数据库不兼容恢复链路和 Skill 更新能力.
@@ -55,7 +57,8 @@
 - v3.19.7 上游合并提交: `9de4561a31330ce1eb2b5fcc7aac253c44439d49` (`Merge upstream and release v3.19.7`). 合并基于 `origin/main` `413c09e0790c304506888ae24b9be72820aca126`,冲突块按 Jessire 要求保留定制实现,同文件非冲突上游改动保留.
 - 当前标准 Windows x64 Release 产物: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.7`, PE32+ x64 Windows GUI, 大小 `33,013,248` bytes, SHA256 `11B008897E9082AF13D9E94B96D621B1BE7F04A43BDF93EF6F76A96B57313B2B`.
 - 最新 GitHub Release: `v3.19.7`,标签指向提交 `9de4561a31330ce1eb2b5fcc7aac253c44439d49`; Release 资产为 `CC-Switch-v3.19.7-Windows-x64.exe`,大小 `33,013,248` bytes,SHA256 `11B008897E9082AF13D9E94B96D621B1BE7F04A43BDF93EF6F76A96B57313B2B`. GitHub 下载回读已匹配.
-- 当前运行实例: PID `11104` 运行 `D:\Download\CC-Switch-v3.19.7-Windows-x64.exe`; 文件版本 `3.19.7`, SHA256 `11B008897E9082AF13D9E94B96D621B1BE7F04A43BDF93EF6F76A96B57313B2B`. 标准路径 EXE 已覆盖为同一构建;未触碰数据库、配置和客户端真实配置.
+- 当前正式运行实例: PID `15524` 运行 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.7`,大小 `33,013,248` bytes,SHA256 `11B008897E9082AF13D9E94B96D621B1BE7F04A43BDF93EF6F76A96B57313B2B`. 本轮未停止或覆盖该实例.
+- 本轮模型菜单候选 EXE: `C:\Users\jery3\.codex\tmp\CC-Switch-Model-Menu-New\CC Switch-New.exe`; 文件版本 `3.19.7`, PE32+ x64 Windows GUI,大小 `33,013,248` bytes,SHA256 `0E6B0A41818EC86DCC0F301A55229735A82DA9F6C490251EFF1340FA8DE161C3`. 隔离验证进程和唯一临时 Cargo target 已清理.
 - 2026-08-02 已删除仓库外 `cc-switch-build`, `.codex\tmp` 中的 CC Switch EXE/回滚副本/临时脚本/日志/截图/隔离数据, 以及标准构建的 `deps`, `build`, `.fingerprint` 等可重建中间物; 保留 `node_modules` 和正在运行的标准 Release EXE. 清理后 C: 可用空间 `101.24 GB`, D: 可用空间 `564.40 GB`.
 
 ## 已完成验证
@@ -82,11 +85,12 @@
 - 2026-08-08 智能排序无视觉变化修复已通过模型菜单单测 7/7, `pnpm typecheck`, `pnpm format:check` 和 `git diff --check`; 标准 Windows x64 Release 已覆盖,版本 `3.19.5`,大小 `32,758,784` bytes,SHA256 `F7F92B5BF3CE42B4E00D611590D6A6EF95A3C244F2C34562EDB462019E550667`.
 - 2026-08-08 跨供应商智能排序视图已通过模型菜单单测 7/7, `pnpm typecheck`, `pnpm format:check`, `git diff --check`, 标准 Windows x64 Release 构建和实际 GUI 验证. 智能视图中 `opus-4.7`、`opus-4.8`、`opus-5` 的不同供应商节点连续排列,切回原始排序恢复供应商卡片;未点击保存,真实配置未改动. 标准 EXE 版本 `3.19.5`,大小 `32,758,784` bytes,SHA256 `E6A3BC50A05958BED21D9C15610D9A17C76D9FB5C172A803DA03220968CA71B6`,当前运行实例为标准 Release 路径.
 - 2026-08-08 智能视图保存顺序修复已通过模型菜单单测 8/8, `pnpm typecheck`, `pnpm format:check` 和 `git diff --check`; 标准 Windows x64 Release 已覆盖,版本 `3.19.5`,大小 `32,758,784` bytes,SHA256 `409849E44E4E1A12E5B9A8B2AB45637E9619BA4287F1B480D985025F7069B77C`.
+- 2026-08-12 模型菜单保存/重启语义、模型缺失提醒、自动重启菜单布局和顶部工具栏右对齐已通过 `pnpm format:check`, `pnpm typecheck`, 全量 `pnpm test:unit`, 直接相关 Vitest 11/11, `pnpm build:renderer`, `git diff --check` 和 Windows x64 Release 增量编译. 独立应用标识与隔离数据库的实际 Release GUI 已确认菜单宽度、两行文案和正常宽度下右对齐; 全应用开启的隔离测试态会超宽, 用户确认实际配置不会出现. 未读取或修改正式数据库.
 
 ## 未完成边界与回归重点
 
 - 为保护正在进行的 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启, 未在真实 Desktop 会话中验证第三方模型菜单读取和对话级路由.
-- 正式实例仍为标准 Release `3.19.5` 并保持运行;本轮只构建了旁路 `3.19.7`,未停止或替换正式实例,也未做新版本窗口级 GUI 验证. `ccswitch` 协议注册未在本轮改动.
+- 正式实例仍为标准 Release `3.19.7` 并保持运行; 本轮候选 `3.19.7` 仅保存在独立交付目录, 未停止或替换正式实例. 已完成隔离 Release GUI 验证, 但未用真实供应商凭据现场执行 `/models` 获取, 模型缺失提醒以纯逻辑测试覆盖. `ccswitch` 协议注册未在本轮改动.
 - 对话级供应商路由仍需在至少两个 Codex Desktop 对话中选择不同 `供应商 - 模型`, 发起真实请求并核对代理日志的供应商及剥离后的上游模型.
 - 本轮清理未停止当前 CC Switch/WorkBuddy Desktop. 旧 `useProviderActions` 测试中的“同组不重启”断言与本轮明确删除的功能冲突,未按旧语义回退. 影响托盘、deep link、分组、重启、模型菜单、代理路由或通用配置的后续改动, 必须按对应真实 Windows 行为重新验证, 不得只凭构建通过收口.
 

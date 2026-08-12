@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import {
+  AlertTriangle,
   ChevronDown,
   ChevronRight,
   Download,
@@ -57,6 +58,7 @@ import { CustomUserAgentField } from "./CustomUserAgentField";
 import { LocalProxyRequestOverridesField } from "./LocalProxyRequestOverridesField";
 import { cn } from "@/lib/utils";
 import { formatCodexModelDisplayName } from "@/utils/codexModelDisplay";
+import { findUnavailableConfiguredModelIds } from "@/utils/codexModelAvailability";
 import {
   CODEX_CONTEXT_WINDOW_PRESETS,
   getCodexContextWindowOrDefault,
@@ -471,6 +473,9 @@ export function CodexFormFields({
   const { t } = useTranslation();
 
   const [fetchedModels, setFetchedModels] = useState<FetchedModel[]>([]);
+  const [latestFetchedModelIds, setLatestFetchedModelIds] = useState<
+    string[] | null
+  >(null);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   // 拉取请求序号：请求身份（Base URL / 完整地址开关 / API Key / 自定义 UA）
   // 一变即自增，清空旧列表并作废在途响应——/models 结果可能按 Key 的模型
@@ -480,6 +485,7 @@ export function CodexFormFields({
   useEffect(() => {
     fetchModelsSeqRef.current += 1;
     setFetchedModels((prev) => (prev.length === 0 ? prev : []));
+    setLatestFetchedModelIds(null);
   }, [
     codexBaseUrl,
     isFullUrl,
@@ -593,6 +599,54 @@ export function CodexFormFields({
     [codexChatReasoning, onCodexChatReasoningChange],
   );
 
+  const unavailableConfiguredModelIds = useMemo(
+    () =>
+      latestFetchedModelIds === null
+        ? []
+        : findUnavailableConfiguredModelIds(
+            catalogRows,
+            latestFetchedModelIds.map((id) => ({ id })),
+          ),
+    [catalogRows, latestFetchedModelIds],
+  );
+
+  const handleFetchedModels = useCallback(
+    (models: FetchedModel[]) => {
+      setFetchedModels(models);
+      setLatestFetchedModelIds(models.map((model) => model.id));
+
+      const unavailableModelIds = findUnavailableConfiguredModelIds(
+        catalogRows,
+        models,
+      );
+      if (models.length === 0) {
+        toast.info(t("providerForm.fetchModelsEmpty"));
+      } else {
+        toast.success(
+          t("providerForm.fetchModelsSuccess", { count: models.length }),
+        );
+      }
+      if (unavailableModelIds.length > 0) {
+        toast.warning(
+          t("codexConfig.fetchedModelsMissingTitle", {
+            count: unavailableModelIds.length,
+            defaultValue: "{{count}} 个已添加模型不在本次获取的模型列表中",
+          }),
+          {
+            description: t("codexConfig.fetchedModelsMissingDescription", {
+              models: unavailableModelIds.join(", "),
+              defaultValue:
+                "缺失: {{models}}。已保留当前配置，不会自动停用或删除。",
+            }),
+            duration: 8000,
+            closeButton: true,
+          },
+        );
+      }
+    },
+    [catalogRows, t],
+  );
+
   const handleFetchModels = useCallback(() => {
     // xAI OAuth 托管预设：不走 base_url + key 的 /models 探测，
     // 直接用托管账号 token 拉取（与 Claude 表单同一后端命令）
@@ -610,14 +664,7 @@ export function CodexFormFields({
       fetchXaiOauthModels(selectedXaiAccountId ?? null)
         .then((models) => {
           if (seq !== fetchModelsSeqRef.current) return;
-          setFetchedModels(models);
-          if (models.length === 0) {
-            toast.info(t("providerForm.fetchModelsEmpty"));
-          } else {
-            toast.success(
-              t("providerForm.fetchModelsSuccess", { count: models.length }),
-            );
-          }
+          handleFetchedModels(models);
         })
         .catch((err) => {
           if (seq !== fetchModelsSeqRef.current) return;
@@ -646,14 +693,7 @@ export function CodexFormFields({
     )
       .then((models) => {
         if (seq !== fetchModelsSeqRef.current) return;
-        setFetchedModels(models);
-        if (models.length === 0) {
-          toast.info(t("providerForm.fetchModelsEmpty"));
-        } else {
-          toast.success(
-            t("providerForm.fetchModelsSuccess", { count: models.length }),
-          );
-        }
+        handleFetchedModels(models);
       })
       .catch((err) => {
         if (seq !== fetchModelsSeqRef.current) return;
@@ -669,6 +709,7 @@ export function CodexFormFields({
     isXaiOauthPreset,
     isXaiOauthAuthenticated,
     selectedXaiAccountId,
+    handleFetchedModels,
     t,
   ]);
 
@@ -967,6 +1008,28 @@ export function CodexFormFields({
               </Button>
             </div>
           </div>
+
+          {unavailableConfiguredModelIds.length > 0 && (
+            <div className="flex items-start gap-2 rounded-md border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:text-amber-200">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="min-w-0">
+                <p className="font-medium">
+                  {t("codexConfig.fetchedModelsMissingTitle", {
+                    count: unavailableConfiguredModelIds.length,
+                    defaultValue:
+                      "{{count}} 个已添加模型不在本次获取的模型列表中",
+                  })}
+                </p>
+                <p className="mt-0.5 break-words text-amber-800/90 dark:text-amber-100/85">
+                  {t("codexConfig.fetchedModelsMissingDescription", {
+                    models: unavailableConfiguredModelIds.join(", "),
+                    defaultValue:
+                      "缺失: {{models}}。已保留当前配置，不会自动停用或删除。",
+                  })}
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">

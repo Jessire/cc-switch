@@ -53,6 +53,7 @@ import {
   providerCatalogModels,
   reorderDraftGroups,
   reorderDraftModels,
+  shouldRestartCodexAfterMenuSave,
   type DraftModelEntry,
   type DraftModelRenameMatch,
   type DraftProviderGroup,
@@ -657,7 +658,12 @@ export function CodexModelMenuDialog({
         await providersApi.update(provider, "codex");
       }
       await queryClient.invalidateQueries({ queryKey: ["providers", "codex"] });
-      if (isCodexModelMenuAutoRestartEnabled()) {
+      if (
+        shouldRestartCodexAfterMenuSave(
+          isSmartSortView,
+          isCodexModelMenuAutoRestartEnabled(),
+        )
+      ) {
         const restartResult = await clientRestartApi.restart("codex");
         if (restartResult.launched) {
           toast.success("模型菜单已保存,已重启 Codex");

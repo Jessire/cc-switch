@@ -1294,10 +1294,10 @@ function App() {
           <div className="flex flex-1 min-w-0 items-center justify-end gap-1.5">
             <div
               ref={toolbarRef}
-              className="flex flex-1 min-w-0 overflow-x-hidden items-center py-4 pr-2"
+              className="flex flex-1 min-w-0 items-center overflow-x-hidden py-4 pr-2"
             >
               <div
-                className="flex shrink-0 items-center gap-1.5"
+                className="ml-auto flex shrink-0 items-center gap-1.5"
                 style={{ WebkitAppRegion: "no-drag" } as any}
               >
                 {currentView === "prompts" && (

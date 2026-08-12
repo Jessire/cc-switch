@@ -262,6 +262,10 @@
     "options": {
       "aria": "自動再起動オプション"
     },
+    "codexModelMenu": {
+      "title": "スマートメニュー保存後",
+      "description": "Codex を自動再起動"
+    },
     "manual": {
       "aria": "{{app}} を今すぐ再起動",
       "tooltip": "{{app}} を今すぐ再起動",
@@ -1439,6 +1443,8 @@
     "modelAndProvider": "モデル / プロバイダー",
     "noFavoriteModels": "プロバイダーをお気に入りにすると、設定済みモデルがここに表示されます。",
     "modelMenuSaved": "Codex モデルメニューを更新しました",
+    "fetchedModelsMissingTitle": "追加済みモデル {{count}} 件が今回の取得一覧にありません",
+    "fetchedModelsMissingDescription": "見つからないモデル: {{models}}。現在の設定は保持され、自動的な無効化や削除は行いません。",
     "modelMenuSaveFailed": "Codex モデルメニューの保存に失敗しました: {{error}}",
     "addCatalogModel": "手動で追加",
     "availableModels": "利用可能なモデル",

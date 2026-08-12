@@ -9,6 +9,7 @@ import {
   flattenDraftGroups,
   reorderDraftGroups,
   reorderDraftModels,
+  shouldRestartCodexAfterMenuSave,
 } from "./codexModelMenuState";
 
 function provider(
@@ -62,6 +63,12 @@ describe("codex model menu state", () => {
         .flatMap((group) => group.entries)
         .map((entry) => entry.model.menuOrder),
     ).toEqual([0, 3, 1, 2]);
+  });
+
+  it("restarts only after saving the smart-sorted menu", () => {
+    expect(shouldRestartCodexAfterMenuSave(false, true)).toBe(false);
+    expect(shouldRestartCodexAfterMenuSave(true, false)).toBe(false);
+    expect(shouldRestartCodexAfterMenuSave(true, true)).toBe(true);
   });
 
   it("uses the smart global order when saving the Codex menu", () => {

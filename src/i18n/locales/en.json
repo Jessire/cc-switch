@@ -268,7 +268,8 @@
       "aria": "Automatic restart options"
     },
     "codexModelMenu": {
-      "menu": "Restart Codex after saving the model menu"
+      "title": "After saving the smart menu",
+      "description": "Restart Codex automatically"
     },
     "manual": {
       "aria": "Restart {{app}} now",
@@ -1447,6 +1448,8 @@
     "modelAndProvider": "Model / provider",
     "noFavoriteModels": "Favorite a provider to manage its configured models here.",
     "modelMenuSaved": "Codex model menu updated",
+    "fetchedModelsMissingTitle": "{{count}} added model(s) are missing from the latest fetched list",
+    "fetchedModelsMissingDescription": "Missing: {{models}}. The current configuration was kept and nothing was disabled or removed.",
     "modelMenuSaveFailed": "Failed to save Codex model menu: {{error}}",
     "addCatalogModel": "Add Manually",
     "availableModels": "Available Models",

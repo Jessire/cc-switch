@@ -262,6 +262,10 @@
     "options": {
       "aria": "自動重啟選項"
     },
+    "codexModelMenu": {
+      "title": "儲存智慧選單後",
+      "description": "自動重新啟動 Codex"
+    },
     "manual": {
       "aria": "立即重新啟動 {{app}}",
       "tooltip": "立即重新啟動 {{app}}",
@@ -1434,6 +1438,8 @@
     "modelAndProvider": "模型 / 供應商",
     "noFavoriteModels": "收藏供應商後，已設定的模型會顯示在這裡。",
     "modelMenuSaved": "Codex 模型選單已更新",
+    "fetchedModelsMissingTitle": "{{count}} 個已新增模型不在本次取得的模型清單中",
+    "fetchedModelsMissingDescription": "缺少: {{models}}。已保留目前設定，不會自動停用或刪除。",
     "modelMenuSaveFailed": "Codex 模型選單儲存失敗: {{error}}",
     "addCatalogModel": "手動新增",
     "availableModels": "可用模型",

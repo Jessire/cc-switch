@@ -214,6 +214,13 @@ export function applySmartSort(
     );
 }
 
+export function shouldRestartCodexAfterMenuSave(
+  smartSorted: boolean,
+  restartEnabled: boolean,
+): boolean {
+  return smartSorted && restartEnabled;
+}
+
 export function entriesForMenuSave(
   groups: DraftProviderGroup[],
   smartSorted: boolean,

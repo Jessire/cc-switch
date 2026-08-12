@@ -65,7 +65,7 @@ export function isAutoRestartClientEnabled(): boolean {
   return readEnabled();
 }
 
-/** Read the Codex model-menu save restart toggle without React. */
+/** Read the smart Codex model-menu save restart toggle without React. */
 export function isCodexModelMenuAutoRestartEnabled(): boolean {
   return readCodexModelMenuRestartEnabled();
 }
@@ -223,17 +223,26 @@ export function AutoRestartToggle({
               <ChevronDown className="h-3.5 w-3.5" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64">
+          <DropdownMenuContent align="end" alignOffset={-18} className="w-56">
             <DropdownMenuCheckboxItem
               checked={codexModelMenuRestartEnabled}
               onCheckedChange={handleCodexModelMenuRestartToggle}
               disabled={!supported}
-              className="pl-8 pr-2"
+              className="min-h-14 items-start pl-8 pr-2 py-2"
             >
-              <Save className="h-4 w-4 text-muted-foreground" />
-              {t("autoRestart.codexModelMenu.menu", {
-                defaultValue: "保存模型菜单后自动重启 Codex",
-              })}
+              <Save className="mt-0.5 h-4 w-4 text-muted-foreground" />
+              <span className="grid min-w-0 gap-0.5 leading-5">
+                <span>
+                  {t("autoRestart.codexModelMenu.title", {
+                    defaultValue: "保存智能菜单后",
+                  })}
+                </span>
+                <span>
+                  {t("autoRestart.codexModelMenu.description", {
+                    defaultValue: "自动重启 Codex",
+                  })}
+                </span>
+              </span>
             </DropdownMenuCheckboxItem>
           </DropdownMenuContent>
         </DropdownMenu>
