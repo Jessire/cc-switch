@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CodexCatalogModel, Provider } from "@/types";
 import {
+  applyDraftModelDisplayNames,
   applySmartSort,
   buildDraftGroups,
   entriesForMenuSave,
@@ -117,6 +118,34 @@ describe("codex model menu state", () => {
     expect(
       flattenDraftGroups(groups).map((entry) => entry.model.model),
     ).toEqual(["second", "first-a", "first-b"]);
+  });
+
+  it("applies model display names without changing any other draft state", () => {
+    const groups = buildDraftGroups({
+      first: provider(
+        "first",
+        [
+          { model: "first-a", displayName: "First A", enabled: false },
+          { model: "first-b", displayName: "First B", menuOrder: 1 },
+        ],
+        0,
+      ),
+    });
+    const firstEntry = groups[0].entries[0];
+    const secondEntry = groups[0].entries[1];
+
+    const updated = applyDraftModelDisplayNames(
+      groups,
+      new Map([[firstEntry.key, "Renamed A"]]),
+    );
+
+    expect(updated[0].entries[0].model).toMatchObject({
+      model: "first-a",
+      displayName: "Renamed A",
+      enabled: false,
+    });
+    expect(updated[0].entries[1]).toBe(secondEntry);
+    expect(groups[0].entries[0].model.displayName).toBe("First A");
   });
 
   it("previews case-insensitive batch renames across provider groups", () => {

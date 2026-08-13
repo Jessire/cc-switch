@@ -123,6 +123,23 @@ export function flattenDraftGroups(
   return groups.flatMap((group) => group.entries);
 }
 
+export function applyDraftModelDisplayNames(
+  groups: DraftProviderGroup[],
+  displayNamesByKey: ReadonlyMap<string, string>,
+): DraftProviderGroup[] {
+  if (displayNamesByKey.size === 0) return groups;
+
+  return groups.map((group) => ({
+    ...group,
+    entries: group.entries.map((entry) => {
+      const displayName = displayNamesByKey.get(entry.key);
+      return displayName === undefined
+        ? entry
+        : { ...entry, model: { ...entry.model, displayName } };
+    }),
+  }));
+}
+
 function normalizeModelText(value: string): string {
   return value
     .toLocaleLowerCase()

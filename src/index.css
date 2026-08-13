@@ -178,8 +178,17 @@ html[data-window-active="false"] .status-heartbeat {
   display: none;
 }
 
+/*
+ * Tauri/WebView keeps focus on controls after pointer clicks. A global blue
+ * outline/ring therefore looked like a persistent selection border across
+ * buttons, menus, switches and form controls. Keep each component's existing
+ * hover, border and selected-state feedback, but suppress the extra focus box.
+ */
+*:focus,
 *:focus-visible {
-  @apply outline-2 outline-blue-500 outline-offset-2;
+  outline: none !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
 }
 
 @layer utilities {

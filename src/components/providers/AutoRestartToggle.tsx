@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, Loader2, RefreshCw, Save } from "lucide-react";
+import { ChevronDown, Loader2, RefreshCw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
@@ -223,15 +223,14 @@ export function AutoRestartToggle({
               <ChevronDown className="h-3.5 w-3.5" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" alignOffset={-18} className="w-56">
+          <DropdownMenuContent align="end" className="w-max min-w-0 p-1">
             <DropdownMenuCheckboxItem
               checked={codexModelMenuRestartEnabled}
               onCheckedChange={handleCodexModelMenuRestartToggle}
               disabled={!supported}
-              className="min-h-14 items-start pl-8 pr-2 py-2"
+              className="min-h-12 w-max items-center py-1.5 pl-2 pr-8 [&>span:first-child]:!left-auto [&>span:first-child]:right-2"
             >
-              <Save className="mt-0.5 h-4 w-4 text-muted-foreground" />
-              <span className="grid min-w-0 gap-0.5 leading-5">
+              <span className="grid min-w-0 gap-0 whitespace-nowrap leading-5">
                 <span>
                   {t("autoRestart.codexModelMenu.title", {
                     defaultValue: "保存智能菜单后",

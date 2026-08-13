@@ -4,7 +4,7 @@
 
 ## 状态快照
 
-- 更新时间: 2026-08-12, Asia/Shanghai.
+- 更新时间: 2026-08-13, Asia/Shanghai.
 - 工作目录: `D:\文件\Agenc Cli\cc-switch`.
 - 当前主线: `main`, 跟踪 `fork/main`.
 - 用户仓库: `fork`, `https://github.com/Jessire/cc-switch.git`.
@@ -86,6 +86,7 @@
 - 2026-08-08 跨供应商智能排序视图已通过模型菜单单测 7/7, `pnpm typecheck`, `pnpm format:check`, `git diff --check`, 标准 Windows x64 Release 构建和实际 GUI 验证. 智能视图中 `opus-4.7`、`opus-4.8`、`opus-5` 的不同供应商节点连续排列,切回原始排序恢复供应商卡片;未点击保存,真实配置未改动. 标准 EXE 版本 `3.19.5`,大小 `32,758,784` bytes,SHA256 `E6A3BC50A05958BED21D9C15610D9A17C76D9FB5C172A803DA03220968CA71B6`,当前运行实例为标准 Release 路径.
 - 2026-08-08 智能视图保存顺序修复已通过模型菜单单测 8/8, `pnpm typecheck`, `pnpm format:check` 和 `git diff --check`; 标准 Windows x64 Release 已覆盖,版本 `3.19.5`,大小 `32,758,784` bytes,SHA256 `409849E44E4E1A12E5B9A8B2AB45637E9619BA4287F1B480D985025F7069B77C`.
 - 2026-08-12 模型菜单保存/重启语义、模型缺失提醒、自动重启菜单布局和顶部工具栏右对齐已通过 `pnpm format:check`, `pnpm typecheck`, 全量 `pnpm test:unit`, 直接相关 Vitest 11/11, `pnpm build:renderer`, `git diff --check` 和 Windows x64 Release 增量编译. 独立应用标识与隔离数据库的实际 Release GUI 已确认菜单宽度、两行文案和正常宽度下右对齐; 全应用开启的隔离测试态会超宽, 用户确认实际配置不会出现. 未读取或修改正式数据库.
+- 2026-08-13 自动重启下拉菜单已改为按两行文案和右侧勾选自动收缩, 移除无关保存图标与两侧冗余留白, 选中勾选移动到下拉箭头正下方的右侧; 修复过度压缩导致的文案溢出重叠和固定宽度造成的中间空白. 已移除全局 `focus-visible` 蓝色描边和 Tailwind 焦点 ring, 保留控件原有 hover、边框、选中和禁用反馈. 批量模型改名在点击“重命名”后立即写入对应 Codex 供应商配置并刷新查询, 不再等待底部“保存”, 连续改名和后续底部保存均以最新持久化结果为基线; 排序、启用状态与菜单短分组继续沿用底部保存语义. 已通过相关 Vitest 10/10, `pnpm format:check`, `pnpm typecheck`, `pnpm build:renderer`, `git diff --check` 和 Windows x64 Release 构建. 实际标准 Release GUI 已确认菜单按内容收缩、两行文案完整、右侧勾选紧凑对齐、与下方分组栏无重叠, 下拉打开及关闭后均无蓝色焦点框. 标准 EXE 版本 `3.19.7`, 大小 `33,013,248` bytes, SHA256 `2A99BB2B1047130517CDB0F2621F66D5A6E74CB61BDC940D6D217FB4C8049184`, 当前运行实例为标准 Release 路径.
 
 ## 未完成边界与回归重点
 

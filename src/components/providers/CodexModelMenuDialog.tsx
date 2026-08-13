@@ -45,6 +45,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { syncCodexModelToCatalogFirst } from "@/components/providers/forms/ProviderForm";
 import {
   buildDraftGroups,
+  applyDraftModelDisplayNames,
   applySmartSort,
   buildSmartSortPreview,
   entriesForMenuSave,
@@ -55,7 +56,6 @@ import {
   reorderDraftModels,
   shouldRestartCodexAfterMenuSave,
   type DraftModelEntry,
-  type DraftModelRenameMatch,
   type DraftProviderGroup,
 } from "@/components/providers/codexModelMenuState";
 
@@ -377,10 +377,13 @@ export function CodexModelMenuDialog({
   >({});
   const [initialSnapshot, setInitialSnapshot] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
   const [renameFrom, setRenameFrom] = useState("");
   const [renameTo, setRenameTo] = useState("");
   const [isRenamePreviewOpen, setIsRenamePreviewOpen] = useState(false);
   const renamePreviewRef = useRef<HTMLDivElement>(null);
+  const wasOpenRef = useRef(false);
+  const persistedProvidersRef = useRef<Record<string, Provider>>({});
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -406,7 +409,14 @@ export function CodexModelMenuDialog({
   };
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      wasOpenRef.current = false;
+      return;
+    }
+    if (wasOpenRef.current) return;
+
+    wasOpenRef.current = true;
+    persistedProvidersRef.current = providers;
     const next = buildDraftGroups(providers);
     setGroups(next);
     setOriginalGroups(next);
@@ -482,27 +492,98 @@ export function CodexModelMenuDialog({
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [isRenamePreviewOpen]);
 
-  const handleBatchRename = () => {
-    if (!renameFrom.trim() || !renameMatches.length) return;
-    const matchesByKey = new Map<string, DraftModelRenameMatch>(
-      renameMatches.map((match) => [match.entryKey, match]),
+  const handleBatchRename = async () => {
+    if (isRenaming || !renameFrom.trim() || !renameMatches.length) return;
+
+    const displayNamesByKey = new Map<string, string>(
+      renameMatches.map((match) => [match.entryKey, match.after]),
+    );
+    const renamedGroups = applyDraftModelDisplayNames(
+      groups,
+      displayNamesByKey,
+    );
+    const changedProviderIds = new Set(
+      flattenDraftGroups(groups)
+        .filter((entry) => displayNamesByKey.has(entry.key))
+        .map((entry) => entry.providerId),
     );
 
-    setGroups((current) =>
-      current.map((group) => ({
-        ...group,
-        entries: group.entries.map((entry) => {
-          const match = matchesByKey.get(entry.key);
-          return match
-            ? { ...entry, model: { ...entry.model, displayName: match.after } }
-            : entry;
+    setIsRenaming(true);
+    try {
+      const changedProviders = renamedGroups
+        .filter((group) => changedProviderIds.has(group.providerId))
+        .flatMap((group) => {
+          const original = persistedProvidersRef.current[group.providerId];
+          if (!original) return [];
+
+          const models = providerCatalogModels(original).map((model) => ({
+            ...model,
+          }));
+          group.entries.forEach((entry) => {
+            const displayName = displayNamesByKey.get(entry.key);
+            if (displayName !== undefined) {
+              models[entry.modelIndex] = {
+                ...models[entry.modelIndex],
+                displayName,
+              };
+            }
+          });
+
+          const configText = original.settingsConfig.config;
+          return [
+            {
+              ...original,
+              settingsConfig: {
+                ...original.settingsConfig,
+                modelCatalog: {
+                  ...original.settingsConfig.modelCatalog,
+                  models,
+                },
+                ...(typeof configText === "string"
+                  ? {
+                      config: syncCodexModelToCatalogFirst(configText, models),
+                    }
+                  : {}),
+              },
+            },
+          ];
+        });
+
+      for (const provider of changedProviders) {
+        await providersApi.update(provider, "codex");
+      }
+      persistedProvidersRef.current = {
+        ...persistedProvidersRef.current,
+        ...Object.fromEntries(
+          changedProviders.map((provider) => [provider.id, provider]),
+        ),
+      };
+      await queryClient.invalidateQueries({ queryKey: ["providers", "codex"] });
+      setGroups(renamedGroups);
+      setOriginalGroups((current) =>
+        applyDraftModelDisplayNames(current, displayNamesByKey),
+      );
+      setInitialSnapshot((current) => {
+        const snapshot = JSON.parse(current) as DraftProviderGroup[];
+        return JSON.stringify(
+          applyDraftModelDisplayNames(snapshot, displayNamesByKey),
+        );
+      });
+      setRenameFrom("");
+      setRenameTo("");
+      setIsRenamePreviewOpen(false);
+      toast.success(
+        t("codexConfig.batchRenameApplied", { count: renameMatches.length }),
+      );
+    } catch (error) {
+      toast.error(
+        t("codexConfig.modelMenuSaveFailed", {
+          error: extractErrorMessage(error),
         }),
-      })),
-    );
-    setIsRenamePreviewOpen(false);
-    toast.success(
-      t("codexConfig.batchRenameApplied", { count: renameMatches.length }),
-    );
+      );
+    } finally {
+      setIsRenaming(false);
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -590,7 +671,7 @@ export function CodexModelMenuDialog({
       const nextByProvider = new Map<string, Provider>();
       const entriesToSave = entriesForMenuSave(groups, isSmartSortView);
       entriesToSave.forEach((entry, menuOrder) => {
-        const original = providers[entry.providerId];
+        const original = persistedProvidersRef.current[entry.providerId];
         if (!original) return;
         const group = groups.find(
           (item) => item.providerId === entry.providerId,
@@ -646,7 +727,8 @@ export function CodexModelMenuDialog({
         })
         .filter(
           (provider) =>
-            JSON.stringify(provider) !== JSON.stringify(providers[provider.id]),
+            JSON.stringify(provider) !==
+            JSON.stringify(persistedProvidersRef.current[provider.id]),
         )
         .sort((left, right) => {
           if (left.id === currentProviderId) return 1;
@@ -657,6 +739,12 @@ export function CodexModelMenuDialog({
       for (const provider of changed) {
         await providersApi.update(provider, "codex");
       }
+      persistedProvidersRef.current = {
+        ...persistedProvidersRef.current,
+        ...Object.fromEntries(
+          changed.map((provider) => [provider.id, provider]),
+        ),
+      };
       await queryClient.invalidateQueries({ queryKey: ["providers", "codex"] });
       if (
         shouldRestartCodexAfterMenuSave(
@@ -773,10 +861,16 @@ export function CodexModelMenuDialog({
               variant="outline"
               size="sm"
               onClick={handleBatchRename}
-              disabled={!renameFrom.trim() || renameMatches.length === 0}
+              disabled={
+                isRenaming || !renameFrom.trim() || renameMatches.length === 0
+              }
               className="h-10 shrink-0 rounded-md px-3 text-sm"
             >
-              {t("codexConfig.batchRenameAction")}
+              {isRenaming ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                t("codexConfig.batchRenameAction")
+              )}
             </Button>
 
             {isRenamePreviewOpen && (
