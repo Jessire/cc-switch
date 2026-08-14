@@ -35,7 +35,6 @@ import {
 } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import {
-  AlertTriangle,
   ChevronDown,
   ChevronRight,
   Download,
@@ -211,6 +210,7 @@ interface SortableCatalogModelRowProps {
   index: number;
   expanded: boolean;
   fetchedModels: FetchedModel[];
+  isUnavailable: boolean;
   onExpandedChange: () => void;
   onRemove: () => void;
   onUpdate: (index: number, patch: Partial<CodexCatalogModel>) => void;
@@ -221,6 +221,7 @@ function SortableCatalogModelRow({
   index,
   expanded,
   fetchedModels,
+  isUnavailable,
   onExpandedChange,
   onRemove,
   onUpdate,
@@ -278,6 +279,13 @@ function SortableCatalogModelRow({
         >
           <span className="block truncate text-sm font-medium">
             {displayName}
+            {isUnavailable && (
+              <span className="ml-2 text-xs font-normal text-amber-600 dark:text-amber-300">
+                {t("codexConfig.modelUnavailableInline", {
+                  defaultValue: "模型不存在",
+                })}
+              </span>
+            )}
           </span>
           <span className="block truncate text-xs text-muted-foreground">
             {row.model ||
@@ -1009,28 +1017,6 @@ export function CodexFormFields({
             </div>
           </div>
 
-          {unavailableConfiguredModelIds.length > 0 && (
-            <div className="flex items-start gap-2 rounded-md border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:text-amber-200">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <div className="min-w-0">
-                <p className="font-medium">
-                  {t("codexConfig.fetchedModelsMissingTitle", {
-                    count: unavailableConfiguredModelIds.length,
-                    defaultValue:
-                      "{{count}} 个已添加模型不在本次获取的模型列表中",
-                  })}
-                </p>
-                <p className="mt-0.5 break-words text-amber-800/90 dark:text-amber-100/85">
-                  {t("codexConfig.fetchedModelsMissingDescription", {
-                    models: unavailableConfiguredModelIds.join(", "),
-                    defaultValue:
-                      "缺失: {{models}}。已保留当前配置，不会自动停用或删除。",
-                  })}
-                </p>
-              </div>
-            </div>
-          )}
-
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
               <span className="text-xs font-medium text-foreground">
@@ -1064,6 +1050,9 @@ export function CodexFormFields({
                         index={index}
                         expanded={expandedCatalogRows.has(row.rowId)}
                         fetchedModels={fetchedModels}
+                        isUnavailable={unavailableConfiguredModelIds.includes(
+                          row.model.trim(),
+                        )}
                         onExpandedChange={() =>
                           setExpandedCatalogRows((current) => {
                             const next = new Set(current);

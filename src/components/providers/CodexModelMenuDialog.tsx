@@ -70,15 +70,21 @@ function SortableMenuModelRow({
   entry,
   position,
   onChange,
+  onRename,
   compact = false,
 }: {
   entry: DraftModelEntry;
   position: number;
   onChange: (patch: Partial<CodexCatalogModel>) => void;
+  onRename: (displayName: string) => Promise<void>;
   compact?: boolean;
 }) {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
+  const [draftDisplayName, setDraftDisplayName] = useState(
+    entry.model.displayName ?? "",
+  );
+  const [isRenaming, setIsRenaming] = useState(false);
   const {
     attributes,
     listeners,
@@ -122,15 +128,27 @@ function SortableMenuModelRow({
       <div className="min-w-0 space-y-0.5">
         {isEditing ? (
           <Input
-            value={entry.model.displayName ?? ""}
-            onChange={(event) => onChange({ displayName: event.target.value })}
+            value={draftDisplayName}
+            onChange={(event) => setDraftDisplayName(event.target.value)}
             placeholder={entry.model.model}
             aria-label={t("codexConfig.catalogColumnDisplay")}
             className="h-9 text-base"
             autoFocus
-            onBlur={() => setIsEditing(false)}
+            disabled={isRenaming}
+            onBlur={() => {
+              if (!isRenaming) {
+                setIsRenaming(true);
+                void onRename(draftDisplayName).finally(() => {
+                  setIsRenaming(false);
+                  setIsEditing(false);
+                });
+              }
+            }}
             onKeyDown={(event) => {
-              if (event.key === "Enter") setIsEditing(false);
+              if (event.key === "Enter") {
+                event.preventDefault();
+                event.currentTarget.blur();
+              }
             }}
           />
         ) : (
@@ -138,7 +156,10 @@ function SortableMenuModelRow({
             type="button"
             className="block min-w-0 max-w-full truncate bg-transparent px-1 text-left text-base font-medium text-foreground hover:text-primary hover:underline hover:underline-offset-2"
             title={t("codexConfig.editModelName")}
-            onClick={() => setIsEditing(true)}
+            onClick={() => {
+              setDraftDisplayName(entry.model.displayName ?? "");
+              setIsEditing(true);
+            }}
           >
             {displayName}
           </button>
@@ -159,13 +180,20 @@ function SmartSortedModelRow({
   position,
   groupName,
   onChange,
+  onRename,
 }: {
   entry: DraftModelEntry;
   position: number;
   groupName: string;
   onChange: (patch: Partial<CodexCatalogModel>) => void;
+  onRename: (displayName: string) => Promise<void>;
 }) {
   const { t } = useTranslation();
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftDisplayName, setDraftDisplayName] = useState(
+    entry.model.displayName ?? "",
+  );
+  const [isRenaming, setIsRenaming] = useState(false);
   const isEnabled = entry.model.enabled !== false;
   const displayName = entry.model.displayName?.trim() || entry.model.model;
 
@@ -185,9 +213,44 @@ function SmartSortedModelRow({
         aria-label={t("codexConfig.disableModel")}
       />
       <div className="min-w-0">
-        <div className="truncate text-base font-medium" title={displayName}>
-          {displayName}
-        </div>
+        {isEditing ? (
+          <Input
+            value={draftDisplayName}
+            onChange={(event) => setDraftDisplayName(event.target.value)}
+            placeholder={entry.model.model}
+            aria-label={t("codexConfig.catalogColumnDisplay")}
+            className="h-9 text-base"
+            autoFocus
+            disabled={isRenaming}
+            onBlur={() => {
+              if (!isRenaming) {
+                setIsRenaming(true);
+                void onRename(draftDisplayName).finally(() => {
+                  setIsRenaming(false);
+                  setIsEditing(false);
+                });
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                event.currentTarget.blur();
+              }
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            className="block max-w-full truncate bg-transparent text-left text-base font-medium hover:text-primary hover:underline hover:underline-offset-2"
+            title={t("codexConfig.editModelName")}
+            onClick={() => {
+              setDraftDisplayName(entry.model.displayName ?? "");
+              setIsEditing(true);
+            }}
+          >
+            {displayName}
+          </button>
+        )}
         <div
           className="truncate font-mono text-sm text-muted-foreground"
           title={entry.model.model}
@@ -210,6 +273,7 @@ function SortableProviderGroup({
   collapsed,
   onMenuGroupNameChange,
   onEntryChange,
+  onEntryRename,
   onGroupEnabledChange,
   onToggleCollapsed,
 }: {
@@ -217,6 +281,7 @@ function SortableProviderGroup({
   collapsed: boolean;
   onMenuGroupNameChange: (name: string) => void;
   onEntryChange: (key: string, patch: Partial<CodexCatalogModel>) => void;
+  onEntryRename: (key: string, displayName: string) => Promise<void>;
   onGroupEnabledChange: (enabled: boolean) => void;
   onToggleCollapsed: () => void;
 }) {
@@ -329,6 +394,7 @@ function SortableProviderGroup({
             position={index + 1}
             compact={layout === "inline"}
             onChange={(patch) => onEntryChange(entry.key, patch)}
+            onRename={(displayName) => onEntryRename(entry.key, displayName)}
           />
         ))}
       </div>
@@ -441,6 +507,75 @@ export function CodexModelMenuDialog({
             : entry,
         ),
       })),
+    );
+  };
+
+  const handleModelRename = async (key: string, displayName: string) => {
+    const entry = flattenDraftGroups(groups).find((item) => item.key === key);
+    if (!entry) return;
+
+    const normalizedDisplayName = displayName.trim();
+    const currentDisplayName = entry.model.displayName?.trim() || "";
+    if (normalizedDisplayName === currentDisplayName) return;
+
+    const original = persistedProvidersRef.current[entry.providerId];
+    if (!original) return;
+    const models = providerCatalogModels(original).map((model) => ({
+      ...model,
+    }));
+    const model = models[entry.modelIndex];
+    if (!model) return;
+
+    if (normalizedDisplayName) model.displayName = normalizedDisplayName;
+    else delete model.displayName;
+
+    const configText = original.settingsConfig.config;
+    const updatedProvider: Provider = {
+      ...original,
+      settingsConfig: {
+        ...original.settingsConfig,
+        modelCatalog: {
+          ...original.settingsConfig.modelCatalog,
+          models,
+        },
+        ...(typeof configText === "string"
+          ? { config: syncCodexModelToCatalogFirst(configText, models) }
+          : {}),
+      },
+    };
+
+    try {
+      await providersApi.update(updatedProvider, "codex");
+    } catch (error) {
+      toast.error(
+        t("codexConfig.modelMenuSaveFailed", {
+          error: extractErrorMessage(error),
+        }),
+      );
+      return;
+    }
+    persistedProvidersRef.current = {
+      ...persistedProvidersRef.current,
+      [updatedProvider.id]: updatedProvider,
+    };
+    const displayNamesByKey = new Map([[key, normalizedDisplayName]]);
+    setGroups((current) =>
+      applyDraftModelDisplayNames(current, displayNamesByKey),
+    );
+    setOriginalGroups((current) =>
+      applyDraftModelDisplayNames(current, displayNamesByKey),
+    );
+    setInitialSnapshot((current) => {
+      const snapshot = JSON.parse(current) as DraftProviderGroup[];
+      return JSON.stringify(
+        applyDraftModelDisplayNames(snapshot, displayNamesByKey),
+      );
+    });
+    await queryClient.invalidateQueries({ queryKey: ["providers", "codex"] });
+    toast.success(
+      t("codexConfig.modelNameUpdated", {
+        defaultValue: "模型名称已立即生效",
+      }),
     );
   };
 
@@ -919,6 +1054,9 @@ export function CodexModelMenuDialog({
                       position={index + 1}
                       groupName={groupName}
                       onChange={(patch) => handleEntryChange(entry.key, patch)}
+                      onRename={(displayName) =>
+                        handleModelRename(entry.key, displayName)
+                      }
                     />
                   ))}
                 </div>
@@ -942,6 +1080,9 @@ export function CodexModelMenuDialog({
                             handleMenuGroupNameChange(group.providerId, name)
                           }
                           onEntryChange={handleEntryChange}
+                          onEntryRename={(key, displayName) =>
+                            handleModelRename(key, displayName)
+                          }
                           onGroupEnabledChange={(enabled) =>
                             handleGroupEnabledChange(group.providerId, enabled)
                           }

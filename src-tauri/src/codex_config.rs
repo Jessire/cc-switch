@@ -563,6 +563,30 @@ fn is_third_party_gpt_catalog_model(model: &str) -> bool {
         .starts_with("gpt-")
 }
 
+fn codex_custom_reasoning_levels() -> Value {
+    json!([
+        { "effort": "high", "description": "Deeper reasoning for complex tasks" },
+        { "effort": "xhigh", "description": "Extra-high reasoning depth" },
+        { "effort": "max", "description": "Maximum reasoning depth" }
+    ])
+}
+
+fn codex_context_window_for_model(
+    model: &str,
+    profile: CodexCatalogToolProfile,
+    default_context_window: u64,
+) -> u64 {
+    let model = model.to_ascii_lowercase();
+    if profile == CodexCatalogToolProfile::Anthropic
+        || model.contains("claude")
+        || model.contains("anthropic")
+    {
+        200_000
+    } else {
+        default_context_window
+    }
+}
+
 fn codex_catalog_model_entry(
     template: &Value,
     spec: &CodexCatalogModelSpec,
@@ -576,7 +600,9 @@ fn codex_catalog_model_entry(
     };
 
     let display_name = spec.display_name.as_deref().unwrap_or(&spec.model);
-    let context_window = spec.context_window.unwrap_or(default_context_window);
+    let context_window = spec.context_window.unwrap_or_else(|| {
+        codex_context_window_for_model(&spec.model, profile, default_context_window)
+    });
     entry_obj.insert("slug".to_string(), json!(spec.model));
     entry_obj.insert("display_name".to_string(), json!(display_name));
     entry_obj.insert("description".to_string(), json!(display_name));
@@ -606,6 +632,11 @@ fn codex_catalog_model_entry(
             }]),
         );
     } else {
+        entry_obj.insert("default_reasoning_level".to_string(), json!("high"));
+        entry_obj.insert(
+            "supported_reasoning_levels".to_string(),
+            codex_custom_reasoning_levels(),
+        );
         entry_obj.insert("additional_speed_tiers".to_string(), json!([]));
         entry_obj.insert("service_tiers".to_string(), json!([]));
     }
@@ -1144,6 +1175,13 @@ fn codex_vendor_catalog_model_entry(
         .filter(|text| !text.is_empty())
     {
         entry_obj.insert("base_instructions".to_string(), json!(base_instructions));
+    }
+    if !is_third_party_gpt_catalog_model(&spec.model) {
+        entry_obj.insert("default_reasoning_level".to_string(), json!("high"));
+        entry_obj.insert(
+            "supported_reasoning_levels".to_string(),
+            codex_custom_reasoning_levels(),
+        );
     }
 
     // Defensive: if a future codex parser requires a field the vendor file
@@ -3485,6 +3523,74 @@ base_url = "https://production.api/v1"
     }
 
     #[test]
+    fn claude_catalog_defaults_to_200k_context_without_overriding_explicit_values() {
+        let template = load_codex_native_responses_template();
+        let specs = vec![
+            CodexCatalogModelSpec {
+                model: "claude-opus-4-8".to_string(),
+                display_name: Some("Claude Opus 4.8".to_string()),
+                context_window: None,
+                supports_parallel_tool_calls: None,
+                input_modalities: None,
+                base_instructions: None,
+                route_tool_profile: None,
+            },
+            CodexCatalogModelSpec {
+                model: "claude-sonnet-4".to_string(),
+                display_name: Some("Claude Sonnet 4".to_string()),
+                context_window: Some(128_000),
+                supports_parallel_tool_calls: None,
+                input_modalities: None,
+                base_instructions: None,
+                route_tool_profile: None,
+            },
+        ];
+
+        let catalog = codex_model_catalog_from_specs(
+            &specs,
+            &template,
+            CodexCatalogToolProfile::ProxyChat,
+            128_000,
+        );
+
+        assert_eq!(catalog["models"][0]["context_window"], 200_000);
+        assert_eq!(catalog["models"][0]["max_context_window"], 200_000);
+        assert_eq!(catalog["models"][1]["context_window"], 128_000);
+        assert_eq!(catalog["models"][1]["max_context_window"], 128_000);
+    }
+
+    #[test]
+    fn third_party_non_gpt_catalog_exposes_shared_reasoning_levels() {
+        let template = load_codex_native_responses_template();
+        let specs = vec![CodexCatalogModelSpec {
+            model: "grok-4.6".to_string(),
+            display_name: Some("Grok 4.6".to_string()),
+            context_window: None,
+            supports_parallel_tool_calls: None,
+            input_modalities: None,
+            base_instructions: None,
+            route_tool_profile: None,
+        }];
+
+        let catalog = codex_model_catalog_from_specs(
+            &specs,
+            &template,
+            CodexCatalogToolProfile::NativeResponses,
+            128_000,
+        );
+        let entry = &catalog["models"][0];
+        let efforts = entry["supported_reasoning_levels"]
+            .as_array()
+            .expect("reasoning levels")
+            .iter()
+            .filter_map(|level| level.get("effort").and_then(Value::as_str))
+            .collect::<Vec<_>>();
+
+        assert_eq!(efforts, ["high", "xhigh", "max"]);
+        assert_eq!(entry["default_reasoning_level"], "high");
+    }
+
+    #[test]
     fn native_responses_profile_suppresses_apply_patch_and_keeps_shell() {
         // Native (direct) /responses providers must NOT emit a freeform
         // apply_patch (type=="custom") tool — gateways like MiMo reject it.
@@ -3724,7 +3830,7 @@ wire_api = "responses"
             .iter()
             .filter_map(|level| level.get("effort").and_then(|v| v.as_str()))
             .collect();
-        assert_eq!(efforts, vec!["low", "high", "max"]);
+        assert_eq!(efforts, vec!["high", "xhigh", "max"]);
         assert_eq!(flash.get("supports_search_tool"), Some(&json!(true)));
         assert_eq!(
             flash.get("web_search_tool_type").and_then(|v| v.as_str()),

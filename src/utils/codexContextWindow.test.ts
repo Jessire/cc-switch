@@ -13,8 +13,9 @@ describe("codex context window defaults", () => {
     expect(inferCodexContextWindow("grok-4.5", "xAI")).toBe("500000");
   });
 
-  it("uses 1M for Claude and Chinese model families", () => {
-    expect(inferCodexContextWindow("claude-opus-4-8")).toBe("1000000");
+  it("uses 200K for Claude models and 1M for Chinese model families", () => {
+    expect(inferCodexContextWindow("claude-opus-4-8")).toBe("200000");
+    expect(inferCodexContextWindow("anthropic/claude-sonnet-4")).toBe("200000");
     expect(inferCodexContextWindow("qwen3-coder-plus")).toBe("1000000");
     expect(inferCodexContextWindow("model-1", "国产模型")).toBe("1000000");
   });

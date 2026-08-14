@@ -5,9 +5,10 @@ export const CODEX_CONTEXT_WINDOW_PRESETS = [
 ] as const;
 
 const GROK_MODEL_PATTERN = /(?:grok|xai)/i;
+const CLAUDE_MODEL_PATTERN = /(?:claude|anthropic)/i;
 const GPT_56_MODEL_PATTERN = /gpt[\s._-]*5[\s._-]*6/i;
 const LARGE_CONTEXT_MODEL_PATTERN =
-  /(?:claude|anthropic|kimi|moonshot|qwen|qwq|glm|zhipu|chatglm|deepseek|doubao|seed|volc|bytedance|minimax|mimo|baichuan|ernie|wenxin|hunyuan|qianfan|ling|longcat|internlm|stepfun|step-\d|spark|国产|国模|國產|國模|中文模型)/i;
+  /(?:kimi|moonshot|qwen|qwq|glm|zhipu|chatglm|deepseek|doubao|seed|volc|bytedance|minimax|mimo|baichuan|ernie|wenxin|hunyuan|qianfan|ling|longcat|internlm|stepfun|step-\d|spark|国产|国模|國產|國模|中文模型)/i;
 
 export function inferCodexContextWindow(
   modelId: string,
@@ -16,6 +17,7 @@ export function inferCodexContextWindow(
   const source = `${providerName} ${modelId}`;
 
   if (GROK_MODEL_PATTERN.test(source)) return "500000";
+  if (CLAUDE_MODEL_PATTERN.test(source)) return "200000";
   if (GPT_56_MODEL_PATTERN.test(source)) return "372000";
   if (LARGE_CONTEXT_MODEL_PATTERN.test(source)) return "1000000";
   return undefined;
