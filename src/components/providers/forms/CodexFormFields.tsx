@@ -936,14 +936,14 @@ export function CodexFormFields({
                 <Download className="h-4 w-4" />
               )}
             </Button>
-            {defaultModelSuggestions.length > 0 && (
-              <ModelDropdown
-                inline
-                models={defaultModelSuggestions}
-                onSelect={(id) => onModelChange(id)}
-              />
-            )}
           </div>
+          {defaultModelSuggestions.length > 0 && (
+            <ModelDropdown
+              inline
+              models={defaultModelSuggestions}
+              onSelect={(id) => onModelChange(id)}
+            />
+          )}
           <p className="text-xs leading-relaxed text-muted-foreground">
             {t("codexConfig.defaultModelHint", {
               defaultValue:

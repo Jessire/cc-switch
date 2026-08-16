@@ -1,5 +1,6 @@
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { formatCodexModelDisplayName } from "@/utils/codexModelDisplay";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,33 +42,66 @@ function ModelOptionLabel({ model }: { model: FetchedModel }) {
 
 export function ModelOptionsList({ models, onSelect }: ModelOptionsProps) {
   const { t } = useTranslation();
+  const [searchTerm, setSearchTerm] = useState("");
+  const filteredModels = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return models;
+    return models.filter((model) => {
+      const displayName = formatCodexModelDisplayName(model.id).toLowerCase();
+      return (
+        model.id.toLowerCase().includes(query) || displayName.includes(query)
+      );
+    });
+  }, [models, searchTerm]);
+
   if (models.length === 0) return null;
 
   return (
-    <div className="mt-2 max-h-64 overflow-y-auto rounded-md border border-border-default bg-muted/20 p-1">
-      <div className="px-2 py-1 text-[11px] font-medium text-muted-foreground">
-        {t("providerForm.availableModels", { defaultValue: "可选模型" })}
-      </div>
-      {groupModels(models).map(([vendor, vendorModels]) => (
-        <div key={vendor}>
-          <div className="px-2 py-1 text-[11px] font-medium text-muted-foreground/80">
-            {vendor}
-          </div>
-          <div className="space-y-0.5">
-            {vendorModels.map((model) => (
-              <button
-                key={model.id}
-                type="button"
-                className="flex w-full items-center rounded px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                title={model.id}
-                onClick={() => onSelect(model.id)}
-              >
-                <ModelOptionLabel model={model} />
-              </button>
-            ))}
-          </div>
+    <div className="mt-3 space-y-2 border-t border-border-default pt-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xs font-medium text-foreground">
+          {t("codexConfig.availableModels", { defaultValue: "可选模型" })}
+        </span>
+        <div className="relative w-full max-w-64">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder={t("codexConfig.searchModels", {
+              defaultValue: "搜索模型",
+            })}
+            className="h-8 w-full rounded-md border border-input bg-background pl-8 pr-2 text-sm outline-none placeholder:text-muted-foreground focus:border-ring"
+          />
         </div>
-      ))}
+      </div>
+      {filteredModels.length > 0 ? (
+        <div className="grid max-h-52 gap-2 overflow-y-auto pr-1 md:grid-cols-3">
+          {filteredModels.map((model) => (
+            <button
+              key={model.id}
+              type="button"
+              className="flex min-h-14 min-w-0 items-center gap-2 rounded-md border border-border-default px-3 py-2 text-left hover:bg-muted/40"
+              title={model.id}
+              onClick={() => onSelect(model.id)}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium">
+                  {formatCodexModelDisplayName(model.id)}
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {model.id}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="py-3 text-center text-xs text-muted-foreground">
+          {t("codexConfig.noAvailableModels", {
+            defaultValue: "没有匹配的模型",
+          })}
+        </p>
+      )}
     </div>
   );
 }

@@ -796,7 +796,13 @@ export function ProviderList({
                           className="min-w-0 flex-1 truncate"
                           title={group.name}
                         >
-                          {group.name} ({group.providerIds.length})
+                          {group.name} (
+                          {
+                            group.providerIds.filter((id) =>
+                              Boolean(codexProviders[id]),
+                            ).length
+                          }
+                          )
                         </span>
                       </DropdownMenuCheckboxItem>
                     ))}
