@@ -52,3 +52,42 @@ export function buildGrokBuildProviderFromCodex(provider: Provider): Provider {
     },
   };
 }
+
+export interface GrokBuildImportGroupSource {
+  name: string;
+  providerIds: string[];
+}
+
+/**
+ * 将按顺序返回的已创建 Grok 供应商 ID 重新分配到对应 Codex 分组。
+ * addProvider 会为每个新供应商生成数据库 ID,因此不能继续使用导入前的
+ * `${codexProviderId}-grokbuild` 临时 ID。
+ */
+export function buildGrokBuildGroupReplacements(
+  groups: GrokBuildImportGroupSource[],
+  codexProviders: Record<string, Provider>,
+  sourceProviderIds: string[],
+  importedProviders: Provider[],
+): Array<{ name: string; providerIds: string[] }> {
+  const importedIdBySourceId = new Map(
+    sourceProviderIds.map((sourceId, index) => [
+      sourceId,
+      importedProviders[index]?.id,
+    ]),
+  );
+
+  return groups.map((group) => ({
+    name: group.name,
+    providerIds: Array.from(
+      new Set(
+        group.providerIds
+          .filter((id) => {
+            const provider = codexProviders[id];
+            return Boolean(provider) && provider.category !== "official";
+          })
+          .map((id) => importedIdBySourceId.get(id))
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ),
+  }));
+}

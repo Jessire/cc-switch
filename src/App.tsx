@@ -1016,11 +1016,13 @@ function App() {
                       onImportCodexProviders={
                         activeApp === "grokbuild"
                           ? async (providersToImport) => {
+                              const importedProviders: Provider[] = [];
                               for (const provider of providersToImport) {
-                                await addProvider(provider);
+                                const imported = await addProvider(provider);
+                                if (imported) importedProviders.push(imported);
                               }
                               await refetch();
-                              return providersToImport.length;
+                              return importedProviders;
                             }
                           : undefined
                       }

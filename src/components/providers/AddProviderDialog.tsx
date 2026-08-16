@@ -36,7 +36,7 @@ interface AddProviderDialogProps {
       ensureCodexOfficialSeed?: boolean;
       ensureGrokBuildOfficialSeed?: boolean;
     },
-  ) => Promise<void> | void;
+  ) => Promise<void | Provider> | void;
 }
 
 export function AddProviderDialog({

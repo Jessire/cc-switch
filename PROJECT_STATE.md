@@ -45,7 +45,9 @@
 - 供应商卡片保持单排自然流布局: 头像、名称、收藏、分组、状态和蓝色官网链接紧凑衔接, 卡片操作仅悬停显示.
 - 分组头像映射: `GPT/OpenAI -> openai`, `Grok/xAI -> grok`, `Claude/Anthropic -> claude`, `国模/国产 -> kimi`; 未识别时回退供应商图标或首字头像.
 - Codex 添加供应商预设仅显示“自定义配置”和“OpenAI Official”; Grok 从 Codex 导入默认不勾选,菜单收窄并明确按分组导入.
-- Claude/Claude Desktop/Codex 的“需要路由”标识改为紧凑路由图标并保留悬停提示; Grok/Codex 共用模型下拉显示 Codex 友好模型名.
+- Claude/Claude Desktop/Codex 的“需要路由”标识改为紧凑分支图标并保留悬停提示; Grok/Codex 共用模型下拉显示 Codex 友好模型名.
+- Codex/Grok/Gemini/Claude 等模型获取成功后直接在输入框下方展示可选模型列表,不再必须点击右侧下拉按钮; 多行模型映射编辑器保留行级选择菜单.
+- Codex -> Grok 分组导入使用数据库实际生成的 provider ID,同一 Codex 供应商属于多个分组时只导入一次并加入对应全部 Grok 分组.
 - 正常运行不检查官方应用更新; 设置页移除应用检查、下载、安装和 Release Notes 入口, 但保留数据库不兼容恢复链路和 Skill 更新能力.
 - 正常启动显示主界面; 托盘左键双击打开、右键菜单保留; 官方 deep link 导入能力必须保持可用.
 
@@ -57,9 +59,9 @@
 ## 当前构建、发布和运行实例
 
 - v3.19.7 上游合并提交: `9de4561a31330ce1eb2b5fcc7aac253c44439d49` (`Merge upstream and release v3.19.7`). 合并基于 `origin/main` `413c09e0790c304506888ae24b9be72820aca126`,冲突块按 Jessire 要求保留定制实现,同文件非冲突上游改动保留.
-- 当前标准 Windows x64 Release 产物: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.7`, PE32+ x64 Windows GUI, 大小 `33,020,416` bytes, SHA256 `1685E456DEB24BC449EB1B8CF37CCBA0003A5C6F17A86158800D788A3C5C57E9`.
+- 当前标准 Windows x64 Release 产物: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.7`, PE32+ x64 Windows GUI, 大小 `33,020,416` bytes, SHA256 `810540A03F3E417A06BE0D553B5A6DCF0D814E5115055D28995A51D500C1FCEF`.
 - 最新 GitHub Release: `v3.19.7`,标签指向提交 `9de4561a31330ce1eb2b5fcc7aac253c44439d49`; Release 资产为 `CC-Switch-v3.19.7-Windows-x64.exe`,大小 `33,013,248` bytes,SHA256 `11B008897E9082AF13D9E94B96D621B1BE7F04A43BDF93EF6F76A96B57313B2B`. GitHub 下载回读已匹配.
-- 当前运行实例: PID `23120` 运行 `D:\Download\CC-Switch-v3.19.7-Windows-x64.exe`; 本轮未结束或替换该外部实例. 标准 Release 已重新构建,但尚未启动以避免干扰现有运行状态.
+- 当前运行实例: PID `1996` 运行 `D:\Download\CC-Switch-v3.19.7-Windows-x64.exe`; 本轮未结束或替换该外部实例. 标准 Release 已重新构建,但尚未启动以避免干扰现有运行状态.
 - 2026-08-02 已删除仓库外 `cc-switch-build`, `.codex\tmp` 中的 CC Switch EXE/回滚副本/临时脚本/日志/截图/隔离数据, 以及标准构建的 `deps`, `build`, `.fingerprint` 等可重建中间物; 保留 `node_modules` 和正在运行的标准 Release EXE. 清理后 C: 可用空间 `101.24 GB`, D: 可用空间 `564.40 GB`.
 
 ## 已完成验证
@@ -89,7 +91,7 @@
 - 2026-08-12 模型菜单保存/重启语义、模型缺失提醒、自动重启菜单布局和顶部工具栏右对齐已通过 `pnpm format:check`, `pnpm typecheck`, 全量 `pnpm test:unit`, 直接相关 Vitest 11/11, `pnpm build:renderer`, `git diff --check` 和 Windows x64 Release 增量编译. 独立应用标识与隔离数据库的实际 Release GUI 已确认菜单宽度、两行文案和正常宽度下右对齐; 全应用开启的隔离测试态会超宽, 用户确认实际配置不会出现. 未读取或修改正式数据库.
 - 2026-08-13 自动重启下拉菜单已改为按两行文案和右侧勾选自动收缩, 移除无关保存图标与两侧冗余留白, 选中勾选移动到下拉箭头正下方的右侧; 修复过度压缩导致的文案溢出重叠和固定宽度造成的中间空白. 已移除全局 `focus-visible` 蓝色描边和 Tailwind 焦点 ring, 保留控件原有 hover、边框、选中和禁用反馈. 批量模型改名在点击“重命名”后立即写入对应 Codex 供应商配置并刷新查询, 不再等待底部“保存”, 连续改名和后续底部保存均以最新持久化结果为基线; 排序、启用状态与菜单短分组继续沿用底部保存语义. 已通过相关 Vitest 10/10, `pnpm format:check`, `pnpm typecheck`, `pnpm build:renderer`, `git diff --check` 和 Windows x64 Release 构建. 实际标准 Release GUI 已确认菜单按内容收缩、两行文案完整、右侧勾选紧凑对齐、与下方分组栏无重叠, 下拉打开及关闭后均无蓝色焦点框. 标准 EXE 版本 `3.19.7`, 大小 `33,013,248` bytes, SHA256 `2A99BB2B1047130517CDB0F2621F66D5A6E74CB61BDC940D6D217FB4C8049184`, 当前运行实例为标准 Release 路径.
 - 2026-08-14 本轮模型菜单修复已完成单模型改名即时持久化、批量改名即时持久化、缺失模型名后行内提示、Claude/Anthropic 无显式上下文时默认 `200K`,以及非 GPT 模型 `High`/`XHigh`/`Max` 三档推理强度. 已通过 `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, `pnpm format:check`, `pnpm typecheck`, 相关 Vitest 16/16, `pnpm build:renderer`, `cargo test --manifest-path src-tauri/Cargo.toml codex_config::tests:: --lib` 90/90 和 `git diff --check`. 标准 Windows x64 Release 已直接覆盖并启动验证; 版本 `3.19.7`,大小 `33,020,416` bytes,SHA256 `A50B8E441545ABFC3B31B16AB3990DA89415FBAC57E0DDB9B9F5474DD08ED460`,当前 PID `21880`. Codex Desktop 原生模型选择器宽度不受本项目 CSS 控制,本轮未修改该外部界面.
-- 2026-08-16 本轮供应商界面调整已通过 `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, `pnpm format:check`, `pnpm typecheck`, 全量 Vitest 110/110 文件、748/748 测试, `pnpm build:renderer`, `pnpm tauri build --no-bundle` 和 `git diff --check`. 标准 Release 版本 `3.19.7`,大小 `33,020,416` bytes,SHA256 `1685E456DEB24BC449EB1B8CF37CCBA0003A5C6F17A86158800D788A3C5C57E9`. 由于现有外部 CC Switch 实例 PID `23120` 正在运行,未强制结束或替换; Release GUI 的隔离启动未能建立可见窗口,因此本轮未完成实际 Release 窗口点击核验.
+- 2026-08-16 本轮分组导入与跨应用模型获取展示修复已通过 `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, `pnpm format:check`, `pnpm typecheck`, 全量 Vitest 110/110 文件、749/749 测试, `pnpm build:renderer`, `pnpm tauri build --no-bundle` 和 `git diff --check`. 标准 Release 版本 `3.19.7`,大小 `33,020,416` bytes,SHA256 `810540A03F3E417A06BE0D553B5A6DCF0D814E5115055D28995A51D500C1FCEF`. 现有外部 CC Switch 实例 PID `1996` 未结束或替换; 本轮未在真实运行实例中执行供应商导入或模型获取,隔离 Release GUI 的主窗口绑定仍未完成.
 
 ## 未完成边界与回归重点
 

@@ -58,7 +58,10 @@ import { GroupTabs } from "@/components/providers/GroupTabs";
 import { BulkAssignBar } from "@/components/providers/BulkAssignBar";
 import { CodexModelMenuDialog } from "@/components/providers/CodexModelMenuDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { buildGrokBuildProviderFromCodex } from "@/utils/grokBuildProviderImport";
+import {
+  buildGrokBuildGroupReplacements,
+  buildGrokBuildProviderFromCodex,
+} from "@/utils/grokBuildProviderImport";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -88,7 +91,7 @@ interface ProviderListProps {
   onOpenTerminal?: (provider: Provider) => void;
   onCreate?: () => void;
   codexProviders?: Record<string, Provider>;
-  onImportCodexProviders?: (providers: Provider[]) => Promise<number>;
+  onImportCodexProviders?: (providers: Provider[]) => Promise<Provider[]>;
   isLoading?: boolean;
   isProxyRunning?: boolean; // 代理服务运行状态
   isProxyTakeover?: boolean; // 代理接管模式（Live配置已被接管）
@@ -810,32 +813,35 @@ export function ProviderList({
                     const selectedGroups = codexGroupsState.groups.filter(
                       (group) => selected.has(group.id),
                     );
-                    const selectedProviders = selectedGroups.flatMap((group) =>
-                      group.providerIds
-                        .map((id) => codexProviders[id])
-                        .filter(
-                          (provider): provider is Provider =>
-                            Boolean(provider) &&
-                            provider.category !== "official",
-                        )
-                        .map(buildGrokBuildProviderFromCodex),
-                    );
+                    const sourceProviderIds = Array.from(
+                      new Set(
+                        selectedGroups.flatMap((group) => group.providerIds),
+                      ),
+                    ).filter((id) => {
+                      const provider = codexProviders[id];
+                      return (
+                        Boolean(provider) && provider.category !== "official"
+                      );
+                    });
+                    const selectedProviders = sourceProviderIds
+                      .map((id) => codexProviders[id])
+                      .filter((provider): provider is Provider =>
+                        Boolean(provider),
+                      )
+                      .map(buildGrokBuildProviderFromCodex);
                     void onImportCodexProviders(selectedProviders).then(
-                      (count) => {
+                      (importedProviders) => {
                         replaceGroupsProvidersByName(
-                          selectedGroups.map((sourceGroup) => ({
-                            name: sourceGroup.name,
-                            providerIds: sourceGroup.providerIds
-                              .filter(
-                                (id) =>
-                                  codexProviders[id]?.category !== "official",
-                              )
-                              .map((id) => `${id}-grokbuild`),
-                          })),
+                          buildGrokBuildGroupReplacements(
+                            selectedGroups,
+                            codexProviders,
+                            sourceProviderIds,
+                            importedProviders,
+                          ),
                         );
                         setSelectedCodexGroupIds([]);
                         toast.success(
-                          `已按分组从 Codex 导入 ${count} 个中转站`,
+                          `已按分组从 Codex 导入 ${importedProviders.length} 个中转站`,
                         );
                       },
                       (error) => toast.error(extractErrorMessage(error)),

@@ -938,6 +938,7 @@ export function CodexFormFields({
             </Button>
             {defaultModelSuggestions.length > 0 && (
               <ModelDropdown
+                inline
                 models={defaultModelSuggestions}
                 onSelect={(id) => onModelChange(id)}
               />

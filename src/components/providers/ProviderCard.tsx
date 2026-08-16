@@ -3,7 +3,7 @@ import {
   GripVertical,
   ChevronDown,
   ChevronUp,
-  Route,
+  GitBranch,
   Star,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -467,7 +467,7 @@ export function ProviderCard({
                       defaultValue: "需要路由",
                     })}
                   >
-                    <Route className="size-3.5" aria-hidden="true" />
+                    <GitBranch className="size-3.5" aria-hidden="true" />
                   </span>
                 )}
 
@@ -481,7 +481,7 @@ export function ProviderCard({
                     defaultValue: "需要路由",
                   })}
                 >
-                  <Route className="size-3.5" aria-hidden="true" />
+                  <GitBranch className="size-3.5" aria-hidden="true" />
                 </span>
               )}
 
@@ -495,7 +495,7 @@ export function ProviderCard({
                     defaultValue: "需要路由",
                   })}
                 >
-                  <Route className="size-3.5" aria-hidden="true" />
+                  <GitBranch className="size-3.5" aria-hidden="true" />
                 </span>
               )}
 

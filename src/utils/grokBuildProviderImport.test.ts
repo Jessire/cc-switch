@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildGrokBuildProviderFromCodex } from "./grokBuildProviderImport";
+import {
+  buildGrokBuildGroupReplacements,
+  buildGrokBuildProviderFromCodex,
+} from "./grokBuildProviderImport";
 
 describe("Grok Build provider import", () => {
   it("converts a Codex provider without changing its source identity", () => {
@@ -29,5 +32,41 @@ describe("Grok Build provider import", () => {
       },
     });
     expect(provider.settingsConfig.config).toContain('api_key = "auth-secret"');
+  });
+});
+
+describe("buildGrokBuildGroupReplacements", () => {
+  it("uses created provider ids and keeps them in their source groups", () => {
+    const codexProviders = {
+      gptRelay: { id: "gptRelay", name: "GPT Relay", category: "third_party" },
+      official: {
+        id: "official",
+        name: "OpenAI Official",
+        category: "official",
+      },
+      grokRelay: {
+        id: "grokRelay",
+        name: "Grok Relay",
+        category: "third_party",
+      },
+    } as any;
+
+    expect(
+      buildGrokBuildGroupReplacements(
+        [
+          { name: "GPT", providerIds: ["gptRelay", "official"] },
+          { name: "Grok", providerIds: ["gptRelay", "grokRelay"] },
+        ],
+        codexProviders,
+        ["gptRelay", "grokRelay"],
+        [{ id: "created-gpt" } as any, { id: "created-grok" } as any],
+      ),
+    ).toEqual([
+      { name: "GPT", providerIds: ["created-gpt"] },
+      {
+        name: "Grok",
+        providerIds: ["created-gpt", "created-grok"],
+      },
+    ]);
   });
 });
