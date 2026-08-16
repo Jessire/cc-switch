@@ -697,10 +697,12 @@ function ProviderFormFull({
 
   const presetEntries = useMemo(() => {
     if (appId === "codex") {
-      return codexProviderPresets.map<PresetEntry>((preset, index) => ({
-        id: `codex-${index}`,
-        preset,
-      }));
+      return codexProviderPresets
+        .map<PresetEntry>((preset, index) => ({
+          id: `codex-${index}`,
+          preset,
+        }))
+        .filter((entry) => entry.preset.category === "official");
     } else if (appId === "gemini") {
       return geminiProviderPresets.map<PresetEntry>((preset, index) => ({
         id: `gemini-${index}`,

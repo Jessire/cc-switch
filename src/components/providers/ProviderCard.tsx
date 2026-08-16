@@ -1,5 +1,11 @@
 import { useMemo, useState, useEffect } from "react";
-import { GripVertical, ChevronDown, ChevronUp, Star } from "lucide-react";
+import {
+  GripVertical,
+  ChevronDown,
+  ChevronUp,
+  Route,
+  Star,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type {
   DraggableAttributes,
@@ -452,26 +458,44 @@ export function ProviderCard({
 
               {appId === "claude-desktop" &&
                 providerNeedsRouting(appId, provider) && (
-                  <span className="inline-flex items-center rounded-md bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
-                    {t("claudeDesktop.modeProxy", {
+                  <span
+                    className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300"
+                    title={t("claudeDesktop.modeProxy", {
                       defaultValue: "需要路由",
                     })}
+                    aria-label={t("claudeDesktop.modeProxy", {
+                      defaultValue: "需要路由",
+                    })}
+                  >
+                    <Route className="size-3.5" aria-hidden="true" />
                   </span>
                 )}
 
               {appId === "claude" && providerNeedsRouting(appId, provider) && (
-                <span className="inline-flex items-center rounded-md bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
-                  {t("claudeCode.needsRouting", {
+                <span
+                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300"
+                  title={t("claudeCode.needsRouting", {
                     defaultValue: "需要路由",
                   })}
+                  aria-label={t("claudeCode.needsRouting", {
+                    defaultValue: "需要路由",
+                  })}
+                >
+                  <Route className="size-3.5" aria-hidden="true" />
                 </span>
               )}
 
               {codexNeedsRouting && (
-                <span className="inline-flex items-center rounded-md bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
-                  {t("codex.needsRouting", {
+                <span
+                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300"
+                  title={t("codex.needsRouting", {
                     defaultValue: "需要路由",
                   })}
+                  aria-label={t("codex.needsRouting", {
+                    defaultValue: "需要路由",
+                  })}
+                >
+                  <Route className="size-3.5" aria-hidden="true" />
                 </span>
               )}
 

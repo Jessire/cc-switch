@@ -154,20 +154,17 @@ export function ProviderList({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deleteSelectedOpen, setDeleteSelectedOpen] = useState(false);
   const [isCodexModelMenuOpen, setIsCodexModelMenuOpen] = useState(false);
-  const [selectedCodexProviderIds, setSelectedCodexProviderIds] = useState<
-    string[]
-  >([]);
+  const [selectedCodexGroupIds, setSelectedCodexGroupIds] = useState<string[]>(
+    [],
+  );
   const appIdRef = useRef(appId);
   useEffect(() => {
     if (appId !== "grokbuild") return;
-    setSelectedCodexProviderIds((current) => {
+    setSelectedCodexGroupIds((current) => {
       const available = new Set(
         codexGroupsState.groups.map((group) => group.id),
       );
-      const retained = current.filter((id) => available.has(id));
-      const selected = new Set(retained);
-      codexGroupsState.groups.forEach((group) => selected.add(group.id));
-      return Array.from(selected);
+      return current.filter((id) => available.has(id));
     });
   }, [appId, codexGroupsState.groups]);
   // Only reset bulk selection when the app tab changes, not on first mount.
@@ -768,7 +765,7 @@ export function ProviderList({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-72 overflow-hidden p-1"
+                className="w-48 max-w-[calc(100vw-2rem)] overflow-hidden p-1"
               >
                 <DropdownMenuLabel>选择要导入的 Codex 分组</DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -781,11 +778,11 @@ export function ProviderList({
                     {codexGroupsState.groups.map((group) => (
                       <DropdownMenuCheckboxItem
                         key={group.id}
-                        checked={selectedCodexProviderIds.includes(group.id)}
+                        checked={selectedCodexGroupIds.includes(group.id)}
                         className="min-h-9 pl-8 pr-2 focus:outline-none focus:ring-0 data-[highlighted]:bg-muted/60 data-[highlighted]:text-foreground"
                         onSelect={(event) => event.preventDefault()}
                         onCheckedChange={(checked) =>
-                          setSelectedCodexProviderIds((current) =>
+                          setSelectedCodexGroupIds((current) =>
                             checked
                               ? [...new Set([...current, group.id])]
                               : current.filter((id) => id !== group.id),
@@ -807,9 +804,9 @@ export function ProviderList({
                   type="button"
                   size="sm"
                   className="m-1 h-8 w-[calc(100%-0.5rem)]"
-                  disabled={selectedCodexProviderIds.length === 0}
+                  disabled={selectedCodexGroupIds.length === 0}
                   onClick={() => {
-                    const selected = new Set(selectedCodexProviderIds);
+                    const selected = new Set(selectedCodexGroupIds);
                     const selectedGroups = codexGroupsState.groups.filter(
                       (group) => selected.has(group.id),
                     );
@@ -836,6 +833,7 @@ export function ProviderList({
                               .map((id) => `${id}-grokbuild`),
                           })),
                         );
+                        setSelectedCodexGroupIds([]);
                         toast.success(
                           `已按分组从 Codex 导入 ${count} 个中转站`,
                         );
@@ -844,7 +842,7 @@ export function ProviderList({
                     );
                   }}
                 >
-                  导入已选择的中转站
+                  导入已选择的分组
                 </Button>
               </DropdownMenuContent>
             </DropdownMenu>

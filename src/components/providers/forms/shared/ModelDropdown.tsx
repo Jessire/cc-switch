@@ -1,4 +1,5 @@
 import { ChevronDown } from "lucide-react";
+import { formatCodexModelDisplayName } from "@/utils/codexModelDisplay";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -40,11 +41,26 @@ export function ModelDropdown({
           <div key={vendor}>
             {vi > 0 && <DropdownMenuSeparator />}
             <DropdownMenuLabel>{vendor}</DropdownMenuLabel>
-            {grouped[vendor].map((m) => (
-              <DropdownMenuItem key={m.id} onSelect={() => onSelect(m.id)}>
-                {m.id}
-              </DropdownMenuItem>
-            ))}
+            {grouped[vendor].map((m) => {
+              const displayName = formatCodexModelDisplayName(m.id);
+              return (
+                <DropdownMenuItem
+                  key={m.id}
+                  onSelect={() => onSelect(m.id)}
+                  className="max-w-full"
+                  title={m.id}
+                >
+                  <span className="min-w-0 truncate">
+                    {displayName}
+                    {displayName !== m.id && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {m.id}
+                      </span>
+                    )}
+                  </span>
+                </DropdownMenuItem>
+              );
+            })}
           </div>
         ))}
       </DropdownMenuContent>
