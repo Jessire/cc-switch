@@ -98,12 +98,13 @@
 - 2026-08-19 已将提交 `c9fe06e425abf62bf25155785276df35bed68c0f` 推送到 `fork/main`; `git ls-remote fork refs/heads/main` 与本地 SHA 一致,分叉计数 `0 0`. 已创建并下载 `v3.20.0-custom.1` Release 资产,下载文件大小和 SHA256 与构建产物一致.
 - 2026-08-19 已移除供应商页顶部重复的橙色添加按钮,保留分组栏右侧绿色添加按钮. 修复 Windows 在 `silentStartup=true` 时手动启动也保持后台隐藏的问题: 页面加载回调与 setup 统一按 `--cc-switch-auto-start` 参数判断,只有真正的系统自启才隐藏窗口. 已复现旧版首次启动只有 `15x15` 单实例辅助窗口,二次启动可恢复主窗口;回归测试先失败后通过. 验证包括 `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, auto-launch Rust 测试 2/2, `pnpm exec tsc --noEmit`,相关 Vitest 16/16 和标准 `pnpm tauri build --no-bundle`.
 - 2026-08-19 上游同步验收范围已按实际使用收窄: Codex Desktop 是主要阻塞项,Grok Build 是次要阻塞项;共享供应商界面、Windows 启动托盘和用户数据安全继续阻塞 Release. Pi、Hermes、OpenClaw、Claude、Gemini、OpenCode、OMO、macOS 和 Linux 仅尽量兼容保留,不做额外真实运行验证,除非影响共享能力或用户当轮明确要求. 规则已写入项目 `AGENTS.md`;纯文档改动不重新构建 EXE.
-- 2026-08-19 修复 Codex 模型菜单复选框视觉回归: 恢复合并前的 Radix Checkbox, 保留原有主题蓝色、白色 SVG 勾号和紧凑勾号尺寸, 不改变模型启用逻辑. 共享 Checkbox 回归测试、Codex 模型相关测试、TypeScript 和格式检查通过;独立标识与隔离数据库的 Windows x64 旁路 Release 已实际打开并核对模型菜单截图. 旁路进程和临时目录已清理,正式实例 PID `21724` 未停止,标准 Release 未覆盖.
+- 2026-08-19 修复 Codex 模型菜单复选框视觉回归: 恢复合并前的 Radix Checkbox, 保留原有主题蓝色、白色 SVG 勾号和紧凑勾号尺寸, 不改变模型启用逻辑. 共享 Checkbox 回归测试、Codex 模型相关测试、TypeScript 和格式检查通过;独立标识与隔离数据库的 Windows x64 旁路 Release 已实际打开并核对模型菜单截图.
+- 2026-08-19 已按用户授权将复选框修复版覆盖到标准 Release: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`, 版本 `3.20.0`, PE32+ x64, 大小 `34,208,768` bytes, SHA256 `CB80FE9C9B843F6A080D7F3AE4158CFA1ABFF8203134DFD892620550BAC681DF`. 旧下载目录实例已停止, 当前正式实例 PID `22736` 从标准路径运行;正式数据库、设置和登录状态未改动.
 
 ## 未完成边界与回归重点
 
 - 为保护正在进行的 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启, 未在真实 Desktop 会话中验证第三方模型菜单读取和对话级路由.
-- 当前运行的是下载目录中的 `v3.20.0-custom.1`; 标准构建路径已覆盖为本地最新修复版 `3.20.0`. 因当前实例持有单实例锁, 新 EXE 未执行完全退出后的冷启动 GUI 验证; 本轮未在真实 Codex Desktop 会话中验证第三方模型菜单读取和对话级路由, 未用真实供应商凭据现场执行 `/models` 获取. `ccswitch` 协议注册未在本轮改动.
+- 当前运行的是标准路径中的 `v3.20.0` Release, PID `22736`, SHA256 `CB80FE9C9B843F6A080D7F3AE4158CFA1ABFF8203134DFD892620550BAC681DF`; 启动日志已确认主页面加载完成. 本轮未在真实 Codex Desktop 会话中验证第三方模型菜单读取和对话级路由, 未用真实供应商凭据现场执行 `/models` 获取. `ccswitch` 协议注册未在本轮改动.
 - 对话级供应商路由仍需在至少两个 Codex Desktop 对话中选择不同 `供应商 - 模型`, 发起真实请求并核对代理日志的供应商及剥离后的上游模型.
 - 旧 `useProviderActions` 测试中的“同组不重启”断言与已明确删除的功能冲突,未按旧语义回退. 影响托盘、deep link、分组、重启、模型菜单、代理路由或通用配置的后续改动, 必须按对应真实 Windows 行为重新验证, 不得只凭构建通过收口.
 
