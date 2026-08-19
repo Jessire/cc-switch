@@ -10,7 +10,7 @@
 - 用户仓库: `fork`, `https://github.com/Jessire/cc-switch.git`.
 - 上游仓库: `origin`, `https://github.com/farion1231/cc-switch.git`.
 - 最近一次已核验的上游基线: `origin/main` 提交 `0b5da510168914b251481654a568c3ffacd62cf4`,版本 `v3.20.0`.
-- 最近一次已核验的远端 `fork/main`: `c9fe06e425abf62bf25155785276df35bed68c0f`,与本地 `main` 一致.
+- 最近一次已核验的远端 `fork/main`: `45f3f437bf173185d4ea6f249f3c523c6488ecb7`,与本地 `main` 一致.
 
 ## 已实现的个人定制
 
@@ -59,7 +59,7 @@
 ## 当前构建、发布和运行实例
 
 - v3.20.0 上游合并正在本地 `main` 完成验证,基线为 `origin/main` `0b5da510168914b251481654a568c3ffacd62cf4`; 冲突块按 Jessire 要求保留已验证定制实现,同文件非冲突上游改动保留.
-- 本轮已验证的 Windows x64 Release 候选: `C:\Users\jery3\.codex\tmp\cc-switch-release-20260819\release\cc-switch.exe`; 文件版本 `3.20.0`, PE32+ x64 Windows GUI, 大小 `34,207,744` bytes, SHA256 `6767E3486F4961D9804239F44F94011AF0451A29FD87D1CF4A341E7EAF2332CE`.
+- 本轮已验证的 Windows x64 Release 构建（旁路目录已清理）: 文件版本 `3.20.0`, PE32+ x64 Windows GUI, 大小 `34,207,744` bytes, SHA256 `6767E3486F4961D9804239F44F94011AF0451A29FD87D1CF4A341E7EAF2332CE`.
 - 最新 GitHub Release: `v3.20.0-custom.1`,标签指向提交 `c9fe06e425abf62bf25155785276df35bed68c0f`; Release URL: `https://github.com/Jessire/cc-switch/releases/tag/v3.20.0-custom.1`.
 - 已下载 Release 资产: `C:\Users\jery3\Downloads\cc-switch-v3.20.0-custom.1\CC-Switch-v3.20.0-custom.1-Windows-x64.exe`; 大小 `34,207,744` bytes,SHA256 `6767E3486F4961D9804239F44F94011AF0451A29FD87D1CF4A341E7EAF2332CE`,与本地构建产物一致.
 - 当前标准 Release 产物仍为 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.7`,大小 `33,020,416` bytes,SHA256 `1262075564DDC3E3A3FD3C831A9D7F9FBA36F58E314D75EE8BB54D05D1A5AD9D`. 由于正式进程占用,本轮未覆盖标准 EXE.
