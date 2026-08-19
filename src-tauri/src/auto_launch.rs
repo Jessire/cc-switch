@@ -11,6 +11,10 @@ pub fn should_start_hidden(silent_startup: bool, args: &[String]) -> bool {
     silent_startup && is_auto_start_invocation(args)
 }
 
+pub fn should_show_main_window_on_page_load(silent_startup: bool, args: &[String]) -> bool {
+    !should_start_hidden(silent_startup, args)
+}
+
 /// 获取 macOS 上的 .app bundle 路径
 /// 将 `/path/to/CC Switch.app/Contents/MacOS/CC Switch` 转换为 `/path/to/CC Switch.app`
 #[cfg(target_os = "macos")]
@@ -92,6 +96,16 @@ mod tests {
         assert!(!should_start_hidden(true, &manual_args));
         assert!(!should_start_hidden(false, &auto_args));
         assert!(should_start_hidden(true, &auto_args));
+    }
+
+    #[test]
+    fn page_load_shows_manual_launch_even_when_silent_startup_is_enabled() {
+        let manual_args = vec!["cc-switch.exe".to_string()];
+        let auto_args = vec!["cc-switch.exe".to_string(), AUTO_START_ARG.to_string()];
+
+        assert!(should_show_main_window_on_page_load(true, &manual_args));
+        assert!(!should_show_main_window_on_page_load(true, &auto_args));
+        assert!(should_show_main_window_on_page_load(false, &auto_args));
     }
 
     #[cfg(target_os = "macos")]

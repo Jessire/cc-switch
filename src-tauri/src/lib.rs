@@ -394,12 +394,16 @@ pub fn run() {
     #[cfg(target_os = "windows")]
     {
         let startup_page_handled = AtomicBool::new(false);
+        let page_load_launch_args = launch_args.clone();
         builder = builder.on_page_load(move |webview, payload| {
             if webview.label() == "main"
                 && payload.event() == tauri::webview::PageLoadEvent::Finished
                 && payload.url().scheme() != "about"
                 && !startup_page_handled.swap(true, Ordering::Relaxed)
-                && !crate::settings::get_settings().silent_startup
+                && crate::auto_launch::should_show_main_window_on_page_load(
+                    crate::settings::get_settings().silent_startup,
+                    &page_load_launch_args,
+                )
             {
                 let _ = webview.window().show();
                 log::info!("主页面加载完成，主窗口已显示");
