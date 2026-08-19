@@ -10,7 +10,7 @@
 - 用户仓库: `fork`, `https://github.com/Jessire/cc-switch.git`.
 - 上游仓库: `origin`, `https://github.com/farion1231/cc-switch.git`.
 - 最近一次已核验的上游基线: `origin/main` 提交 `0b5da510168914b251481654a568c3ffacd62cf4`,版本 `v3.20.0`.
-- 最近一次已核验的远端 `fork/main`: `45f3f437bf173185d4ea6f249f3c523c6488ecb7`,与本地 `main` 一致.
+- 最近一次已核验的远端 `fork/main`: `db796e9ab32b426e8f2aa411de21161bb452eabe`.
 
 ## 已实现的个人定制
 
@@ -58,12 +58,12 @@
 
 ## 当前构建、发布和运行实例
 
-- v3.20.0 上游合并正在本地 `main` 完成验证,基线为 `origin/main` `0b5da510168914b251481654a568c3ffacd62cf4`; 冲突块按 Jessire 要求保留已验证定制实现,同文件非冲突上游改动保留.
+- v3.20.0 上游合并已完成并发布,基线为 `origin/main` `0b5da510168914b251481654a568c3ffacd62cf4`; 冲突块按 Jessire 要求保留已验证定制实现,同文件非冲突上游改动保留.
 - 本轮已验证的 Windows x64 Release 构建（旁路目录已清理）: 文件版本 `3.20.0`, PE32+ x64 Windows GUI, 大小 `34,207,744` bytes, SHA256 `6767E3486F4961D9804239F44F94011AF0451A29FD87D1CF4A341E7EAF2332CE`.
 - 最新 GitHub Release: `v3.20.0-custom.1`,标签指向提交 `c9fe06e425abf62bf25155785276df35bed68c0f`; Release URL: `https://github.com/Jessire/cc-switch/releases/tag/v3.20.0-custom.1`.
 - 已下载 Release 资产: `C:\Users\jery3\Downloads\cc-switch-v3.20.0-custom.1\CC-Switch-v3.20.0-custom.1-Windows-x64.exe`; 大小 `34,207,744` bytes,SHA256 `6767E3486F4961D9804239F44F94011AF0451A29FD87D1CF4A341E7EAF2332CE`,与本地构建产物一致.
 - 当前标准 Release 产物仍为 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.7`,大小 `33,020,416` bytes,SHA256 `1262075564DDC3E3A3FD3C831A9D7F9FBA36F58E314D75EE8BB54D05D1A5AD9D`. 由于正式进程占用,本轮未覆盖标准 EXE.
-- 当前运行实例: PID `15268` 运行 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 本轮未结束或替换该实例.
+- 当前运行实例: PID `24024` 运行已下载的 `C:\Users\jery3\Downloads\cc-switch-v3.20.0-custom.1\CC-Switch-v3.20.0-custom.1-Windows-x64.exe`; 文件版本 `3.20.0`,大小 `34,207,744` bytes,SHA256 `6767E3486F4961D9804239F44F94011AF0451A29FD87D1CF4A341E7EAF2332CE`.
 - 2026-08-02 已删除仓库外 `cc-switch-build`, `.codex\tmp` 中的 CC Switch EXE/回滚副本/临时脚本/日志/截图/隔离数据, 以及标准构建的 `deps`, `build`, `.fingerprint` 等可重建中间物; 保留 `node_modules` 和正在运行的标准 Release EXE. 清理后 C: 可用空间 `101.24 GB`, D: 可用空间 `564.40 GB`.
 
 ## 已完成验证
@@ -100,7 +100,7 @@
 ## 未完成边界与回归重点
 
 - 为保护正在进行的 Codex 对话, 未对真实 `ChatGPT.exe` 执行破坏性重启, 未在真实 Desktop 会话中验证第三方模型菜单读取和对话级路由.
-- 标准 Release `3.19.7` 已覆盖并保持运行; 本轮未在真实 Codex Desktop 会话中验证第三方模型菜单读取和对话级路由, 未用真实供应商凭据现场执行 `/models` 获取, 模型缺失提示以逻辑测试覆盖. `ccswitch` 协议注册未在本轮改动.
+- 当前运行的是下载目录中的 `v3.20.0-custom.1`,标准构建路径仍保留 `3.19.7`; 本轮未在真实 Codex Desktop 会话中验证第三方模型菜单读取和对话级路由, 未用真实供应商凭据现场执行 `/models` 获取, 模型缺失提示以逻辑测试覆盖. `ccswitch` 协议注册未在本轮改动.
 - 对话级供应商路由仍需在至少两个 Codex Desktop 对话中选择不同 `供应商 - 模型`, 发起真实请求并核对代理日志的供应商及剥离后的上游模型.
 - 旧 `useProviderActions` 测试中的“同组不重启”断言与已明确删除的功能冲突,未按旧语义回退. 影响托盘、deep link、分组、重启、模型菜单、代理路由或通用配置的后续改动, 必须按对应真实 Windows 行为重新验证, 不得只凭构建通过收口.
 
