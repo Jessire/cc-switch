@@ -98,6 +98,7 @@
 - 2026-08-19 已将提交 `c9fe06e425abf62bf25155785276df35bed68c0f` 推送到 `fork/main`; `git ls-remote fork refs/heads/main` 与本地 SHA 一致,分叉计数 `0 0`. 已创建并下载 `v3.20.0-custom.1` Release 资产,下载文件大小和 SHA256 与构建产物一致.
 - 2026-08-19 已移除供应商页顶部重复的橙色添加按钮,保留分组栏右侧绿色添加按钮. 修复 Windows 在 `silentStartup=true` 时手动启动也保持后台隐藏的问题: 页面加载回调与 setup 统一按 `--cc-switch-auto-start` 参数判断,只有真正的系统自启才隐藏窗口. 已复现旧版首次启动只有 `15x15` 单实例辅助窗口,二次启动可恢复主窗口;回归测试先失败后通过. 验证包括 `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, auto-launch Rust 测试 2/2, `pnpm exec tsc --noEmit`,相关 Vitest 16/16 和标准 `pnpm tauri build --no-bundle`.
 - 2026-08-19 上游同步验收范围已按实际使用收窄: Codex Desktop 是主要阻塞项,Grok Build 是次要阻塞项;共享供应商界面、Windows 启动托盘和用户数据安全继续阻塞 Release. Pi、Hermes、OpenClaw、Claude、Gemini、OpenCode、OMO、macOS 和 Linux 仅尽量兼容保留,不做额外真实运行验证,除非影响共享能力或用户当轮明确要求. 规则已写入项目 `AGENTS.md`;纯文档改动不重新构建 EXE.
+- 2026-08-19 修复 Codex 模型菜单复选框视觉回归: 恢复合并前的 Radix Checkbox, 保留原有主题蓝色、白色 SVG 勾号和紧凑勾号尺寸, 不改变模型启用逻辑. 共享 Checkbox 回归测试、Codex 模型相关测试、TypeScript 和格式检查通过;独立标识与隔离数据库的 Windows x64 旁路 Release 已实际打开并核对模型菜单截图. 旁路进程和临时目录已清理,正式实例 PID `21724` 未停止,标准 Release 未覆盖.
 
 ## 未完成边界与回归重点
 
