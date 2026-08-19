@@ -10,7 +10,7 @@
 - 用户仓库: `fork`, `https://github.com/Jessire/cc-switch.git`.
 - 上游仓库: `origin`, `https://github.com/farion1231/cc-switch.git`.
 - 最近一次已核验的上游基线: `origin/main` 提交 `0b5da510168914b251481654a568c3ffacd62cf4`,版本 `v3.20.0`.
-- 最近一次已核验的远端 `fork/main`: `92ad034df18d0b74462b42165464914e2882185f`. 当前本地 `main` 含尚未推送提交; 后续是否已推送必须以当次 Git 复核为准.
+- 最近一次已核验的远端 `fork/main`: `c9fe06e425abf62bf25155785276df35bed68c0f`,与本地 `main` 一致.
 
 ## 已实现的个人定制
 
@@ -60,6 +60,8 @@
 
 - v3.20.0 上游合并正在本地 `main` 完成验证,基线为 `origin/main` `0b5da510168914b251481654a568c3ffacd62cf4`; 冲突块按 Jessire 要求保留已验证定制实现,同文件非冲突上游改动保留.
 - 本轮已验证的 Windows x64 Release 候选: `C:\Users\jery3\.codex\tmp\cc-switch-release-20260819\release\cc-switch.exe`; 文件版本 `3.20.0`, PE32+ x64 Windows GUI, 大小 `34,207,744` bytes, SHA256 `6767E3486F4961D9804239F44F94011AF0451A29FD87D1CF4A341E7EAF2332CE`.
+- 最新 GitHub Release: `v3.20.0-custom.1`,标签指向提交 `c9fe06e425abf62bf25155785276df35bed68c0f`; Release URL: `https://github.com/Jessire/cc-switch/releases/tag/v3.20.0-custom.1`.
+- 已下载 Release 资产: `C:\Users\jery3\Downloads\cc-switch-v3.20.0-custom.1\CC-Switch-v3.20.0-custom.1-Windows-x64.exe`; 大小 `34,207,744` bytes,SHA256 `6767E3486F4961D9804239F44F94011AF0451A29FD87D1CF4A341E7EAF2332CE`,与本地构建产物一致.
 - 当前标准 Release 产物仍为 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.7`,大小 `33,020,416` bytes,SHA256 `1262075564DDC3E3A3FD3C831A9D7F9FBA36F58E314D75EE8BB54D05D1A5AD9D`. 由于正式进程占用,本轮未覆盖标准 EXE.
 - 当前运行实例: PID `15268` 运行 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 本轮未结束或替换该实例.
 - 2026-08-02 已删除仓库外 `cc-switch-build`, `.codex\tmp` 中的 CC Switch EXE/回滚副本/临时脚本/日志/截图/隔离数据, 以及标准构建的 `deps`, `build`, `.fingerprint` 等可重建中间物; 保留 `node_modules` 和正在运行的标准 Release EXE. 清理后 C: 可用空间 `101.24 GB`, D: 可用空间 `564.40 GB`.
@@ -93,6 +95,7 @@
 - 2026-08-14 本轮模型菜单修复已完成单模型改名即时持久化、批量改名即时持久化、缺失模型名后行内提示、Claude/Anthropic 无显式上下文时默认 `200K`,以及非 GPT 模型 `High`/`XHigh`/`Max` 三档推理强度. 已通过 `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, `pnpm format:check`, `pnpm typecheck`, 相关 Vitest 16/16, `pnpm build:renderer`, `cargo test --manifest-path src-tauri/Cargo.toml codex_config::tests:: --lib` 90/90 和 `git diff --check`. 标准 Windows x64 Release 已直接覆盖并启动验证; 版本 `3.19.7`,大小 `33,020,416` bytes,SHA256 `A50B8E441545ABFC3B31B16AB3990DA89415FBAC57E0DDB9B9F5474DD08ED460`,当前 PID `21880`. Codex Desktop 原生模型选择器宽度不受本项目 CSS 控制,本轮未修改该外部界面.
 - 2026-08-16 本轮分组计数与模型选择界面修正已通过 `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, `pnpm format:check`, `pnpm typecheck`, 全量 Vitest 110/110 文件、749/749 测试, `pnpm build:renderer`, `pnpm tauri build --no-bundle` 和 `git diff --check`. Codex 导入菜单只统计实际存在的 Codex provider; 获取模型后使用与图 4 一致的三列卡片和搜索框直接展示;路由标识改为双向箭头. 标准 Release 版本 `3.19.7`,大小 `33,020,416` bytes,SHA256 `1262075564DDC3E3A3FD3C831A9D7F9FBA36F58E314D75EE8BB54D05D1A5AD9D`. 现有外部 CC Switch 实例 PID `3680` 未结束或替换;未在正式数据上执行真实导入.
 - 2026-08-19 v3.20.0 上游合并已通过 `pnpm typecheck`, `pnpm format:check`, 全量 Vitest 141 个文件/1030 个测试, `pnpm build:renderer`, `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, Rust `cargo test --manifest-path src-tauri/Cargo.toml --lib` (2700 passed, 6 ignored), `git diff --check` 和旁路 `pnpm tauri build --no-bundle`. 候选 EXE 已核验版本 `3.20.0`, PE32+ x64,大小 `34,207,744` bytes,SHA256 `6767E3486F4961D9804239F44F94011AF0451A29FD87D1CF4A341E7EAF2332CE`. 未覆盖正在运行的标准 Release,未读取或修改正式数据库.
+- 2026-08-19 已将提交 `c9fe06e425abf62bf25155785276df35bed68c0f` 推送到 `fork/main`; `git ls-remote fork refs/heads/main` 与本地 SHA 一致,分叉计数 `0 0`. 已创建并下载 `v3.20.0-custom.1` Release 资产,下载文件大小和 SHA256 与构建产物一致.
 
 ## 未完成边界与回归重点
 
