@@ -97,6 +97,7 @@
 - 2026-08-19 v3.20.0 上游合并已通过 `pnpm typecheck`, `pnpm format:check`, 全量 Vitest 141 个文件/1030 个测试, `pnpm build:renderer`, `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, Rust `cargo test --manifest-path src-tauri/Cargo.toml --lib` (2700 passed, 6 ignored), `git diff --check` 和旁路 `pnpm tauri build --no-bundle`. 候选 EXE 已核验版本 `3.20.0`, PE32+ x64,大小 `34,207,744` bytes,SHA256 `6767E3486F4961D9804239F44F94011AF0451A29FD87D1CF4A341E7EAF2332CE`. 未覆盖正在运行的标准 Release,未读取或修改正式数据库.
 - 2026-08-19 已将提交 `c9fe06e425abf62bf25155785276df35bed68c0f` 推送到 `fork/main`; `git ls-remote fork refs/heads/main` 与本地 SHA 一致,分叉计数 `0 0`. 已创建并下载 `v3.20.0-custom.1` Release 资产,下载文件大小和 SHA256 与构建产物一致.
 - 2026-08-19 已移除供应商页顶部重复的橙色添加按钮,保留分组栏右侧绿色添加按钮. 修复 Windows 在 `silentStartup=true` 时手动启动也保持后台隐藏的问题: 页面加载回调与 setup 统一按 `--cc-switch-auto-start` 参数判断,只有真正的系统自启才隐藏窗口. 已复现旧版首次启动只有 `15x15` 单实例辅助窗口,二次启动可恢复主窗口;回归测试先失败后通过. 验证包括 `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, auto-launch Rust 测试 2/2, `pnpm exec tsc --noEmit`,相关 Vitest 16/16 和标准 `pnpm tauri build --no-bundle`.
+- 2026-08-19 上游同步验收范围已按实际使用收窄: Codex Desktop 是主要阻塞项,Grok Build 是次要阻塞项;共享供应商界面、Windows 启动托盘和用户数据安全继续阻塞 Release. Pi、Hermes、OpenClaw、Claude、Gemini、OpenCode、OMO、macOS 和 Linux 仅尽量兼容保留,不做额外真实运行验证,除非影响共享能力或用户当轮明确要求. 规则已写入项目 `AGENTS.md`;纯文档改动不重新构建 EXE.
 
 ## 未完成边界与回归重点
 
