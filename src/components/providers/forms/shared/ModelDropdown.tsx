@@ -4,13 +4,18 @@ import { ChevronDown, Search } from "lucide-react";
 import { formatCodexModelDisplayName } from "@/utils/codexModelDisplay";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type { FetchedModel } from "@/lib/api/model-fetch";
 
 interface ModelOptionsProps {
@@ -111,38 +116,73 @@ export function ModelDropdown({
   onSelect,
   inline = false,
 }: ModelOptionsProps & { inline?: boolean }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const grouped = groupModels(models);
+
   if (inline) {
     return <ModelOptionsList models={models} onSelect={onSelect} />;
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" className="shrink-0">
+    <Popover modal open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          className="shrink-0"
+          aria-label={t("providerForm.searchModelAriaLabel", {
+            defaultValue: "Select model",
+          })}
+        >
           <ChevronDown className="h-4 w-4" />
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
+      </PopoverTrigger>
+      <PopoverContent
         align="end"
-        className="z-[200] max-h-64 overflow-y-auto"
+        sideOffset={4}
+        collisionPadding={8}
+        className="z-[200] w-72 p-0"
       >
-        {groupModels(models).map(([vendor, vendorModels], vendorIndex) => (
-          <div key={vendor}>
-            {vendorIndex > 0 && <DropdownMenuSeparator />}
-            <DropdownMenuLabel>{vendor}</DropdownMenuLabel>
-            {vendorModels.map((model) => (
-              <DropdownMenuItem
-                key={model.id}
-                onSelect={() => onSelect(model.id)}
-                className="max-w-full"
-                title={model.id}
-              >
-                <ModelOptionLabel model={model} />
-              </DropdownMenuItem>
+        <Command
+          label={t("providerForm.searchModelPlaceholder", {
+            defaultValue: "Search models...",
+          })}
+        >
+          <CommandInput
+            placeholder={t("providerForm.searchModelPlaceholder", {
+              defaultValue: "Search models...",
+            })}
+          />
+          <CommandList className="max-h-64">
+            <CommandEmpty>
+              {t("providerForm.searchModelEmpty", {
+                defaultValue: "No matching models.",
+              })}
+            </CommandEmpty>
+            {grouped.map(([vendor, vendorModels]) => (
+              <CommandGroup key={vendor} heading={vendor}>
+                {vendorModels.map((m) => (
+                  <CommandItem
+                    key={m.id}
+                    value={m.id}
+                    aria-label={m.id}
+                    // Expose the vendor name as a keyword so models can also be
+                    // fuzzy-matched by vendor, not just by model id.
+                    keywords={[m.ownedBy || "Other"]}
+                    onSelect={() => {
+                      onSelect(m.id);
+                      setOpen(false);
+                    }}
+                  >
+                    <ModelOptionLabel model={m} />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
             ))}
-          </div>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

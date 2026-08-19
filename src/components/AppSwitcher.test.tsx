@@ -17,6 +17,7 @@ describe("AppSwitcher", () => {
           opencode: false,
           openclaw: false,
           hermes: false,
+          pi: false,
         }}
       />,
     );

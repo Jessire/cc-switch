@@ -4,12 +4,12 @@
 
 ## 状态快照
 
-- 更新时间: 2026-08-16, Asia/Shanghai.
+- 更新时间: 2026-08-19, Asia/Shanghai.
 - 工作目录: `D:\文件\Agenc Cli\cc-switch`.
 - 当前主线: `main`, 跟踪 `fork/main`.
 - 用户仓库: `fork`, `https://github.com/Jessire/cc-switch.git`.
 - 上游仓库: `origin`, `https://github.com/farion1231/cc-switch.git`.
-- 最近一次已核验的上游基线: `origin/main` 提交 `413c09e0790c304506888ae24b9be72820aca126`,包含 v3.19.2 及其后续 Codex catalog 修复.
+- 最近一次已核验的上游基线: `origin/main` 提交 `0b5da510168914b251481654a568c3ffacd62cf4`,版本 `v3.20.0`.
 - 最近一次已核验的远端 `fork/main`: `92ad034df18d0b74462b42165464914e2882185f`. 当前本地 `main` 含尚未推送提交; 后续是否已推送必须以当次 Git 复核为准.
 
 ## 已实现的个人定制
@@ -58,10 +58,10 @@
 
 ## 当前构建、发布和运行实例
 
-- v3.19.7 上游合并提交: `9de4561a31330ce1eb2b5fcc7aac253c44439d49` (`Merge upstream and release v3.19.7`). 合并基于 `origin/main` `413c09e0790c304506888ae24b9be72820aca126`,冲突块按 Jessire 要求保留定制实现,同文件非冲突上游改动保留.
-- 当前标准 Windows x64 Release 产物: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.7`, PE32+ x64 Windows GUI, 大小 `33,020,416` bytes, SHA256 `1262075564DDC3E3A3FD3C831A9D7F9FBA36F58E314D75EE8BB54D05D1A5AD9D`.
-- 最新 GitHub Release: `v3.19.7`,标签指向提交 `9de4561a31330ce1eb2b5fcc7aac253c44439d49`; Release 资产为 `CC-Switch-v3.19.7-Windows-x64.exe`,大小 `33,013,248` bytes,SHA256 `11B008897E9082AF13D9E94B96D621B1BE7F04A43BDF93EF6F76A96B57313B2B`. GitHub 下载回读已匹配.
-- 当前运行实例: PID `3680` 运行 `D:\Download\CC-Switch-v3.19.7-Windows-x64.exe`; 本轮未结束或替换该外部实例. 标准 Release 已重新构建,但尚未启动以避免干扰现有运行状态.
+- v3.20.0 上游合并正在本地 `main` 完成验证,基线为 `origin/main` `0b5da510168914b251481654a568c3ffacd62cf4`; 冲突块按 Jessire 要求保留已验证定制实现,同文件非冲突上游改动保留.
+- 本轮已验证的 Windows x64 Release 候选: `C:\Users\jery3\.codex\tmp\cc-switch-release-20260819\release\cc-switch.exe`; 文件版本 `3.20.0`, PE32+ x64 Windows GUI, 大小 `34,207,744` bytes, SHA256 `6767E3486F4961D9804239F44F94011AF0451A29FD87D1CF4A341E7EAF2332CE`.
+- 当前标准 Release 产物仍为 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 文件版本 `3.19.7`,大小 `33,020,416` bytes,SHA256 `1262075564DDC3E3A3FD3C831A9D7F9FBA36F58E314D75EE8BB54D05D1A5AD9D`. 由于正式进程占用,本轮未覆盖标准 EXE.
+- 当前运行实例: PID `15268` 运行 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`; 本轮未结束或替换该实例.
 - 2026-08-02 已删除仓库外 `cc-switch-build`, `.codex\tmp` 中的 CC Switch EXE/回滚副本/临时脚本/日志/截图/隔离数据, 以及标准构建的 `deps`, `build`, `.fingerprint` 等可重建中间物; 保留 `node_modules` 和正在运行的标准 Release EXE. 清理后 C: 可用空间 `101.24 GB`, D: 可用空间 `564.40 GB`.
 
 ## 已完成验证
@@ -92,6 +92,7 @@
 - 2026-08-13 自动重启下拉菜单已改为按两行文案和右侧勾选自动收缩, 移除无关保存图标与两侧冗余留白, 选中勾选移动到下拉箭头正下方的右侧; 修复过度压缩导致的文案溢出重叠和固定宽度造成的中间空白. 已移除全局 `focus-visible` 蓝色描边和 Tailwind 焦点 ring, 保留控件原有 hover、边框、选中和禁用反馈. 批量模型改名在点击“重命名”后立即写入对应 Codex 供应商配置并刷新查询, 不再等待底部“保存”, 连续改名和后续底部保存均以最新持久化结果为基线; 排序、启用状态与菜单短分组继续沿用底部保存语义. 已通过相关 Vitest 10/10, `pnpm format:check`, `pnpm typecheck`, `pnpm build:renderer`, `git diff --check` 和 Windows x64 Release 构建. 实际标准 Release GUI 已确认菜单按内容收缩、两行文案完整、右侧勾选紧凑对齐、与下方分组栏无重叠, 下拉打开及关闭后均无蓝色焦点框. 标准 EXE 版本 `3.19.7`, 大小 `33,013,248` bytes, SHA256 `2A99BB2B1047130517CDB0F2621F66D5A6E74CB61BDC940D6D217FB4C8049184`, 当前运行实例为标准 Release 路径.
 - 2026-08-14 本轮模型菜单修复已完成单模型改名即时持久化、批量改名即时持久化、缺失模型名后行内提示、Claude/Anthropic 无显式上下文时默认 `200K`,以及非 GPT 模型 `High`/`XHigh`/`Max` 三档推理强度. 已通过 `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, `pnpm format:check`, `pnpm typecheck`, 相关 Vitest 16/16, `pnpm build:renderer`, `cargo test --manifest-path src-tauri/Cargo.toml codex_config::tests:: --lib` 90/90 和 `git diff --check`. 标准 Windows x64 Release 已直接覆盖并启动验证; 版本 `3.19.7`,大小 `33,020,416` bytes,SHA256 `A50B8E441545ABFC3B31B16AB3990DA89415FBAC57E0DDB9B9F5474DD08ED460`,当前 PID `21880`. Codex Desktop 原生模型选择器宽度不受本项目 CSS 控制,本轮未修改该外部界面.
 - 2026-08-16 本轮分组计数与模型选择界面修正已通过 `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, `pnpm format:check`, `pnpm typecheck`, 全量 Vitest 110/110 文件、749/749 测试, `pnpm build:renderer`, `pnpm tauri build --no-bundle` 和 `git diff --check`. Codex 导入菜单只统计实际存在的 Codex provider; 获取模型后使用与图 4 一致的三列卡片和搜索框直接展示;路由标识改为双向箭头. 标准 Release 版本 `3.19.7`,大小 `33,020,416` bytes,SHA256 `1262075564DDC3E3A3FD3C831A9D7F9FBA36F58E314D75EE8BB54D05D1A5AD9D`. 现有外部 CC Switch 实例 PID `3680` 未结束或替换;未在正式数据上执行真实导入.
+- 2026-08-19 v3.20.0 上游合并已通过 `pnpm typecheck`, `pnpm format:check`, 全量 Vitest 141 个文件/1030 个测试, `pnpm build:renderer`, `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, Rust `cargo test --manifest-path src-tauri/Cargo.toml --lib` (2700 passed, 6 ignored), `git diff --check` 和旁路 `pnpm tauri build --no-bundle`. 候选 EXE 已核验版本 `3.20.0`, PE32+ x64,大小 `34,207,744` bytes,SHA256 `6767E3486F4961D9804239F44F94011AF0451A29FD87D1CF4A341E7EAF2332CE`. 未覆盖正在运行的标准 Release,未读取或修改正式数据库.
 
 ## 未完成边界与回归重点
 
