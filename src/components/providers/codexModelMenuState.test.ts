@@ -4,6 +4,7 @@ import {
   applyDraftModelDisplayNames,
   applySmartSort,
   buildDraftGroups,
+  cleanModelNameForDisplay,
   cleanModelNameForSorting,
   entriesForMenuSave,
   buildSmartSortPreview,
@@ -72,6 +73,9 @@ describe("codex model menu state", () => {
     );
     expect(cleanModelNameForSorting("V4 Flash 20240731 128K")).toBe("v4 flash");
     expect(cleanModelNameForSorting("V4 Flash 2410")).toBe("v4 flash");
+    expect(cleanModelNameForDisplay("GPT 5.6 Sol")).toBe("5.6 Sol");
+    expect(cleanModelNameForDisplay("Gemini 3.7 Flash")).toBe("3.7 Flash");
+    expect(cleanModelNameForDisplay("Qwen3.8 27B FP8")).toBe("3.8 27B");
   });
 
   it("supports custom prefixes and custom removed text", () => {
@@ -84,6 +88,33 @@ describe("codex model menu state", () => {
         customRemovePatterns: ["Beta"],
       }),
     ).toBe("5 6 sol");
+  });
+
+  it("exposes the cleaned model name for the smart-sort preview", () => {
+    const groups = buildDraftGroups({
+      first: provider(
+        "first",
+        [
+          { model: "gemini-3.7-flash", displayName: "Gemini 3.7 Flash" },
+          {
+            model: "deepseek-v4-flash-0731-1m",
+            displayName: "DeepSeek-V4-Flash-0731-1M",
+          },
+        ],
+        0,
+      ),
+    });
+
+    expect(
+      buildSmartSortPreview(groups).map((item) => item.normalizedDisplayName),
+    ).toEqual(["3.7 Flash", "V4 Flash"]);
+    expect(
+      buildSmartSortPreview(groups, {
+        stripBrandPrefixes: true,
+        stripDateSuffixes: false,
+        stripContextSuffixes: false,
+      }).map((item) => item.normalizedDisplayName),
+    ).toEqual(["3.7 Flash", "V4 Flash 0731 1M"]);
   });
 
   it("groups smart-sort results by model family while preserving stable order", () => {

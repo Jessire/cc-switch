@@ -25,6 +25,7 @@ export interface SmartSortPreviewItem {
   entryKey: string;
   family: string;
   displayName: string;
+  normalizedDisplayName: string;
   modelId: string;
   groupName: string;
 }
@@ -160,7 +161,7 @@ export function applyDraftModelDisplayNames(
 }
 
 const KNOWN_BRAND_PREFIX_REGEX =
-  /^(?:(?:openai|anthropic|google|deepseek|moonshot|zhipu|meta|mistral)[/_\-\s]+)?(?:gpt|claude|gemini|deepseek|qwen|glm|kimi|minimax|mistral|llama)[/_\-\s]*/i;
+  /^(?:(?:openai|anthropic|google|deepseek|moonshot|zhipu|meta|mistral)[/_\-\s]+)?(?:gpt|claude|gemini|deepseek|qwen|glm|kimi|minimax|mistral|llama)(?=[/_\-\s]|\d|$)[/_\-\s]*/i;
 
 const FULL_DATE_SUFFIX_REGEX =
   /(?:[-_.\s]|^)(?:20\d{2}[-_.]?)(?:0[1-9]|1[0-2])(?:[-_.]?)(?:0[1-9]|[12]\d|3[01])(?=[-_.\s]|$)/gi;
@@ -173,7 +174,7 @@ const MONTH_DAY_SUFFIX_REGEX =
 const CONTEXT_SUFFIX_REGEX =
   /(?:[-_.\s]*)(?:1m|\d+k|fp8|fp16|preview|latest|chat|instruct|online)\b(?:[-_.\s]*)$/gi;
 
-export function cleanModelNameForSorting(
+function stripModelNameAffixes(
   rawName: string,
   rules: ModelSortRulesConfig = DEFAULT_MODEL_SORT_RULES,
 ): string {
@@ -218,13 +219,31 @@ export function cleanModelNameForSorting(
       .replace(MONTH_DAY_SUFFIX_REGEX, " ");
   }
 
-  result = result
-    .toLocaleLowerCase()
+  return result
+    .replace(/[-_/]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function cleanModelNameForDisplay(
+  rawName: string,
+  rules: ModelSortRulesConfig = DEFAULT_MODEL_SORT_RULES,
+): string {
+  return stripModelNameAffixes(rawName, rules) || rawName.trim();
+}
+
+export function cleanModelNameForSorting(
+  rawName: string,
+  rules: ModelSortRulesConfig = DEFAULT_MODEL_SORT_RULES,
+): string {
+  const displayName = cleanModelNameForDisplay(rawName, rules);
+  const normalized = displayName
     .replace(/[:：].*$/, "")
+    .toLocaleLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 
-  return result || rawName.trim();
+  return normalized || rawName.trim();
 }
 
 function normalizeModelText(
@@ -261,30 +280,34 @@ export function buildSmartSortPreview(
     groups.map((group) => [group.providerId, group.menuGroupName]),
   );
   return flattenDraftGroups(groups)
-    .map((entry, index) => ({
-      entry,
-      index,
-      family: modelFamily(entry, rules),
-    }))
+    .map((entry, index) => {
+      const displayName =
+        entry.model.displayName?.trim() || entry.model.model || "";
+      const normalizedDisplayName = cleanModelNameForDisplay(
+        displayName,
+        rules,
+      );
+      return {
+        entry,
+        index,
+        family: modelFamily(entry, rules),
+        normalizedDisplayName,
+      };
+    })
     .sort(
       (left, right) =>
         naturalCompare(left.family, right.family) ||
         naturalCompare(
-          normalizeModelText(
-            left.entry.model.displayName?.trim() || left.entry.model.model,
-            rules,
-          ),
-          normalizeModelText(
-            right.entry.model.displayName?.trim() || right.entry.model.model,
-            rules,
-          ),
+          normalizeModelText(left.normalizedDisplayName),
+          normalizeModelText(right.normalizedDisplayName),
         ) ||
         left.index - right.index,
     )
-    .map(({ entry, family }) => ({
+    .map(({ entry, family, normalizedDisplayName }) => ({
       entryKey: entry.key,
       family,
       displayName: entry.model.displayName?.trim() || entry.model.model,
+      normalizedDisplayName,
       modelId: entry.model.model,
       groupName: groupNames.get(entry.providerId) || entry.providerId,
     }));

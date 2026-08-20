@@ -189,12 +189,14 @@ function SmartSortedModelRow({
   entry,
   position,
   groupName,
+  normalizedDisplayName,
   onChange,
   onRename,
 }: {
   entry: DraftModelEntry;
   position: number;
   groupName: string;
+  normalizedDisplayName: string;
   onChange: (patch: Partial<CodexCatalogModel>) => void;
   onRename: (displayName: string) => Promise<void>;
 }) {
@@ -205,7 +207,8 @@ function SmartSortedModelRow({
   );
   const [isRenaming, setIsRenaming] = useState(false);
   const isEnabled = entry.model.enabled !== false;
-  const displayName = entry.model.displayName?.trim() || entry.model.model;
+  const rawDisplayName = entry.model.displayName?.trim() || entry.model.model;
+  const displayName = normalizedDisplayName || rawDisplayName;
 
   return (
     <div
@@ -837,6 +840,7 @@ export function CodexModelMenuDialog({
             {
               entry,
               groupName: groupNames.get(entry.providerId) || entry.providerId,
+              normalizedDisplayName: item.normalizedDisplayName,
             },
           ]
         : [];
@@ -1204,18 +1208,23 @@ export function CodexModelMenuDialog({
             <ScrollArea className="h-[min(62vh,36rem)] pr-2">
               {isSmartSortView ? (
                 <div className="space-y-1.5 rounded-xl border border-border-default bg-background p-2">
-                  {smartSortedEntries.map(({ entry, groupName }, index) => (
-                    <SmartSortedModelRow
-                      key={entry.key}
-                      entry={entry}
-                      position={index + 1}
-                      groupName={groupName}
-                      onChange={(patch) => handleEntryChange(entry.key, patch)}
-                      onRename={(displayName) =>
-                        handleModelRename(entry.key, displayName)
-                      }
-                    />
-                  ))}
+                  {smartSortedEntries.map(
+                    ({ entry, groupName, normalizedDisplayName }, index) => (
+                      <SmartSortedModelRow
+                        key={entry.key}
+                        entry={entry}
+                        position={index + 1}
+                        groupName={groupName}
+                        normalizedDisplayName={normalizedDisplayName}
+                        onChange={(patch) =>
+                          handleEntryChange(entry.key, patch)
+                        }
+                        onRename={(displayName) =>
+                          handleModelRename(entry.key, displayName)
+                        }
+                      />
+                    ),
+                  )}
                 </div>
               ) : (
                 <DndContext
