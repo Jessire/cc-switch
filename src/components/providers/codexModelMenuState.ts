@@ -29,6 +29,25 @@ export interface SmartSortPreviewItem {
   groupName: string;
 }
 
+export interface ModelSortRulesConfig {
+  stripBrandPrefixes?: boolean;
+  stripDateSuffixes?: boolean;
+  stripContextSuffixes?: boolean;
+  customPrefixes?: string[];
+  customRemovePatterns?: string[];
+}
+
+export const DEFAULT_MODEL_SORT_RULES: ModelSortRulesConfig = {
+  stripBrandPrefixes: true,
+  stripDateSuffixes: true,
+  stripContextSuffixes: true,
+  customPrefixes: [],
+  customRemovePatterns: [],
+};
+
+export const MODEL_SORT_RULES_STORAGE_KEY =
+  "cc-switch-codex-model-menu-sort-rules-v1";
+
 export function providerCatalogModels(provider: Provider): CodexCatalogModel[] {
   const catalog = provider.settingsConfig?.modelCatalog;
   return Array.isArray(catalog?.models)
@@ -140,19 +159,87 @@ export function applyDraftModelDisplayNames(
   }));
 }
 
-function normalizeModelText(value: string): string {
-  return value
+const KNOWN_BRAND_PREFIX_REGEX =
+  /^(?:(?:openai|anthropic|google|deepseek|moonshot|zhipu|meta|mistral)[/_\-\s]+)?(?:gpt|claude|gemini|deepseek|qwen|glm|kimi|minimax|mistral|llama)[/_\-\s]*/i;
+
+const FULL_DATE_SUFFIX_REGEX =
+  /(?:[-_.\s]|^)(?:20\d{2}[-_.]?)(?:0[1-9]|1[0-2])(?:[-_.]?)(?:0[1-9]|[12]\d|3[01])(?=[-_.\s]|$)/gi;
+const SHORT_DATE_SUFFIX_REGEX =
+  /(?:[-_.\s]|^)(?:2[4-9])(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])(?=[-_.\s]|$)/gi;
+const YEAR_MONTH_SUFFIX_REGEX =
+  /(?:[-_.\s]|^)(?:2[4-9])(?:0[1-9]|1[0-2])(?=[-_.\s]|$)/gi;
+const MONTH_DAY_SUFFIX_REGEX =
+  /(?:[-_.\s]|^)(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])(?=[-_.\s]|$)/gi;
+const CONTEXT_SUFFIX_REGEX =
+  /(?:[-_.\s]*)(?:1m|\d+k|fp8|fp16|preview|latest|chat|instruct|online)\b(?:[-_.\s]*)$/gi;
+
+export function cleanModelNameForSorting(
+  rawName: string,
+  rules: ModelSortRulesConfig = DEFAULT_MODEL_SORT_RULES,
+): string {
+  let result = rawName.trim();
+  if (!result) return "";
+
+  if (rules.customPrefixes?.length) {
+    for (const prefix of rules.customPrefixes) {
+      const trimmedPrefix = prefix.trim();
+      if (!trimmedPrefix) continue;
+      result = result.replace(
+        new RegExp(`^${escapeRegExp(trimmedPrefix)}[/_\\-\\s]*`, "i"),
+        "",
+      );
+    }
+  }
+
+  if (rules.stripBrandPrefixes !== false) {
+    result = result.replace(KNOWN_BRAND_PREFIX_REGEX, "");
+  }
+
+  if (rules.customRemovePatterns?.length) {
+    for (const pattern of rules.customRemovePatterns) {
+      const trimmedPattern = pattern.trim();
+      if (!trimmedPattern) continue;
+      result = result.replace(
+        new RegExp(escapeRegExp(trimmedPattern), "gi"),
+        " ",
+      );
+    }
+  }
+
+  if (rules.stripContextSuffixes !== false) {
+    result = result.replace(CONTEXT_SUFFIX_REGEX, " ");
+  }
+
+  if (rules.stripDateSuffixes !== false) {
+    result = result
+      .replace(FULL_DATE_SUFFIX_REGEX, " ")
+      .replace(SHORT_DATE_SUFFIX_REGEX, " ")
+      .replace(YEAR_MONTH_SUFFIX_REGEX, " ")
+      .replace(MONTH_DAY_SUFFIX_REGEX, " ");
+  }
+
+  result = result
     .toLocaleLowerCase()
     .replace(/[:：].*$/, "")
-    .replace(/(?:[- _]?(?:\d+(?:\.\d+)?\s*)?(?:k|m))$/i, "")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+
+  return result || rawName.trim();
 }
 
-function modelFamily(entry: DraftModelEntry): string {
-  const normalized = normalizeModelText(
-    entry.model.model || entry.model.displayName || "",
-  );
+function normalizeModelText(
+  value: string,
+  rules: ModelSortRulesConfig = DEFAULT_MODEL_SORT_RULES,
+): string {
+  return cleanModelNameForSorting(value, rules).toLocaleLowerCase();
+}
+
+function modelFamily(
+  entry: DraftModelEntry,
+  rules: ModelSortRulesConfig = DEFAULT_MODEL_SORT_RULES,
+): string {
+  const rawName = entry.model.displayName?.trim() || entry.model.model || "";
+  const normalized = normalizeModelText(rawName, rules);
   const knownFamily = normalized.match(
     /^(gpt|claude\s+(?:opus|sonnet|haiku)|grok|glm|kimi|qwen|deepseek)(?:\s|$)/,
   );
@@ -168,6 +255,7 @@ function naturalCompare(left: string, right: string): number {
 
 export function buildSmartSortPreview(
   groups: DraftProviderGroup[],
+  rules: ModelSortRulesConfig = DEFAULT_MODEL_SORT_RULES,
 ): SmartSortPreviewItem[] {
   const groupNames = new Map(
     groups.map((group) => [group.providerId, group.menuGroupName]),
@@ -176,17 +264,19 @@ export function buildSmartSortPreview(
     .map((entry, index) => ({
       entry,
       index,
-      family: modelFamily(entry),
+      family: modelFamily(entry, rules),
     }))
     .sort(
       (left, right) =>
         naturalCompare(left.family, right.family) ||
         naturalCompare(
           normalizeModelText(
-            left.entry.model.displayName || left.entry.model.model,
+            left.entry.model.displayName?.trim() || left.entry.model.model,
+            rules,
           ),
           normalizeModelText(
-            right.entry.model.displayName || right.entry.model.model,
+            right.entry.model.displayName?.trim() || right.entry.model.model,
+            rules,
           ),
         ) ||
         left.index - right.index,
@@ -202,8 +292,9 @@ export function buildSmartSortPreview(
 
 export function applySmartSort(
   groups: DraftProviderGroup[],
+  rules: ModelSortRulesConfig = DEFAULT_MODEL_SORT_RULES,
 ): DraftProviderGroup[] {
-  const preview = buildSmartSortPreview(groups);
+  const preview = buildSmartSortPreview(groups, rules);
   const orderByKey = new Map(
     preview.map((item, index) => [item.entryKey, index]),
   );
@@ -241,12 +332,13 @@ export function shouldRestartCodexAfterMenuSave(
 export function entriesForMenuSave(
   groups: DraftProviderGroup[],
   smartSorted: boolean,
+  rules: ModelSortRulesConfig = DEFAULT_MODEL_SORT_RULES,
 ): DraftModelEntry[] {
   if (!smartSorted) return flattenDraftGroups(groups);
   const entriesByKey = new Map(
     flattenDraftGroups(groups).map((entry) => [entry.key, entry]),
   );
-  return buildSmartSortPreview(groups).flatMap((item) => {
+  return buildSmartSortPreview(groups, rules).flatMap((item) => {
     const entry = entriesByKey.get(item.entryKey);
     return entry ? [entry] : [];
   });

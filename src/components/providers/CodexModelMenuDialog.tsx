@@ -20,6 +20,7 @@ import {
   ChevronDown,
   GripVertical,
   Loader2,
+  SlidersHorizontal,
   WandSparkles,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -41,22 +42,31 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import { syncCodexModelToCatalogFirst } from "@/components/providers/forms/ProviderForm";
 import {
   buildDraftGroups,
   applyDraftModelDisplayNames,
   applySmartSort,
   buildSmartSortPreview,
+  DEFAULT_MODEL_SORT_RULES,
   entriesForMenuSave,
   findDraftModelRenameMatches,
   flattenDraftGroups,
+  MODEL_SORT_RULES_STORAGE_KEY,
   providerCatalogModels,
   reorderDraftGroups,
   reorderDraftModels,
   shouldRestartCodexAfterMenuSave,
   type DraftModelEntry,
   type DraftProviderGroup,
+  type ModelSortRulesConfig,
 } from "@/components/providers/codexModelMenuState";
 
 interface CodexModelMenuDialogProps {
@@ -438,6 +448,11 @@ export function CodexModelMenuDialog({
     [],
   );
   const [isSmartSortView, setIsSmartSortView] = useState(false);
+  const [sortRules, setSortRules] = useState<ModelSortRulesConfig>(
+    DEFAULT_MODEL_SORT_RULES,
+  );
+  const [customPrefixesInput, setCustomPrefixesInput] = useState("");
+  const [customRemoveInput, setCustomRemoveInput] = useState("");
   const [collapsedGroups, setCollapsedGroups] = useState<
     Record<string, boolean>
   >({});
@@ -474,6 +489,33 @@ export function CodexModelMenuDialog({
     }
   };
 
+  const readSortRules = (): ModelSortRulesConfig => {
+    try {
+      const raw = localStorage.getItem(MODEL_SORT_RULES_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === "object"
+        ? { ...DEFAULT_MODEL_SORT_RULES, ...parsed }
+        : DEFAULT_MODEL_SORT_RULES;
+    } catch {
+      return DEFAULT_MODEL_SORT_RULES;
+    }
+  };
+
+  const updateSortRules = (patch: Partial<ModelSortRulesConfig>) => {
+    setSortRules((current) => {
+      const next = { ...current, ...patch };
+      try {
+        localStorage.setItem(
+          MODEL_SORT_RULES_STORAGE_KEY,
+          JSON.stringify(next),
+        );
+      } catch {
+        // Keep the rules active for this session when storage is unavailable.
+      }
+      return next;
+    });
+  };
+
   useEffect(() => {
     if (!open) {
       wasOpenRef.current = false;
@@ -487,6 +529,12 @@ export function CodexModelMenuDialog({
     setGroups(next);
     setOriginalGroups(next);
     setIsSmartSortView(false);
+    const savedSortRules = readSortRules();
+    setSortRules(savedSortRules);
+    setCustomPrefixesInput((savedSortRules.customPrefixes || []).join(", "));
+    setCustomRemoveInput(
+      (savedSortRules.customRemovePatterns || []).join(", "),
+    );
     setCollapsedGroups(readCollapsedGroups());
     setInitialSnapshot(JSON.stringify(next));
     setRenameFrom("");
@@ -763,10 +811,17 @@ export function CodexModelMenuDialog({
   const handleToggleSortView = () => {
     setIsSmartSortView((current) => {
       const next = !current;
-      setGroups(next ? applySmartSort(originalGroups) : originalGroups);
+      setGroups(
+        next ? applySmartSort(originalGroups, sortRules) : originalGroups,
+      );
       return next;
     });
   };
+
+  useEffect(() => {
+    if (!isSmartSortView) return;
+    setGroups(applySmartSort(originalGroups, sortRules));
+  }, [isSmartSortView, originalGroups, sortRules]);
 
   const smartSortedEntries = useMemo(() => {
     const groupNames = new Map(
@@ -775,7 +830,7 @@ export function CodexModelMenuDialog({
     const entriesByKey = new Map(
       flattenDraftGroups(groups).map((entry) => [entry.key, entry]),
     );
-    return buildSmartSortPreview(groups).flatMap((item) => {
+    return buildSmartSortPreview(groups, sortRules).flatMap((item) => {
       const entry = entriesByKey.get(item.entryKey);
       return entry
         ? [
@@ -786,7 +841,7 @@ export function CodexModelMenuDialog({
           ]
         : [];
     });
-  }, [groups]);
+  }, [groups, sortRules]);
 
   const hasChanges = JSON.stringify(groups) !== initialSnapshot;
   const totalModelCount = groups.reduce(
@@ -804,7 +859,11 @@ export function CodexModelMenuDialog({
     setIsSaving(true);
     try {
       const nextByProvider = new Map<string, Provider>();
-      const entriesToSave = entriesForMenuSave(groups, isSmartSortView);
+      const entriesToSave = entriesForMenuSave(
+        groups,
+        isSmartSortView,
+        sortRules,
+      );
       entriesToSave.forEach((entry, menuOrder) => {
         const original = persistedProvidersRef.current[entry.providerId];
         if (!original) return;
@@ -920,21 +979,119 @@ export function CodexModelMenuDialog({
             {t("codexConfig.modelMenuManager")}
           </DialogTitle>
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleToggleSortView}
-            className="h-10 shrink-0 gap-1.5 rounded-md px-3 text-sm"
-            title={isSmartSortView ? "切换回原始排序" : "查看智能排序结果"}
-          >
-            {isSmartSortView ? (
-              <ArrowLeftRight className="h-4 w-4" />
-            ) : (
-              <WandSparkles className="h-4 w-4" />
-            )}
-            <span>{isSmartSortView ? "原始排序" : "智能排序"}</span>
-          </Button>
+          <div className="flex shrink-0 items-center gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleToggleSortView}
+              className="h-10 shrink-0 gap-1.5 rounded-md px-3 text-sm"
+              title={isSmartSortView ? "切换回原始排序" : "查看智能排序结果"}
+            >
+              {isSmartSortView ? (
+                <ArrowLeftRight className="h-4 w-4" />
+              ) : (
+                <WandSparkles className="h-4 w-4" />
+              )}
+              <span>{isSmartSortView ? "原始排序" : "智能排序"}</span>
+            </Button>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  title="智能排序规则"
+                  aria-label="智能排序规则"
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                className="z-[140] w-80 space-y-4 p-4"
+              >
+                <div className="text-sm font-medium">智能排序规则</div>
+
+                <div className="space-y-3">
+                  <label className="flex items-center justify-between gap-4 text-sm">
+                    <span>去除 GPT、Claude 等前缀</span>
+                    <Switch
+                      checked={sortRules.stripBrandPrefixes !== false}
+                      onCheckedChange={(checked) =>
+                        updateSortRules({ stripBrandPrefixes: checked })
+                      }
+                    />
+                  </label>
+                  <label className="flex items-center justify-between gap-4 text-sm">
+                    <span>去除日期后缀</span>
+                    <Switch
+                      checked={sortRules.stripDateSuffixes !== false}
+                      onCheckedChange={(checked) =>
+                        updateSortRules({ stripDateSuffixes: checked })
+                      }
+                    />
+                  </label>
+                  <label className="flex items-center justify-between gap-4 text-sm">
+                    <span>去除 1M、128K 等后缀</span>
+                    <Switch
+                      checked={sortRules.stripContextSuffixes !== false}
+                      onCheckedChange={(checked) =>
+                        updateSortRules({ stripContextSuffixes: checked })
+                      }
+                    />
+                  </label>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="codex-sort-custom-prefixes"
+                    className="text-xs"
+                  >
+                    自定义前缀
+                  </label>
+                  <Input
+                    id="codex-sort-custom-prefixes"
+                    value={customPrefixesInput}
+                    onChange={(event) => {
+                      setCustomPrefixesInput(event.target.value);
+                      updateSortRules({
+                        customPrefixes: event.target.value
+                          .split(/[,，]/)
+                          .map((value) => value.trim())
+                          .filter(Boolean),
+                      });
+                    }}
+                    placeholder="例如: MyModel, VendorX"
+                    className="h-9 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="codex-sort-remove-text" className="text-xs">
+                    自定义删除文本
+                  </label>
+                  <Input
+                    id="codex-sort-remove-text"
+                    value={customRemoveInput}
+                    onChange={(event) => {
+                      setCustomRemoveInput(event.target.value);
+                      updateSortRules({
+                        customRemovePatterns: event.target.value
+                          .split(/[,，]/)
+                          .map((value) => value.trim())
+                          .filter(Boolean),
+                      });
+                    }}
+                    placeholder="例如: Beta, 专线"
+                    className="h-9 text-sm"
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
 
           <div
             ref={renamePreviewRef}

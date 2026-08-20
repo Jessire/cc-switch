@@ -4,6 +4,7 @@ import {
   applyDraftModelDisplayNames,
   applySmartSort,
   buildDraftGroups,
+  cleanModelNameForSorting,
   entriesForMenuSave,
   buildSmartSortPreview,
   findDraftModelRenameMatches,
@@ -28,6 +29,63 @@ function provider(
 }
 
 describe("codex model menu state", () => {
+  it("uses renamed display names instead of unusual model IDs for smart sorting", () => {
+    const groups = buildDraftGroups({
+      first: provider(
+        "first",
+        [
+          { model: "邪恶FF（sol）", displayName: "5.6 Sol" },
+          { model: "claude-opus-5", displayName: "Claude Opus 5" },
+        ],
+        0,
+      ),
+      second: provider(
+        "second",
+        [
+          { model: "gpt-5.6-sol", displayName: "GPT 5.6 Sol" },
+          { model: "another-odd-id", displayName: "Opus 5" },
+        ],
+        1,
+      ),
+    });
+
+    const preview = buildSmartSortPreview(groups);
+    expect(preview.map((item) => item.displayName)).toEqual([
+      "5.6 Sol",
+      "GPT 5.6 Sol",
+      "Claude Opus 5",
+      "Opus 5",
+    ]);
+    expect(preview.map((item) => item.family)).toEqual([
+      "5 6 sol",
+      "5 6 sol",
+      "opus 5",
+      "opus 5",
+    ]);
+  });
+
+  it("removes preset date, context, and brand affixes from sorting names", () => {
+    expect(cleanModelNameForSorting("GPT 5.6 Sol")).toBe("5 6 sol");
+    expect(cleanModelNameForSorting("Claude-Opus-5")).toBe("opus 5");
+    expect(cleanModelNameForSorting("DeepSeek-V4-Flash-0731-1M")).toBe(
+      "v4 flash",
+    );
+    expect(cleanModelNameForSorting("V4 Flash 20240731 128K")).toBe("v4 flash");
+    expect(cleanModelNameForSorting("V4 Flash 2410")).toBe("v4 flash");
+  });
+
+  it("supports custom prefixes and custom removed text", () => {
+    expect(
+      cleanModelNameForSorting("VendorX GPT 5.6 Beta Sol", {
+        stripBrandPrefixes: true,
+        stripDateSuffixes: true,
+        stripContextSuffixes: true,
+        customPrefixes: ["VendorX"],
+        customRemovePatterns: ["Beta"],
+      }),
+    ).toBe("5 6 sol");
+  });
+
   it("groups smart-sort results by model family while preserving stable order", () => {
     const groups = buildDraftGroups({
       first: provider(
@@ -50,13 +108,13 @@ describe("codex model menu state", () => {
 
     const preview = buildSmartSortPreview(groups);
     expect(preview.map((item) => item.modelId)).toEqual([
+      "gpt-5.6-luna",
+      "gpt-5.6-luna",
       "claude-opus-4-8",
       "claude-opus-5",
-      "gpt-5.6-luna",
-      "gpt-5.6-luna",
     ]);
-    expect(preview[0].groupName).toBe("second relay");
-    expect(preview[2].groupName).toBe("first relay");
+    expect(preview[0].groupName).toBe("first relay");
+    expect(preview[2].groupName).toBe("second relay");
 
     const sorted = applySmartSort(groups);
     expect(
