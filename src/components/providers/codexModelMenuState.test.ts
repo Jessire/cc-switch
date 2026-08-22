@@ -69,25 +69,42 @@ describe("codex model menu state", () => {
     expect(cleanModelNameForSorting("GPT 5.6 Sol")).toBe("5 6 sol");
     expect(cleanModelNameForSorting("Claude-Opus-5")).toBe("opus 5");
     expect(cleanModelNameForSorting("DeepSeek-V4-Flash-0731-1M")).toBe(
-      "v4 flash",
+      "deepseek v4 flash",
     );
     expect(cleanModelNameForSorting("V4 Flash 20240731 128K")).toBe("v4 flash");
     expect(cleanModelNameForSorting("V4 Flash 2410")).toBe("v4 flash");
     expect(cleanModelNameForDisplay("GPT 5.6 Sol")).toBe("5.6 Sol");
     expect(cleanModelNameForDisplay("Gemini 3.7 Flash")).toBe("3.7 Flash");
-    expect(cleanModelNameForDisplay("Qwen3.8 27B FP8")).toBe("3.8 27B");
+    expect(cleanModelNameForDisplay("Qwen3.8 27B FP8")).toBe("Qwen3.8 27B");
   });
 
-  it("supports custom prefixes and custom removed text", () => {
+  it("keeps domestic brand prefixes while cleaning foreign model prefixes", () => {
     expect(
-      cleanModelNameForSorting("VendorX GPT 5.6 Beta Sol", {
+      cleanModelNameForDisplay("Qwen3.8 27B FP8", {
         stripBrandPrefixes: true,
         stripDateSuffixes: true,
         stripContextSuffixes: true,
-        customPrefixes: ["VendorX"],
-        customRemovePatterns: ["Beta"],
       }),
-    ).toBe("5 6 sol");
+    ).toBe("Qwen3.8 27B");
+    expect(
+      cleanModelNameForDisplay("Kimi K2.7 Code", {
+        stripBrandPrefixes: true,
+        stripDateSuffixes: true,
+        stripContextSuffixes: true,
+      }),
+    ).toBe("Kimi K2.7 Code");
+    expect(
+      cleanModelNameForDisplay("DeepSeek V4 Flash", {
+        stripBrandPrefixes: true,
+        stripDateSuffixes: true,
+        stripContextSuffixes: true,
+      }),
+    ).toBe("DeepSeek V4 Flash");
+    expect(
+      cleanModelNameForDisplay("Ox Alpha", {
+        stripBrandPrefixes: true,
+      }),
+    ).toBe("Alpha");
   });
 
   it("exposes the cleaned model name for the smart-sort preview", () => {
@@ -107,14 +124,14 @@ describe("codex model menu state", () => {
 
     expect(
       buildSmartSortPreview(groups).map((item) => item.normalizedDisplayName),
-    ).toEqual(["3.7 Flash", "V4 Flash"]);
+    ).toEqual(["3.7 Flash", "DeepSeek V4 Flash"]);
     expect(
       buildSmartSortPreview(groups, {
         stripBrandPrefixes: true,
         stripDateSuffixes: false,
         stripContextSuffixes: false,
       }).map((item) => item.normalizedDisplayName),
-    ).toEqual(["3.7 Flash", "V4 Flash 0731 1M"]);
+    ).toEqual(["3.7 Flash", "DeepSeek V4 Flash 0731 1M"]);
   });
 
   it("groups smart-sort results by model family while preserving stable order", () => {

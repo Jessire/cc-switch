@@ -450,12 +450,10 @@ export function CodexModelMenuDialog({
   const [originalGroups, setOriginalGroups] = useState<DraftProviderGroup[]>(
     [],
   );
-  const [isSmartSortView, setIsSmartSortView] = useState(false);
+  const [isSmartSortView, setIsSmartSortView] = useState(true);
   const [sortRules, setSortRules] = useState<ModelSortRulesConfig>(
     DEFAULT_MODEL_SORT_RULES,
   );
-  const [customPrefixesInput, setCustomPrefixesInput] = useState("");
-  const [customRemoveInput, setCustomRemoveInput] = useState("");
   const [collapsedGroups, setCollapsedGroups] = useState<
     Record<string, boolean>
   >({});
@@ -531,13 +529,9 @@ export function CodexModelMenuDialog({
     const next = buildDraftGroups(providers);
     setGroups(next);
     setOriginalGroups(next);
-    setIsSmartSortView(false);
+    setIsSmartSortView(true);
     const savedSortRules = readSortRules();
     setSortRules(savedSortRules);
-    setCustomPrefixesInput((savedSortRules.customPrefixes || []).join(", "));
-    setCustomRemoveInput(
-      (savedSortRules.customRemovePatterns || []).join(", "),
-    );
     setCollapsedGroups(readCollapsedGroups());
     setInitialSnapshot(JSON.stringify(next));
     setRenameFrom("");
@@ -868,6 +862,12 @@ export function CodexModelMenuDialog({
         isSmartSortView,
         sortRules,
       );
+      const savedNameByKey = new Map(
+        buildSmartSortPreview(groups, sortRules).map((item) => [
+          item.entryKey,
+          item.normalizedDisplayName,
+        ]),
+      );
       entriesToSave.forEach((entry, menuOrder) => {
         const original = persistedProvidersRef.current[entry.providerId];
         if (!original) return;
@@ -904,6 +904,10 @@ export function CodexModelMenuDialog({
         };
         models[entry.modelIndex] = {
           ...model,
+          // The cleaned smart-sort label is the user-visible Codex label.
+          ...(savedNameByKey.has(entry.key)
+            ? { displayName: savedNameByKey.get(entry.key) }
+            : {}),
           menuOrder,
         };
         nextByProvider.set(entry.providerId, source);
@@ -1047,51 +1051,6 @@ export function CodexModelMenuDialog({
                       }
                     />
                   </label>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="codex-sort-custom-prefixes"
-                    className="text-xs"
-                  >
-                    自定义前缀
-                  </label>
-                  <Input
-                    id="codex-sort-custom-prefixes"
-                    value={customPrefixesInput}
-                    onChange={(event) => {
-                      setCustomPrefixesInput(event.target.value);
-                      updateSortRules({
-                        customPrefixes: event.target.value
-                          .split(/[,，]/)
-                          .map((value) => value.trim())
-                          .filter(Boolean),
-                      });
-                    }}
-                    placeholder="例如: MyModel, VendorX"
-                    className="h-9 text-sm"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="codex-sort-remove-text" className="text-xs">
-                    自定义删除文本
-                  </label>
-                  <Input
-                    id="codex-sort-remove-text"
-                    value={customRemoveInput}
-                    onChange={(event) => {
-                      setCustomRemoveInput(event.target.value);
-                      updateSortRules({
-                        customRemovePatterns: event.target.value
-                          .split(/[,，]/)
-                          .map((value) => value.trim())
-                          .filter(Boolean),
-                      });
-                    }}
-                    placeholder="例如: Beta, 专线"
-                    className="h-9 text-sm"
-                  />
                 </div>
               </PopoverContent>
             </Popover>

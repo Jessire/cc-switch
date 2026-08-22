@@ -34,16 +34,12 @@ export interface ModelSortRulesConfig {
   stripBrandPrefixes?: boolean;
   stripDateSuffixes?: boolean;
   stripContextSuffixes?: boolean;
-  customPrefixes?: string[];
-  customRemovePatterns?: string[];
 }
 
 export const DEFAULT_MODEL_SORT_RULES: ModelSortRulesConfig = {
   stripBrandPrefixes: true,
   stripDateSuffixes: true,
   stripContextSuffixes: true,
-  customPrefixes: [],
-  customRemovePatterns: [],
 };
 
 export const MODEL_SORT_RULES_STORAGE_KEY =
@@ -160,8 +156,11 @@ export function applyDraftModelDisplayNames(
   }));
 }
 
-const KNOWN_BRAND_PREFIX_REGEX =
-  /^(?:(?:openai|anthropic|google|deepseek|moonshot|zhipu|meta|mistral)[/_\-\s]+)?(?:gpt|claude|gemini|deepseek|qwen|glm|kimi|minimax|mistral|llama)(?=[/_\-\s]|\d|$)[/_\-\s]*/i;
+const DOMESTIC_MODEL_PREFIX_REGEX =
+  /^(?:(?:zhipu|moonshot|alibaba|stepfun|xiaomi|01ai|baichuan)[/_\-\s]+)?(?:qwen|glm|kimi|deepseek|minimax|step|mimo|ling|longcat|hunyuan|doubao|ernie|spark)(?=[/_\-\s\d]|\d|$)/i;
+
+const FOREIGN_MODEL_PREFIX_REGEX =
+  /^(?:(?:openai|anthropic|google|meta|xai|mistral|cohere|amazon)[/_\-\s]+)?(?:ox|gpt|claude|gemini|grok|llama|mistral|command)(?=[/_\-\s\d]|\d|$)[/_\-\s]*/i;
 
 const FULL_DATE_SUFFIX_REGEX =
   /(?:[-_.\s]|^)(?:20\d{2}[-_.]?)(?:0[1-9]|1[0-2])(?:[-_.]?)(?:0[1-9]|[12]\d|3[01])(?=[-_.\s]|$)/gi;
@@ -181,30 +180,12 @@ function stripModelNameAffixes(
   let result = rawName.trim();
   if (!result) return "";
 
-  if (rules.customPrefixes?.length) {
-    for (const prefix of rules.customPrefixes) {
-      const trimmedPrefix = prefix.trim();
-      if (!trimmedPrefix) continue;
-      result = result.replace(
-        new RegExp(`^${escapeRegExp(trimmedPrefix)}[/_\\-\\s]*`, "i"),
-        "",
-      );
-    }
-  }
-
-  if (rules.stripBrandPrefixes !== false) {
-    result = result.replace(KNOWN_BRAND_PREFIX_REGEX, "");
-  }
-
-  if (rules.customRemovePatterns?.length) {
-    for (const pattern of rules.customRemovePatterns) {
-      const trimmedPattern = pattern.trim();
-      if (!trimmedPattern) continue;
-      result = result.replace(
-        new RegExp(escapeRegExp(trimmedPattern), "gi"),
-        " ",
-      );
-    }
+  // Prefix cleanup is only for foreign models; domestic names keep their brand.
+  if (
+    rules.stripBrandPrefixes !== false &&
+    !DOMESTIC_MODEL_PREFIX_REGEX.test(result)
+  ) {
+    result = result.replace(FOREIGN_MODEL_PREFIX_REGEX, "");
   }
 
   if (rules.stripContextSuffixes !== false) {

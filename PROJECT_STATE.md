@@ -36,6 +36,7 @@
 - Codex 模型编辑支持 `372K`、`500K`、`1M` 上下文快捷值; GPT-5.6 默认 `372000`, Claude 默认 `200000`, 国产模型默认 `1000000`, Grok 默认 `500000`, 仅在上下文窗口为空时自动填充. 所有模型禁用后保留供应商收藏,主页以淡色星标表示未启用.
 - Codex 模型菜单支持原始排序与智能排序结果切换查看; 原始视图保留供应商卡片,智能视图改为跨供应商全局模型列表,同型号节点连续排列并显示所属短分组,保存时按当前视图写入.
 - 智能视图保存时按全局列表顺序写入 `menuOrder`,不再按原供应商卡片顺序写入;Codex 菜单实际顺序与智能排序视图一致.
+- Codex 模型菜单默认进入智能排序;智能清洗后的显示名会随保存写入供应商模型目录,并由后端投影到真实 Codex 目录. 品牌前缀只清洗国外模型,国产模型保留前缀;日期/规格后缀继续可配置,两个自定义规则入口已移除.
 - 获取最新模型列表后会提示已添加但本次缺失的模型 ID; 当前配置保持不变, 不自动停用、取消勾选、删除或替换这些模型.
 - Codex 对话可独立选择供应商和模型; 代理在出站前恢复真实模型 ID, 不切换 CC Switch 全局供应商.
 
@@ -101,6 +102,7 @@
 - 2026-08-19 修复 Codex 模型菜单复选框视觉回归: 恢复合并前的 Radix Checkbox, 保留原有主题蓝色、白色 SVG 勾号和紧凑勾号尺寸, 不改变模型启用逻辑. 共享 Checkbox 回归测试、Codex 模型相关测试、TypeScript 和格式检查通过;独立标识与隔离数据库的 Windows x64 旁路 Release 已实际打开并核对模型菜单截图.
 - 2026-08-19 已按用户授权将复选框修复版覆盖到标准 Release: `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`, 版本 `3.20.0`, PE32+ x64, 大小 `34,208,768` bytes, SHA256 `CB80FE9C9B843F6A080D7F3AE4158CFA1ABFF8203134DFD892620550BAC681DF`. 旧下载目录实例已停止, 当前正式实例 PID `22736` 从标准路径运行;正式数据库、设置和登录状态未改动.
 - 2026-08-20 智能排序已改为优先使用模型显示名,并支持预制/自定义清洗规则. 智能视图非编辑状态会显示清洗后的名称,例如 `GPT 5.6 Sol` -> `5.6 Sol`、`Gemini 3.7 Flash` -> `3.7 Flash`;编辑框和真实模型 ID 仍保留原值. 本轮已通过定向 Vitest 14/14、`pnpm typecheck`、`pnpm format:check`、`pnpm build:renderer`、`git diff --check` 和正式配置 Windows x64 Release 构建. 标准 Release 已写到 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe`,版本 `3.20.0`,PE32+ x64,大小 `34,208,768` bytes,SHA256 `CD84A466AF4938B3594EC458AD251474CF292CAAAE35CB04123E128AE899F270`. 当前实际运行仍是非标准 Downloads 实例 PID `16524`,路径 `C:\Users\jery3\Downloads\cc-switch-v3.20.0-custom.1\CC-Switch-v3.20.0-custom.1-Windows-x64.exe`;未强制结束该实例,未修改正式数据库.
+- 2026-08-22 Codex 模型菜单默认使用智能排序;保存时将清洗后显示名写入持久化模型目录并进入真实 Codex 菜单;国外品牌前缀才移除,国产保留;移除自定义前缀/删除文本入口. 验证: 定向 Vitest 14/14、`pnpm typecheck`、`pnpm format:check`、`pnpm build:renderer`、`git diff --check` 和正式配置 Windows x64 Release 构建. 标准 Release 为版本 `3.20.0`,PE32+ x64,大小 `34,208,768` bytes,SHA256 `7C1F40913DF61CAB3F73262519535B5E3CA009B6C0B9694E234C55C725109D30`. 当前实际运行仍是非标准 Downloads 实例 PID `7724`;未结束该实例或修改正式数据库. 未在真实 Codex Desktop 中现场验证新目录名称与顺序.
 
 ## 未完成边界与回归重点
 
