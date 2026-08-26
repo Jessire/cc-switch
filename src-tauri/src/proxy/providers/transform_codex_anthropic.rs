@@ -3052,4 +3052,79 @@ data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":
         );
         assert!(anthropic_sse_to_message_value(sse).is_err());
     }
+
+    #[test]
+    fn test_opus_5_maps_every_effort_to_adaptive_output_config() {
+        // Real codex.exe never sends max_output_tokens, so the forwarder default
+        // applies. Under the legacy path that default collapsed medium/high/xhigh/max
+        // into the same `max_tokens / 2` ceiling; adaptive must keep them distinct.
+        for (effort, expected) in [
+            ("low", "low"),
+            ("medium", "medium"),
+            ("high", "high"),
+            ("xhigh", "max"),
+            ("max", "max"),
+            ("ultra", "max"),
+        ] {
+            let input = json!({
+                "model": "claude-opus-5",
+                "reasoning": { "effort": effort, "summary": "auto" },
+                "input": [{ "role": "user", "content": "hi" }]
+            });
+            let result = responses_request_to_anthropic(input, 8192).unwrap();
+            assert_eq!(result["thinking"]["type"], "adaptive", "effort={effort}");
+            assert!(
+                result["thinking"].get("budget_tokens").is_none(),
+                "effort={effort}"
+            );
+            assert_eq!(result["output_config"]["effort"], expected, "effort={effort}");
+        }
+    }
+
+    #[test]
+    fn test_opus_5_dated_and_vendor_prefixed_ids_are_adaptive() {
+        for model in [
+            "claude-opus-5",
+            "claude-opus-5-20260101",
+            "anthropic/claude-opus-5",
+            "anthropic.claude-opus-5-v1:0",
+        ] {
+            let input = json!({
+                "model": model,
+                "reasoning": { "effort": "max" },
+                "input": [{ "role": "user", "content": "hi" }]
+            });
+            let result = responses_request_to_anthropic(input, 8192).unwrap();
+            assert_eq!(result["thinking"]["type"], "adaptive", "model={model}");
+            assert_eq!(result["output_config"]["effort"], "max", "model={model}");
+        }
+    }
+
+    #[test]
+    fn test_opus_5_explicit_none_still_disables_thinking() {
+        // opus-5 is intentionally absent from `adaptive_thinking_is_default` and
+        // `thinking_cannot_be_disabled`, so an explicit `none` must stay off.
+        let input = json!({
+            "model": "claude-opus-5",
+            "reasoning": { "effort": "none" },
+            "input": [{ "role": "user", "content": "hi" }]
+        });
+        let result = responses_request_to_anthropic(input, 8192).unwrap();
+        assert_eq!(result["thinking"]["type"], "disabled");
+        assert!(result.get("output_config").is_none());
+    }
+
+    #[test]
+    fn test_non_adaptive_opus_still_uses_legacy_budget_ceiling() {
+        // Guards the substring match: `opus-5` must not capture `opus-4-5`.
+        let input = json!({
+            "model": "claude-opus-4-5",
+            "reasoning": { "effort": "max" },
+            "input": [{ "role": "user", "content": "hi" }]
+        });
+        let result = responses_request_to_anthropic(input, 8192).unwrap();
+        assert_eq!(result["thinking"]["type"], "enabled");
+        assert_eq!(result["thinking"]["budget_tokens"], 4096);
+        assert!(result.get("output_config").is_none());
+    }
 }
