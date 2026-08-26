@@ -320,17 +320,15 @@ pub fn responses_request_to_anthropic(
                 .and_then(codex_effort_to_anthropic)
                 .is_some());
 
-    if !thinking_history_is_valid {
-        if cannot_disable_thinking {
-            return Err(ProxyError::InvalidRequest(
-                "Anthropic model requires thinking, but the tool history has no signed thinking block to replay"
-                    .to_string(),
-            ));
-        }
-        if adaptive_should_think {
-            result["thinking"] = json!({ "type": "disabled" });
-        }
-    } else if adaptive_should_think && (!explicitly_disabled || cannot_disable_thinking) {
+    if adaptive_should_think && (!explicitly_disabled || cannot_disable_thinking) {
+        // Adaptive models always carry the caller's effort, including tool-result
+        // continuations whose replayed assistant turn has no signed thinking block.
+        // Adaptive thinking is a server-side mode selected per request, so a missing
+        // signature is not grounds to silently drop the user's chosen effort:
+        // verified against the configured upstream, `thinking: {"type":"adaptive"}`
+        // plus `output_config.effort` on an unsigned tool continuation returns 200.
+        // Suppressing it here made every deep tool loop fall back to the model's
+        // default effort, which is exactly the reasoning level the caller opted out of.
         thinking_enabled = true;
         result["thinking"] = json!({ "type": "adaptive" });
         if let Some(effort) = reasoning_effort.and_then(codex_effort_to_anthropic) {
@@ -342,6 +340,15 @@ pub fn responses_request_to_anthropic(
         }
     } else if explicitly_disabled {
         result["thinking"] = json!({ "type": "disabled" });
+    } else if !thinking_history_is_valid {
+        // Legacy budget-style thinking still needs the signed block: replaying a
+        // tool turn without it makes Anthropic reject the request outright.
+        if cannot_disable_thinking {
+            return Err(ProxyError::InvalidRequest(
+                "Anthropic model requires thinking, but the tool history has no signed thinking block to replay"
+                    .to_string(),
+            ));
+        }
     } else if thinking_budget > 0 {
         thinking_enabled = true;
         // Anthropic requires max_tokens > budget_tokens and budget >= 1024. Reserve
@@ -402,7 +409,9 @@ pub fn responses_request_to_anthropic(
                 mapped.get("type").and_then(|value| value.as_str()),
                 Some("any" | "tool")
             );
-            if thinking_enabled && forced {
+            // Adaptive thinking supports forced tool choice, so only the legacy
+            // budget path needs the downgrade below.
+            if thinking_enabled && forced && !adaptive_model {
                 if cannot_disable_thinking {
                     return Err(ProxyError::InvalidRequest(
                         "Anthropic model requires adaptive thinking and cannot honor a forced tool_choice"
@@ -2191,7 +2200,7 @@ mod tests {
     }
 
     #[test]
-    fn test_older_signed_turn_does_not_enable_thinking_for_unsigned_tool_call() {
+    fn test_older_signed_turn_is_not_replayed_onto_unsigned_tool_call() {
         let encrypted = encode_anthropic_thinking_block(&json!({
             "type": "thinking",
             "thinking": "old reasoning",
@@ -2214,11 +2223,25 @@ mod tests {
 
         let result = responses_request_to_anthropic(input, 4096).unwrap();
 
-        assert_eq!(result["thinking"]["type"], "disabled");
+        // The caller's effort still reaches the upstream: adaptive thinking is a
+        // per-request server-side mode, so a tool turn without a signed block must
+        // not silently fall back to the model's default reasoning level.
+        assert_eq!(result["thinking"]["type"], "adaptive");
+        assert_eq!(result["output_config"]["effort"], "high");
+        // The stale signature from the earlier turn must NOT be replayed onto this
+        // unsigned tool turn: the paired assistant starts directly at tool_use.
         let messages = result["messages"].as_array().unwrap();
         let paired_assistant = &messages[messages.len() - 2];
         assert_eq!(paired_assistant["role"], "assistant");
         assert_eq!(paired_assistant["content"][0]["type"], "tool_use");
+        assert!(
+            !paired_assistant["content"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|block| block.get("type").and_then(|t| t.as_str()) == Some("thinking")),
+            "stale signed thinking must not be replayed"
+        );
     }
 
     #[test]
@@ -3077,7 +3100,10 @@ data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":
                 result["thinking"].get("budget_tokens").is_none(),
                 "effort={effort}"
             );
-            assert_eq!(result["output_config"]["effort"], expected, "effort={effort}");
+            assert_eq!(
+                result["output_config"]["effort"], expected,
+                "effort={effort}"
+            );
         }
     }
 
@@ -3112,6 +3138,89 @@ data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":
         let result = responses_request_to_anthropic(input, 8192).unwrap();
         assert_eq!(result["thinking"]["type"], "disabled");
         assert!(result.get("output_config").is_none());
+    }
+
+    #[test]
+    fn test_opus_5_unsigned_tool_continuation_still_sends_effort() {
+        // The relay upstream returns plain text with no thinking block, so a tool
+        // round replayed by Codex never carries a signed thinking block. Adaptive
+        // models accept that shape (verified live: HTTP 200), so the caller's
+        // selected effort must still be forwarded instead of being downgraded.
+        let input = json!({
+            "model": "claude-opus-5",
+            "reasoning": { "effort": "max" },
+            "input": [
+                { "role": "user", "content": "check the file" },
+                { "type": "function_call", "call_id": "call_1", "name": "Read", "arguments": "{}" },
+                { "type": "function_call_output", "call_id": "call_1", "output": "ok" }
+            ]
+        });
+        let result = responses_request_to_anthropic(input, 8192).unwrap();
+        assert_eq!(result["thinking"]["type"], "adaptive");
+        assert_eq!(result["output_config"]["effort"], "max");
+    }
+
+    #[test]
+    fn test_adaptive_forced_tool_choice_keeps_effort() {
+        // Adaptive thinking supports forced tool choice upstream, so a `required`
+        // tool_choice must not strip the caller's effort on an adaptive model.
+        let input = json!({
+            "model": "claude-opus-5",
+            "reasoning": { "effort": "max" },
+            "tools": [{ "type": "function", "name": "x", "parameters": {"type": "object"} }],
+            "tool_choice": "required",
+            "input": [{ "role": "user", "content": "hi" }]
+        });
+        let result = responses_request_to_anthropic(input, 8192).unwrap();
+        assert_eq!(result["thinking"]["type"], "adaptive");
+        assert_eq!(result["output_config"]["effort"], "max");
+        assert_eq!(result["tool_choice"], json!({ "type": "any" }));
+    }
+
+    #[test]
+    fn test_opus_5_explicit_none_disables_even_with_tool_history() {
+        // `none` must still truly disable thinking, including on tool continuations.
+        let input = json!({
+            "model": "claude-opus-5",
+            "reasoning": { "effort": "none" },
+            "input": [
+                { "role": "user", "content": "call it" },
+                { "type": "function_call", "call_id": "c1", "name": "t", "arguments": "{}" },
+                { "type": "function_call_output", "call_id": "c1", "output": "ok" }
+            ]
+        });
+        let result = responses_request_to_anthropic(input, 8192).unwrap();
+        assert_eq!(result["thinking"]["type"], "disabled");
+        assert!(result.get("output_config").is_none());
+    }
+
+    #[test]
+    fn test_adaptive_effort_survives_every_tier_on_unsigned_tool_continuation() {
+        // The reported defect: deep tool loops silently lost the chosen effort.
+        for (effort, expected) in [
+            ("low", "low"),
+            ("medium", "medium"),
+            ("high", "high"),
+            ("xhigh", "max"),
+            ("max", "max"),
+            ("ultra", "max"),
+        ] {
+            let input = json!({
+                "model": "claude-opus-5",
+                "reasoning": { "effort": effort },
+                "input": [
+                    { "role": "user", "content": "go" },
+                    { "type": "function_call", "call_id": "c1", "name": "t", "arguments": "{}" },
+                    { "type": "function_call_output", "call_id": "c1", "output": "ok" }
+                ]
+            });
+            let result = responses_request_to_anthropic(input, 8192).unwrap();
+            assert_eq!(result["thinking"]["type"], "adaptive", "effort={effort}");
+            assert_eq!(
+                result["output_config"]["effort"], expected,
+                "effort={effort}"
+            );
+        }
     }
 
     #[test]
