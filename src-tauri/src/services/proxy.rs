@@ -6604,7 +6604,7 @@ requires_openai_auth = true
         provider.category = Some("custom".to_string());
 
         let mut takeover_settings = provider.settings_config.clone();
-        ProxyService::apply_codex_takeover_fields_for_provider(
+        service.apply_codex_takeover_fields_for_provider(
             &mut takeover_settings,
             "http://127.0.0.1:15721/v1",
             &provider,
@@ -6684,7 +6684,7 @@ wire_api = "responses"
         provider.category = Some("custom".to_string());
 
         let mut takeover_settings = provider.settings_config.clone();
-        ProxyService::apply_codex_takeover_fields_for_provider(
+        service.apply_codex_takeover_fields_for_provider(
             &mut takeover_settings,
             "http://127.0.0.1:15721/v1",
             &provider,
@@ -6752,7 +6752,7 @@ wire_api = "responses"
         provider.category = Some("custom".to_string());
 
         let mut takeover_settings = provider.settings_config.clone();
-        ProxyService::apply_codex_takeover_fields_for_provider(
+        service.apply_codex_takeover_fields_for_provider(
             &mut takeover_settings,
             "http://127.0.0.1:15721/v1",
             &provider,
@@ -6818,7 +6818,7 @@ requires_openai_auth = true
             provider.category = Some("custom".to_string());
 
             let mut takeover_settings = provider.settings_config.clone();
-            ProxyService::apply_codex_takeover_fields_for_provider(
+            service.apply_codex_takeover_fields_for_provider(
                 &mut takeover_settings,
                 "http://127.0.0.1:15721/v1",
                 &provider,
@@ -6884,7 +6884,7 @@ requires_openai_auth = true
         provider.category = Some("custom".to_string());
 
         let mut takeover_settings = provider.settings_config.clone();
-        ProxyService::apply_codex_takeover_fields_for_provider(
+        service.apply_codex_takeover_fields_for_provider(
             &mut takeover_settings,
             "http://127.0.0.1:15721/v1",
             &provider,
@@ -6957,7 +6957,7 @@ requires_openai_auth = false
         provider.category = Some("custom".to_string());
 
         let mut takeover_settings = provider.settings_config.clone();
-        ProxyService::apply_codex_takeover_fields_for_provider(
+        service.apply_codex_takeover_fields_for_provider(
             &mut takeover_settings,
             "http://127.0.0.1:15721/v1",
             &provider,
@@ -7039,7 +7039,7 @@ requires_openai_auth = true
             provider.category = Some("custom".to_string());
 
             let mut takeover_settings = provider.settings_config.clone();
-            ProxyService::apply_codex_takeover_fields_for_provider(
+            service.apply_codex_takeover_fields_for_provider(
                 &mut takeover_settings,
                 "http://127.0.0.1:15721/v1",
                 &provider,
@@ -7120,7 +7120,7 @@ requires_openai_auth = true
         assert!(provider.uses_proxy_injected_oauth());
 
         let mut takeover_settings = provider.settings_config.clone();
-        ProxyService::apply_codex_takeover_fields_for_provider(
+        service.apply_codex_takeover_fields_for_provider(
             &mut takeover_settings,
             "http://127.0.0.1:15721/v1",
             &provider,
