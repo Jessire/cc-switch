@@ -4,6 +4,8 @@
 
 - 本文件写给在此项目中工作的 Agent, 不是写给用户的使用说明.
 - 将 Jessire 在本项目历史对话中已经确认的需求, 偏好, 禁区和验收方式作为默认约束.
+- 与全局 AGENTS.md 关系: 分析、调研、方案建议或视觉设计阶段严格遵循全局只读约定 (不写文件、不提交、不改配置).
+- 仅当用户明确要求执行且进入最终交付阶段的已验证改动, 才适用下文的本地提交流程; 用户要求“仅分析/只给建议/先不要改/不急提交”时, 保持只读或保留工作区改动, 不自动提交.
 - 不得用上游仓库的通用做法覆盖本文件中的个人定制决策.
 - 用户当轮明确要求高于本文件; 出现冲突时按用户最新要求执行.
 - 每个任务开始时, 先读取 `PROJECT_STATE.md`, 再用 Git 和进程检查刷新其中可能变化的事实.
@@ -159,7 +161,7 @@ pnpm tauri build --no-bundle
 - `src-tauri/target/release/cc-switch.exe` 是本地最终 Release 和正式运行实例的标准路径. `C:\Users\jery3\.codex\tmp`、仓库外 `cc-switch-build*` 目录和临时 `CARGO_TARGET_DIR` 只允许用于中间构建、隔离验证或发布资产暂存, 不得作为任务结束后的正式运行位置.
 - 同一任务需要旁路构建时只允许复用一个已明确命名的临时 target. 不得为每次 UI 微调创建新的完整 Cargo target; 中间迭代优先使用 renderer build 和直接相关测试, 最终方案确定后只做一次完整 Release.
 - 标准 Release 被正在运行的实例占用时, 可在唯一临时 target 中生成并验证候选 EXE; 最终必须关闭旧 CC Switch、将已验证 EXE 归位到 `src-tauri/target/release/cc-switch.exe`、从标准路径重新启动并核验版本和 SHA256. 不得让最终实例长期运行于 `.codex\tmp`.
-- 任务结束前必须删除本轮旁路 Cargo target、隔离数据库、临时脚本、日志和多余截图. 如需控制磁盘占用, 可在保留标准 `release/cc-switch.exe` 后清理 `release/deps`, `release/build`, `.fingerprint` 等可重建中间物; 不得删除当前正式运行所依赖的标准 EXE.
+- 任务结束前必须删除本轮旁路 Cargo target、隔离数据库、临时脚本、日志和多余截图. 如需控制磁盘占用, 可在保留标准 `release/cc-switch.exe` 后清理 `release/deps`, `release/build`, `.fingerprint` 等可重建中间物; 不得删除当前正式运行所依赖的标准 EXE. 清理范围需明确并遵循全局安全约定, 绝不误删未确认文件或用户持久化数据.
 - 桌面交付文件默认命名为 `CC Switch.exe`; 目标正在运行时使用 `CC Switch-New.exe`, `CC Switch-New2.exe` 等旁路名称, 不结束旧实例.
 - GitHub 构建使用 `Build Windows EXE` 手动工作流, 产物固定为 Windows x64 Artifact `CC-Switch-Custom-Windows-x64`.
 - 长时间 Rust Release 构建必须持续跟踪到明确成功或失败. 不得因为工具超时提前结束任务, 也不得重复启动多个 Cargo 构建争用同一 target 目录.
