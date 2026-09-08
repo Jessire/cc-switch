@@ -120,3 +120,12 @@
 - [ ] 涉及 EXE 替换前精确核验指定进程 PID、路径、版本和 SHA256, 不以进程列表第一项作判断.
 - [ ] 任务结束时将仍有效的测试、构建、Release 和运行状态写回本文件; 删除过时或重复记录.
 - [ ] 不写入 API Key, token, cookie, OAuth 数据或真实数据库内容.
+
+## 2026-09-08 状态协调补充
+
+- 新增 `docs/reconciliation.md` 与 `scripts/verify-release-reconciliation.ps1`; 检查文件版本、SHA256、PE machine 为 x64 和目标路径进程.
+- 标准 Release 回读通过: 版本 `3.20.2`, 大小 `34,448,384` bytes, SHA256 `9AC7782A9A47F94FD928770282FDDED62EB6CCF1F97811695E61514134445754`, 标准路径进程 PID `25188` 正在运行; 未结束或替换运行实例.
+- `lol-auto` 增加 `health` 和脱敏 `last_run.json`; Python 语法通过. 当前 health 明确为未校准, 未运行真实登录;真实动作末态改为 `unverified`, 不把脚本走完当作游戏业务成功.
+- `test` 与 ScriptCat 目录补充 reconciliation 文档和源文件一致性检查; 未改动真实 userscript 业务逻辑.
+- 未执行正式 Release 构建, 未推送; reconciliation 文档、脚本和状态记录已完成本地提交.
+
