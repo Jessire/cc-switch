@@ -4,13 +4,13 @@
 
 ## 状态快照
 
-- 更新时间: 2026-09-08, Asia/Shanghai.
+- 更新时间: 2026-09-09, Asia/Shanghai.
 - 工作目录: `D:\文件\Agenc Cli\cc-switch`.
 - 当前主线: `main`, 跟踪 `fork/main`.
 - 用户仓库: `fork`, `https://github.com/Jessire/cc-switch.git`.
 - 上游仓库: `origin`, `https://github.com/farion1231/cc-switch.git`.
 - 最近一次已核验的上游基线: `origin/main` 提交 `f3b18df12007d0fd79fd8ad8d310880664015197`, 版本 `v3.20.2`.
-- 最近一次已核验的远端 `fork/main`: `db796e9ab32b426e8f2aa411de21161bb452eabe`.
+- 最近一次已核验的远端 `fork/main`: `34432d946a61a590071903c155a2ad9ca8316f73`.
 
 ## 已实现的个人定制
 
