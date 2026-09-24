@@ -4,13 +4,13 @@
 
 ## 状态快照
 
-- 更新时间: 2026-09-09, Asia/Shanghai.
+- 更新时间: 2026-09-24, Asia/Shanghai.
 - 工作目录: `D:\文件\Agenc Cli\cc-switch`.
 - 当前主线: `main`, 跟踪 `fork/main`.
 - 用户仓库: `fork`, `https://github.com/Jessire/cc-switch.git`.
 - 上游仓库: `origin`, `https://github.com/farion1231/cc-switch.git`.
-- 最近一次已核验的上游基线: `origin/main` 提交 `f3b18df12007d0fd79fd8ad8d310880664015197`, 版本 `v3.20.2`.
-- 最近一次已核验的远端 `fork/main`: `34432d946a61a590071903c155a2ad9ca8316f73`.
+- 最近一次已核验的上游基线: `origin/main` 提交 `f8788719875a6c38827fa6c88e7b19a164b3ef81`, 版本 `v3.20.4`.
+- 最近一次已核验的远端 `fork/main`: `96fc207e3cf12b0192f806b76400f844d9dfdf5a`.
 
 ## 已实现的个人定制
 
@@ -106,6 +106,13 @@
 - 2026-08-26 修复 adaptive 思考模型在工具续轮丢失推理强度的缺陷: `src-tauri/src/proxy/providers/transform_codex_anthropic.rs` 将 adaptive 分支提到 `thinking_history_is_valid` 之前, 并把强制 tool_choice 的降级只保留给 legacy budget 路径, 使 `claude-opus-5` 等 adaptive 模型在无签名 thinking block 的工具续轮上仍发送 `thinking:{"type":"adaptive"}` 与顶层 `output_config.effort`. 根因: 该中转从不返回 thinking block, 导致每次工具续轮的 `trailing_turn_supports_thinking` 必然失败并被预防性降级为 `thinking:{"type":"disabled"}`, 而上游探针实测该形状返回 HTTP 200, 降级无必要. 验证: `transform_codex_anthropic` 模块单测 81/81, 更广 proxy 回归 1424/1424, `cargo fmt` 已应用; 旧二进制真实出站基线为 plain 六档全部带 effort 而 tool_continuation 六档全部 `disabled` 且 `output_config=null`; 重启后新二进制 (PID 22768, 启动 2026/8/26 22:01:52) 复测同样 12 个用例, plain 与 tool_continuation 六档全部携带 `output_config.effort` (low/medium/high/max/max/max), 结果 `ALL_CASES_CARRY_EFFORT`, 并顺带抓到 8 条真实会话请求 (msgs=63) 同样带 `{"effort":"max"}`. 提交 `a1dc8041`; 标准 Windows x64 Release 已更新, 大小 `34,176,512` bytes, SHA256 `D3B9971A6E53548A4D2FAB0F19F40AA7CB070C930F8007D5E696DC05839D57C1`, 旧 EXE 备份已清理, provider base_url 已恢复为原上游.
 
 - 2026-09-08 完成本地与上游 origin/main 同步并合并 v3.20.2 (上游官方最新发布版本及提交，无 3.20.5，已完全对齐). 冲突处理逐项保留全部定制：Codex 模型菜单智能排序/清洗、Radix Checkbox 紧凑勾选框样式、供应商分组及拖拽排序、同组切换重启逻辑与无官方应用更新提示; 完整合入上游 v3.20.1/v3.20.2 全部修复与新特性 (SoleAPI/9527/AICodeWith/QwenCloud 等预设、2026-09 模型定价表更新、Codex 图片编辑/生成代理转发、Codex OAuth/Responses 与 DeepSeek MCP 修复等). 验证：通过 `pnpm typecheck`、全量 `pnpm test:unit` (146/146 测试套件, 1135/1135 passed)、`pnpm build:renderer`、Rust 单元测试 (`codex_config` 128/128 passed, `proxy` 1525/1525 passed) 与 `pnpm format:check`. 标准 Windows x64 Release 已构建并归位于 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe` (及同目录副本 `CC Switch.exe`), 版本 `3.20.2`, PE32+ x64, 大小 `34,448,384` bytes, SHA256 `9AC7782A9A47F94FD928770282FDDED62EB6CCF1F97811695E61514134445754`. 旧运行实例 PID `8560` (前版本 3.20.0) 已通过旁路重命名保持平稳运行, 未强杀进程以防中断会话, 用户随时可切换至新版.
+
+- 2026-09-24 完成本地与上游 origin/main (v3.20.4) 合并与同步, 并实现所有模型品牌前缀彻底剥离定制. 核心变更:
+  1. 上游基线同步到 v3.20.4 (包含 v3.20.3 & v3.20.4): grok-4.x 思考白名单扩展与 xhigh 透传、GPT-5.6 / GPT-6 Astra 思考深度保留、Codex responses-to-chat converter 优化、Claude Opus 5.5 / Grok 4.7 / GLM-5.3-FlashX / Qwen3.8 定价更新、FluxA / Soshow / Sub2API / Kimi Global / MiniMax Code 等供应商预设更新及底层系统修复.
+  2. 新增个人定制: Codex 模型菜单智能清洗由“仅去国外模型前缀”升级为“所有模型品牌前缀全部去除” (`BRAND_MODEL_PREFIX_REGEX` 覆盖国内外所有品牌, 包括 GLM、DeepSeek、Qwen、Kimi、MiniMax、Doubao、Hunyuan 等), 与用户给出的真实显示效果完全对齐 (`glm-5.3` -> `5.3`, `GLM-5.3-Flash` -> `5.3 Flash`, `DeepSeek-V4.1-Flash` -> `V4.1 Flash`).
+  3. 完好保留全部历史个人定制: Radix Checkbox 紧凑蓝色主题复选框、供应商卡片三列单排流、顶部分组滚轮与多分组归属、同组免重启及屏蔽应用自动更新.
+  4. 验证: 通过 `pnpm typecheck`、前端测试 (单测及 integration 9/9 passed)、`pnpm build:renderer`、Rust 单元测试 (`codex_config` 129/129 passed, `proxy` 1558/1558 passed)、`pnpm format:check` 与 `verify-release-reconciliation.ps1` 校验.
+  5. 标准 Windows x64 Release 已生成并归位至 `D:\文件\Agenc Cli\cc-switch\src-tauri\target\release\cc-switch.exe` (及同目录副本 `CC Switch.exe`), 版本 `3.20.4`, PE32+ x64, 大小 `34,695,680` bytes, SHA256 `F29FE4A652B0440A9342F25758D09D52DF40A80BB5C123ED05A5702EF7BC44D4`. 当前旧运行实例 PID `17232` 通过旁路重命名维持平稳运行, 未强制结束.
 
 ## 未完成边界与回归重点
 
