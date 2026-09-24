@@ -156,11 +156,8 @@ export function applyDraftModelDisplayNames(
   }));
 }
 
-const DOMESTIC_MODEL_PREFIX_REGEX =
-  /^(?:(?:zhipu|moonshot|alibaba|stepfun|xiaomi|01ai|baichuan)[/_\-\s]+)?(?:qwen|glm|kimi|deepseek|minimax|step|mimo|ling|longcat|hunyuan|doubao|ernie|spark)(?=[/_\-\s\d]|\d|$)/i;
-
-const FOREIGN_MODEL_PREFIX_REGEX =
-  /^(?:(?:openai|anthropic|google|meta|xai|mistral|cohere|amazon)[/_\-\s]+)?(?:ox|gpt|claude|gemini|grok|llama|mistral|command)(?=[/_\-\s\d]|\d|$)[/_\-\s]*/i;
+const BRAND_MODEL_PREFIX_REGEX =
+  /^(?:(?:openai|anthropic|google|meta|xai|mistral|cohere|amazon|zhipu|moonshot|alibaba|aliyun|stepfun|xiaomi|01ai|baichuan|baidu|tencent|bytedance|volcengine)[/_\-\s]+)?(?:ox|gpt|claude|gemini|grok|llama|mistral|command|qwen|glm|chatglm|kimi|deepseek|minimax|step|mimo|ling|longcat|hunyuan|doubao|ernie|spark|yi)(?=[/_\-\s\d]|\d|$)[/_\-\s]*/i;
 
 const FULL_DATE_SUFFIX_REGEX =
   /(?:[-_.\s]|^)(?:20\d{2}[-_.]?)(?:0[1-9]|1[0-2])(?:[-_.]?)(?:0[1-9]|[12]\d|3[01])(?=[-_.\s]|$)/gi;
@@ -180,12 +177,9 @@ function stripModelNameAffixes(
   let result = rawName.trim();
   if (!result) return "";
 
-  // Prefix cleanup is only for foreign models; domestic names keep their brand.
-  if (
-    rules.stripBrandPrefixes !== false &&
-    !DOMESTIC_MODEL_PREFIX_REGEX.test(result)
-  ) {
-    result = result.replace(FOREIGN_MODEL_PREFIX_REGEX, "");
+  // Strip all brand prefixes (both foreign and domestic).
+  if (rules.stripBrandPrefixes !== false) {
+    result = result.replace(BRAND_MODEL_PREFIX_REGEX, "");
   }
 
   if (rules.stripContextSuffixes !== false) {

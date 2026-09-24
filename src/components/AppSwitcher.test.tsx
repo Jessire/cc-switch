@@ -18,6 +18,7 @@ describe("AppSwitcher", () => {
           openclaw: false,
           hermes: false,
           pi: false,
+          mcode: false,
         }}
       />,
     );

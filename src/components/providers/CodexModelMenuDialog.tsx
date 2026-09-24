@@ -1025,7 +1025,7 @@ export function CodexModelMenuDialog({
 
                 <div className="space-y-3">
                   <label className="flex items-center justify-between gap-4 text-sm">
-                    <span>去除 GPT、Claude 等前缀</span>
+                    <span>去除品牌前缀（全部模型）</span>
                     <Switch
                       checked={sortRules.stripBrandPrefixes !== false}
                       onCheckedChange={(checked) =>
